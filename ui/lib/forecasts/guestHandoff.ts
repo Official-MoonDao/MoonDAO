@@ -13,6 +13,8 @@ export type PendingHandoff = {
   deprizeId: number
   /** Raw `vote` JSON from the guest's Forecasts row. */
   vote: string
+  /** Guest wallet that confirmed this write. Absent on rows copied from the gateway. */
+  from?: string
 }
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
@@ -25,18 +27,23 @@ function storage(): StorageLike | null {
   }
 }
 
+function isPendingHandoff(row: unknown): row is PendingHandoff {
+  if (!row || typeof row !== 'object') return false
+  const candidate = row as PendingHandoff
+  return (
+    typeof candidate.chainSlug === 'string' &&
+    Number.isInteger(candidate.deprizeId) &&
+    typeof candidate.vote === 'string' &&
+    (candidate.from == null || typeof candidate.from === 'string')
+  )
+}
+
 export function readPendingHandoffs(store: StorageLike | null = storage()): PendingHandoff[] {
   if (!store) return []
   try {
     const parsed = JSON.parse(store.getItem(GUEST_HANDOFF_STORAGE_KEY) || '[]')
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (row): row is PendingHandoff =>
-        !!row &&
-        typeof row.chainSlug === 'string' &&
-        Number.isInteger(row.deprizeId) &&
-        typeof row.vote === 'string'
-    )
+    return parsed.filter(isPendingHandoff)
   } catch {
     return []
   }
@@ -69,6 +76,46 @@ export function mergePendingHandoffs(...groups: PendingHandoff[][]): PendingHand
     }
   }
   return [...byPrize.values()]
+}
+
+/**
+ * Rows to move onto an existing account. The gateway lags a confirmed write,
+ * so a local note fills a prize the read missed and wins when both exist.
+ */
+export function handoffRows(
+  fromChain: PendingHandoff[],
+  local: PendingHandoff[]
+): PendingHandoff[] {
+  return mergePendingHandoffs(fromChain, local)
+}
+
+/** The signed-in wallet already holds this forecast. Rewriting it would insert a duplicate. */
+export function isSameWalletHandoff(pending: PendingHandoff, accountAddress: string): boolean {
+  return !!pending.from && pending.from.toLowerCase() === accountAddress.toLowerCase()
+}
+
+/** Remember a guest write that has confirmed on chain, before the gateway can read it. */
+export function rememberGuestForecast(
+  row: PendingHandoff,
+  store: StorageLike | null = storage()
+): boolean {
+  if (!row.from || !/^0x[a-fA-F0-9]{40}$/.test(row.from)) return false
+  const noted: PendingHandoff = { ...row, from: row.from.toLowerCase() }
+  return writePendingHandoffs(mergePendingHandoffs(readPendingHandoffs(store), [noted]), store)
+}
+
+/** The guest removed this prediction. Do not move it onto an account later. */
+export function forgetGuestForecast(
+  chainSlug: string,
+  deprizeId: number,
+  store: StorageLike | null = storage()
+): boolean {
+  return writePendingHandoffs(
+    readPendingHandoffs(store).filter(
+      (row) => row.chainSlug !== chainSlug || row.deprizeId !== deprizeId
+    ),
+    store
+  )
 }
 
 /** The pending forecast for one prize, left in storage for a retry. */

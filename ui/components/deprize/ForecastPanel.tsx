@@ -32,6 +32,7 @@ import {
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
 import { sameForecastSession } from '@/lib/forecasts/forecastSession'
+import { forgetGuestForecast, rememberGuestForecast } from '@/lib/forecasts/guestHandoff'
 import {
   mergeCallerRoster,
   notifyRoster,
@@ -368,6 +369,11 @@ export default function ForecastPanel(props: {
         address: from.address,
         vote,
       })
+      // The gateway cannot see this row yet. Keep it locally so signing into
+      // an existing account can still move it.
+      if (forecastWriter.isGuest || (options?.from && !account)) {
+        rememberGuestForecast({ chainSlug, deprizeId, vote, from: from.address })
+      }
       notifyRoster({
         chain: chainSlug,
         deprizeId,
@@ -413,6 +419,7 @@ export default function ForecastPanel(props: {
         account: writer,
         voteId: deprizeForecastVoteId(deprizeId),
       })
+      if (forecastWriter.isGuest || !account) forgetGuestForecast(chainSlug, deprizeId)
       const clearedPick = savedPick != null ? labels[savedPick] : undefined
       notifyRoster({
         chain: chainSlug,

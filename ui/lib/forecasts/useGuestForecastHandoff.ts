@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { decodeForecastVote } from '@/lib/deprize/forecastVote'
 import { pickFromAllocation } from '@/lib/forecasts/forecastPick'
-import { peekPendingHandoff, takePendingHandoff } from '@/lib/forecasts/guestHandoff'
+import {
+  isSameWalletHandoff,
+  peekPendingHandoff,
+  takePendingHandoff,
+} from '@/lib/forecasts/guestHandoff'
 
 /** Identity of the roster a handoff is allowed to trust. */
 export function forecastRosterKey(chainSlug: string, deprizeId: number, address?: string): string {
@@ -46,11 +50,22 @@ export function useGuestForecastHandoff(args: {
   const { chainSlug, deprizeId, isGuest, rosterReady, inputsLocked, writing, savedPick, n } = args
 
   useEffect(() => {
-    if (!accountAddress || isGuest || !rosterReady || inputsLocked || writing) return
-    if (attemptScope.current === scope) return
+    if (!accountAddress || isGuest) return
 
     const pending = peekPendingHandoff(chainSlug, deprizeId)
     if (!pending) return
+
+    // Creating an account keeps the guest wallet, so this row is already
+    // theirs. Drop the note before the roster loads: rewriting it while the
+    // gateway still lags the confirmed insert would be a duplicate.
+    if (isSameWalletHandoff(pending, accountAddress)) {
+      takePendingHandoff(chainSlug, deprizeId)
+      attemptScope.current = scope
+      return
+    }
+
+    if (!rosterReady || inputsLocked || writing) return
+    if (attemptScope.current === scope) return
 
     // This account already has a forecast. Drop the guest copy so a later
     // undo does not write it back over that pick.

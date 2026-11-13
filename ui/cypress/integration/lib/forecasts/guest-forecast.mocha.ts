@@ -10,9 +10,13 @@ import path from 'path'
 import { guestForecastAccount, toPrivyTransaction } from '@/lib/forecasts/guestAccount'
 import {
   GUEST_HANDOFF_STORAGE_KEY,
+  forgetGuestForecast,
+  handoffRows,
+  isSameWalletHandoff,
   mergePendingHandoffs,
   peekPendingHandoff,
   readPendingHandoffs,
+  rememberGuestForecast,
   takePendingHandoff,
   writePendingHandoffs,
 } from '@/lib/forecasts/guestHandoff'
@@ -197,6 +201,64 @@ describe('guest handoff to an existing account', () => {
     expect(merged.find((row) => row.chainSlug === 'sepolia')?.vote).to.equal('{"v":3}')
   })
 
+  it('keeps a confirmed prediction the gateway has not indexed', () => {
+    const noted = {
+      chainSlug: 'arbitrum',
+      deprizeId: 1,
+      vote: '{"v":1,"a":{"2":100},"vp":0}',
+      from: '0xabcabcabcabcabcabcabcabcabcabcabcabcabca',
+    }
+    expect(handoffRows([], [noted])).to.deep.equal([noted])
+  })
+
+  it('prefers the local note when the gateway still shows the previous pick', () => {
+    const stale = { chainSlug: 'arbitrum', deprizeId: 1, vote: '{"v":1,"a":{"0":100}}' }
+    const latest = {
+      chainSlug: 'arbitrum',
+      deprizeId: 1,
+      vote: '{"v":1,"a":{"2":100}}',
+      from: '0xabcabcabcabcabcabcabcabcabcabcabcabcabca',
+    }
+    const other = { chainSlug: 'sepolia', deprizeId: 1, vote: '{"v":1,"a":{"1":100}}' }
+    const rows = handoffRows([stale, other], [latest])
+    expect(rows).to.have.length(2)
+    expect(rows.find((row) => row.chainSlug === 'arbitrum')?.vote).to.equal(latest.vote)
+    expect(rows.find((row) => row.chainSlug === 'sepolia')?.vote).to.equal(other.vote)
+  })
+
+  it('remembers a guest write and forgets it when that guest removes it', () => {
+    const store = memoryStore()
+    const guest = '0xABCDEFabcdefABCDEFabcdefABCDEFabcdefABCD'
+    const row = {
+      chainSlug: 'arbitrum',
+      deprizeId: 1,
+      vote: '{"v":1,"a":{"2":100},"vp":0}',
+      from: guest,
+    }
+    expect(rememberGuestForecast(row, store)).to.equal(true)
+    expect(readPendingHandoffs(store)[0].from).to.equal(guest.toLowerCase())
+    expect(forgetGuestForecast('arbitrum', 1, store)).to.equal(true)
+    expect(readPendingHandoffs(store)).to.deep.equal([])
+    expect(rememberGuestForecast({ ...row, from: 'not-an-address' }, store)).to.equal(false)
+  })
+
+  it('does not rewrite a note onto the wallet that already holds it', () => {
+    const pending = {
+      chainSlug: 'arbitrum',
+      deprizeId: 1,
+      vote: '{}',
+      from: '0xABCDEFabcdefABCDEFabcdefABCDEFabcdefABCD',
+    }
+    const guest = pending.from.toLowerCase()
+    expect(isSameWalletHandoff(pending, guest)).to.equal(true)
+    expect(isSameWalletHandoff(pending, '0xdefdefdefdefdefdefdefdefdefdefdefdefdefd')).to.equal(
+      false
+    )
+    expect(
+      isSameWalletHandoff({ chainSlug: 'arbitrum', deprizeId: 1, vote: '{}' }, guest)
+    ).to.equal(false)
+  })
+
   it('reports when the handoff could not be stored', () => {
     const row = { chainSlug: 'arbitrum', deprizeId: 2, vote: '{"v":1}' }
     expect(writePendingHandoffs([row], null)).to.equal(false)
@@ -289,6 +351,8 @@ describe('guest wiring', () => {
     const beforeLogout = fn.slice(0, logoutAt)
     expect(beforeLogout).to.contain('if (!res.ok)')
     expect(beforeLogout).to.contain('return')
+    expect(beforeLogout).to.contain('const found = handoffRows(')
+    expect(beforeLogout).to.contain('for (const row of found)')
     expect(beforeLogout).to.contain('if (found.length > 0 && !stored)')
     // A delete that throws must return before the guest is dropped.
     const deleteTry = beforeLogout.indexOf('await clearForecastVote')
@@ -302,9 +366,12 @@ describe('guest wiring', () => {
     expect(hook).to.contain('peekPendingHandoff(chainSlug, deprizeId)')
     expect(hook).to.match(/if \(ok\) takePendingHandoff\(chainSlug, deprizeId\)/)
     const peekAt = hook.indexOf('peekPendingHandoff(chainSlug, deprizeId)')
+    const sameWalletAt = hook.indexOf('isSameWalletHandoff(')
     const commitAt = hook.indexOf('commitPickRef.current(pick)')
     const takeAt = hook.indexOf('if (ok) takePendingHandoff')
-    expect(commitAt).to.be.greaterThan(peekAt)
+    expect(sameWalletAt).to.be.greaterThan(peekAt)
+    expect(commitAt).to.be.greaterThan(sameWalletAt)
+    expect(hook.slice(sameWalletAt, commitAt)).to.contain('return')
     expect(takeAt).to.be.greaterThan(commitAt)
     // A decode miss returns without removing the stored copy.
     const decodeAt = hook.indexOf('decodeForecastVote(pending.vote, n)')
@@ -319,6 +386,14 @@ describe('guest wiring', () => {
       expect(panel).to.contain('useGuestForecastHandoff(')
       expect(panel).to.contain('chainSlug')
       expect(panel).to.contain('deprizeId')
+      expect(panel).to.contain('rememberGuestForecast(')
+      expect(panel).to.contain('forgetGuestForecast(')
+      const writeAt = panel.indexOf('await writeForecastVote(')
+      const rememberAt = panel.indexOf('rememberGuestForecast(')
+      const clearAt = panel.indexOf('await clearForecastVote(')
+      const forgetAt = panel.indexOf('forgetGuestForecast(')
+      expect(rememberAt).to.be.greaterThan(writeAt)
+      expect(forgetAt).to.be.greaterThan(clearAt)
       expect(panel).not.to.contain('handoffChecked')
       expect(panel).not.to.contain('takePendingHandoff(')
     }
