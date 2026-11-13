@@ -579,7 +579,9 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       const sea = seaAt(wxp, wzp)
       const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz)
       // m[4] is the cosine of the tilt: 0.82 is about 35 degrees, 0.966 about 15.
-      if (sea && speed < 11 && m[4] > 0.82) finish(s, 'splashdown', 'sea')
+      // Water forgives sideways speed that land does not: slow enough down and
+      // not skidding wildly, the ship settles in and stays in one piece.
+      if (sea && -s.vy < 9 && s.vx * s.vx + s.vz * s.vz < 26 * 26 && m[4] > 0.82) finish(s, 'splashdown', 'sea')
       // On land a gentle arrival, even one still sliding sideways, leaves the
       // ship standing for a moment: it has no legs, so it goes over.
       else if (!sea && -s.vy < 8 && s.vx * s.vx + s.vz * s.vz < 14 * 14 && m[4] > 0.94) finish(s, 'ditched', 'ground')

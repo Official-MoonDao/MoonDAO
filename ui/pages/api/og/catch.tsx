@@ -74,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   ${text('x="56" y="550" font-size="40" fill-opacity="0.92"', `Can you catch a Starship?${pro}`)}
   ${text(
     'x="56" y="598" font-size="26" fill-opacity="0.8"',
-    'A one-minute Starship catch game. New wind every day.'
+    'A one-minute Starship catch game. New weather every day.'
   )}
 </svg>`)
         const jpg = await sharp(base)
@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? `Beat ${challenge.score.toLocaleString('en-US')} points`
       : 'Can you catch a Starship?',
     subtitle: 'A one-minute 3D Starship catch game',
-    chips: ['New wind daily', 'Easy + Pro', 'No sign-up'],
+    chips: ['New weather daily', 'Easy + Pro', 'No sign-up'],
     footer: SHARE_URL_LABEL,
   })
   const { png, cacheControl } = await rasterizeOgSvg(svg)

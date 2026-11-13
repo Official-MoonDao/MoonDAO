@@ -41,7 +41,8 @@ const SPLASH = [
   'A perfect landing, 400 meters east of where the arms are.',
   'Splashdown. The fish are impressed. The tower is not.',
   'You overshot a 140-meter tower and found an entire ocean.',
-  'It floats! Briefly.',
+  'It floats! Somebody call a tugboat.',
+  'Down soft, tipped over, still floating. The recovery ship is not amused.',
 ]
 
 const DITCHED = [

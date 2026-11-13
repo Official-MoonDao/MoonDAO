@@ -28,7 +28,7 @@ export default function CatchPage({ challenge }: Props) {
   const score = challenge ? challenge.score.toLocaleString('en-US') : ''
   const title = challenge ? `Beat ${challenge.nickname ? `${challenge.nickname}'s ` : ''}${score} on Starship Catch` : 'Starship Catch: can you catch a Starship?'
   const description =
-    'A one-minute 3D game. A Starship falls out of the sky over Starbase: brake, steer, and set it down in the launch tower’s arms. New wind every day.'
+    'A one-minute 3D game. A Starship falls out of the sky over Starbase: brake, steer, and set it down in the launch tower’s arms. New weather every day.'
   const ogQuery = challenge ? `?${challengeQuery(challenge)}` : ''
   return (
     <>

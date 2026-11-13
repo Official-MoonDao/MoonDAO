@@ -505,8 +505,40 @@ roughnessFactor = mix(roughnessFactor, 0.75, foam);`
       )
   }
   bag.push(mat)
-  const geo = new THREE.PlaneGeometry(160000, 160000, 1, 1)
-  geo.rotateX(-Math.PI / 2)
+  // One flat sheet, but not two giant triangles: depth interpolated across a
+  // triangle 160 km wide is too coarse to separate the ground from anything
+  // lying a hand's height above it (a trench floor, a kerb, a parked truck),
+  // and those surfaces flicker. The sheet is cut on a grid that is fine round
+  // the launch site and doubles in size outward.
+  const lines: number[] = []
+  for (let v = 150; v < 80000; v *= 2) lines.push(v)
+  lines.push(80000)
+  const marks = [...lines.map((v) => -v).reverse(), 0, ...lines]
+  const n = marks.length
+  const pos = new Float32Array(n * n * 3)
+  const nor = new Float32Array(n * n * 3)
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      const k = (j * n + i) * 3
+      // Centred on the site, not on the origin's far corner.
+      pos[k] = marks[i] - 180
+      pos[k + 2] = marks[j] - 30
+      nor[k + 1] = 1
+    }
+  }
+  const index: number[] = []
+  for (let j = 0; j < n - 1; j++) {
+    for (let i = 0; i < n - 1; i++) {
+      const a = j * n + i
+      // Wound so the face points up (x east, z south).
+      index.push(a, a + n, a + 1, a + 1, a + n, a + n + 1)
+    }
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+  geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3))
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * n * 2), 2))
+  geo.setIndex(index)
   bag.push(geo)
   const mesh = new THREE.Mesh(geo, mat)
   mesh.receiveShadow = true

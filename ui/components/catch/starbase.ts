@@ -60,11 +60,18 @@ function weather(
   float wb = texture2D(uWNoise, (vWp.xz + vWp.y * 0.7) / 41.0).g;
   float wf = texture2D(uWNoise, (vWp.xz * 1.3 + vWp.y) / 3.1).b;
   vec3 c = diffuseColor.rgb;
-  c *= mix(1.0, 0.6 + 0.8 * ws, uW.x);
+  // Rain streaks run down walls, not across flat tops: on a horizontal face
+  // the streak pattern has no height to vary along, so it is sampled far too
+  // coarsely and shimmers. They also fade out with distance, where they are
+  // finer than a pixel anyway.
+  float wDist = length(vViewPosition);
+  vec3 wN = normalize((vec4(normalize(vNormal), 0.0) * viewMatrix).xyz);
+  float wSide = smoothstep(0.25, 0.6, 1.0 - abs(wN.y)) * (1.0 - smoothstep(220.0, 650.0, wDist));
+  c *= mix(1.0, 0.6 + 0.8 * ws, uW.x * wSide);
   c *= 1.0 + uW.y * (wb * 2.0 - 1.0);
-  c *= 0.95 + 0.1 * wf;
+  c *= 0.95 + 0.1 * mix(wf, 0.5, smoothstep(60.0, 260.0, wDist));
   if (uW.w > 0.0) c *= 1.0 - 0.18 * smoothstep(0.47, 0.5, abs(fract(vWp.y / uW.w) - 0.5));
-  float splash = smoothstep(2.4, 0.0, vWp.y) * (0.5 + 0.5 * wf);
+  float splash = smoothstep(2.4, 0.0, vWp.y) * (0.5 + 0.5 * mix(wf, 0.5, smoothstep(60.0, 260.0, wDist)));
   c = mix(c, vec3(0.40, 0.34, 0.24), splash * uW.z);
   float cloudSh = smoothstep(0.50, 0.72, texture2D(uWNoise, vWp.xz / 3100.0 + uTime * vec2(0.0021, 0.0008)).r * 0.65 + texture2D(uWNoise, vWp.xz / 1300.0 + uTime * vec2(0.0045, 0.0017)).g * 0.35);
   diffuseColor.rgb = c * (1.0 - uCloud * cloudSh);
@@ -505,7 +512,7 @@ function mapStructures(b: Builder, far: Builder) {
     segs(w.p, (ax, az, bx, bz) => {
       const L = Math.hypot(bx - ax, bz - az)
       if (L < 0.5) return
-      b.box('black', L, w.h, 0.5, (ax + bx) / 2, w.h / 2, (az + bz) / 2, -Math.atan2(bz - az, bx - ax))
+      b.box('concreteWall', L, w.h, 1.0, (ax + bx) / 2, w.h / 2, (az + bz) / 2, -Math.atan2(bz - az, bx - ax))
     })
   }
   for (const p of MAP.racks) {
@@ -662,13 +669,9 @@ function roads(mats: Mats, bag: Bag): THREE.Group {
       // Only the highway and streets are asphalt; service roads and tracks are graded dirt.
       if (kind >= 2) {
         if (r.k !== 0 || r.w < 9) continue
-        if (kind === 2) {
-          ribbon(pos, r.p, 0.16, 0.06, 0.1)
-          ribbon(pos, r.p, -0.16, 0.06, 0.1)
-        } else {
-          ribbon(pos, r.p, r.w / 2 - 0.45, 0.07, 0.1)
-          ribbon(pos, r.p, -(r.w / 2 - 0.45), 0.07, 0.1)
-        }
+        // One centre line, wide enough to hold together from the air. Edge
+        // lines a hand's width across only ever showed as flicker.
+        if (kind === 2) ribbon(pos, r.p, 0, 0.22, 0.1)
         continue
       }
       if ((r.k === 1 || r.w < 6 ? 1 : 0) !== kind) continue

@@ -21,6 +21,8 @@ export type Conditions = {
   sunElevation: number
   sunAzimuth: number
   cloudCover: number
+  /** The day's sky in a word or two, for the start screen. */
+  sky: string
   /** For the briefing: compass direction the wind comes FROM, and its speed. */
   windFrom: string
   windSpeed: number
@@ -58,16 +60,23 @@ export function conditionsFor(mission: number): Conditions {
   const [fx, fz] = DIR16[fromIndex]
   // Morning to mid-afternoon: the sun swings from the south-east round to the south-west.
   const hour = rng()
+  const gust = 0.15 + Math.round(rng() * 20) / 100
+  const gustPhase = Math.round(rng() * 600) / 100
+  const lateral = Math.round((rng() * 2 - 1) * 26)
+  const coverDraw = rng()
+  // Low cloud from a few puffs to broken, never overcast: the tower must stay in sight.
+  const cover = 0.14 + Math.round(coverDraw * 41) / 100
   return {
     seed,
     windX: -fx * speed,
     windZ: -fz * speed,
-    gust: 0.15 + Math.round(rng() * 20) / 100,
-    gustPhase: Math.round(rng() * 600) / 100,
-    lateral: Math.round((rng() * 2 - 1) * 26),
+    gust,
+    gustPhase,
+    lateral,
     sunElevation: 26 + Math.round(Math.sin(hour * Math.PI) * 30),
     sunAzimuth: 30 + Math.round(hour * 190),
-    cloudCover: 0.2 + Math.round(rng() * 35) / 100,
+    cloudCover: cover,
+    sky: cover < 0.27 ? 'Mostly clear' : cover < 0.42 ? 'Scattered cloud' : 'Broken cloud',
     windFrom: COMPASS[fromIndex],
     windSpeed: speed,
   }

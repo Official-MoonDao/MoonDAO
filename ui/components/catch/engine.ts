@@ -153,6 +153,7 @@ export class CatchEngine {
   /** Target circles on the ground and the mount deck, straight under the catch point. */
   /** Where the ship is heading: a circle on the ground at its predicted arrival point, and a line to it. */
   private plumbRing!: THREE.Mesh
+  private shipShadow!: THREE.Mesh
   private plumbLine!: THREE.Line
   private flash = new THREE.PointLight(0xffb066, 0, 900, 1.4)
   private scorch!: THREE.Mesh
@@ -165,6 +166,7 @@ export class CatchEngine {
   /** A ship set down intact has no legs: it stands a moment, then goes over. */
   private topple: { th: number; th0: number; w: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion; down: boolean } | null = null
   private endHoldUntil = 0
+  private baseRatio = 1
   /** Everything the current ship owns on the GPU, freed when a wreck is replaced. */
   private shipBag: Bag = []
   private flapTrim = 0
@@ -224,7 +226,8 @@ export class CatchEngine {
   ) {
     this.mobile = opts.mobile
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.mobile ? 1.5 : 2))
+    this.baseRatio = Math.min(window.devicePixelRatio || 1, opts.mobile ? 1.5 : 2)
+    this.renderer.setPixelRatio(this.baseRatio)
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.0
     this.renderer.shadowMap.enabled = true
@@ -285,14 +288,15 @@ export class CatchEngine {
     sh.camera.right = 330
     sh.camera.top = 330
     sh.camera.bottom = -330
-    sh.camera.near = 50
-    sh.camera.far = 1400
-    sh.bias = -0.0004
+    sh.camera.near = 100
+    sh.camera.far = 2600
+    sh.bias = -0.00022
     sh.normalBias = 0.12
     // The shadow box takes in both pads and the tank farm between them.
     const f = v3().set((PAD1.x + PAD2.x) / 2 + 20, 60, -20)
     this.sun.target.position.copy(f)
-    this.sun.position.copy(f).addScaledVector(this.sunDir, 700)
+    // Far enough back along the sun's direction that a ship still high up is in front of it.
+    this.sun.position.copy(f).addScaledVector(this.sunDir, 1600)
     this.scene.add(this.sun, this.sun.target)
 
     // The sun itself: a hot disc with a soft glow for the bloom pass to catch.
@@ -355,6 +359,38 @@ export class CatchEngine {
     this.plumbLine = new THREE.Line(lineGeo, lineMat)
     this.plumbLine.frustumCulled = false
     this.scene.add(this.plumbRing, this.plumbLine)
+
+    // The shadow map only covers the launch site. High up and far out, the
+    // ship's shadow lands well outside it, so a soft stand-in is drawn there
+    // and hands over to the real shadow as it comes onto the site.
+    const sc = document.createElement('canvas')
+    sc.width = 64
+    sc.height = 256
+    const sg = sc.getContext('2d')!
+    const across = sg.createLinearGradient(0, 0, 64, 0)
+    across.addColorStop(0, 'rgba(0,0,0,0)')
+    across.addColorStop(0.3, 'rgba(0,0,0,1)')
+    across.addColorStop(0.7, 'rgba(0,0,0,1)')
+    across.addColorStop(1, 'rgba(0,0,0,0)')
+    sg.fillStyle = across
+    sg.fillRect(0, 0, 64, 256)
+    sg.globalCompositeOperation = 'destination-in'
+    const along = sg.createLinearGradient(0, 0, 0, 256)
+    along.addColorStop(0, 'rgba(0,0,0,0)')
+    along.addColorStop(0.08, 'rgba(0,0,0,1)')
+    along.addColorStop(0.85, 'rgba(0,0,0,1)')
+    along.addColorStop(1, 'rgba(0,0,0,0)')
+    sg.fillStyle = along
+    sg.fillRect(0, 0, 64, 256)
+    const shadowTex = new THREE.CanvasTexture(sc)
+    const shadowGeo = new THREE.PlaneGeometry(1, 1)
+    shadowGeo.rotateX(-Math.PI / 2)
+    const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, color: 0x000000, transparent: true, opacity: 0, depthWrite: false, fog: false })
+    this.shipShadow = new THREE.Mesh(shadowGeo, shadowMat)
+    this.shipShadow.renderOrder = 1
+    this.shipShadow.visible = false
+    this.scene.add(this.shipShadow)
+    this.bag.push(shadowTex, shadowGeo, shadowMat)
     this.bag.push(plumbMat, lineGeo, lineMat)
 
     const c = document.createElement('canvas')
@@ -412,7 +448,9 @@ export class CatchEngine {
   prepare(mode: ModeConfig) {
     this.mode = mode
     this.sim = createSim(mode, this.conditions)
+    const wasIdle = this.phase === 'idle'
     this.phase = 'idle'
+    if (!wasIdle) this.resize()
     this.phaseT = 0
     this.result = null
     this.endFired = false
@@ -486,6 +524,8 @@ export class CatchEngine {
     this.phase = 'intro'
     this.phaseT = 0
     this.resetCamera()
+    // Flight resolution from here on.
+    this.resize()
     this.say('Belly-down at 250 km/h. Flip.', 'info')
   }
 
@@ -780,10 +820,14 @@ export class CatchEngine {
     this.ground.time.value = this.clock
     if (this.flash.intensity > 1) this.flash.intensity *= Math.pow(0.0006, dt)
     else this.flash.intensity = 0
-    const blink = this.clock % 1.8 < 0.3
-    for (const b of this.base.beacons) b.visible = blink
+    // Obstruction lights breathe slowly. A hard on-off blink flashed a bloom halo
+    // over each tower top and read as a rendering fault.
+    const glow = 0.5 + 0.5 * Math.sin(this.clock * 1.6)
+    const lamp = this.base.beacons[0]?.material as THREE.MeshBasicMaterial | undefined
+    if (lamp) lamp.color.setRGB(0.9 + 2.2 * glow * glow, 0.08 + 0.14 * glow * glow, 0.06 + 0.1 * glow * glow)
     const guide = this.phase === 'flying' || this.phase === 'intro'
     this.plumbRing.visible = this.plumbLine.visible = this.phase === 'flying' && !this.exploded
+    this.placeShipShadow()
     if (this.plumbRing.visible) {
       // Where the ship is heading: the spot on the ground it will be over when
       // it gets down to the arms, if it keeps shedding speed steadily. Put this
@@ -999,7 +1043,7 @@ export class CatchEngine {
       }
       const th0 = Math.max(0.02, Math.acos(Math.min(1, Math.max(-1, m[4]))))
       this.topple = { th: th0, th0, w: (hs / COM_Y) * 0.5, dx, dz, boom: !wet, q0: this.ship.group.quaternion.clone(), down: false }
-      this.say(wet ? 'Splashdown. Soft, wet, and nowhere near the tower.' : 'Down in one piece. It has no legs.', 'warn')
+      this.say(wet ? 'Splashdown. Soft, wet, and nowhere near the tower.' : 'Down in one piece. It has no legs.', wet ? 'good' : 'warn')
       this.endLook.set(s.px, 22, s.pz)
       this.endAngle = Math.atan2(this.camera.position.z - s.pz, this.camera.position.x - s.px) + 0.4
       this.endDist = 150
@@ -1015,17 +1059,51 @@ export class CatchEngine {
   }
 
   /** A ship standing with no legs: it leans, gathers speed and goes over. On land that ends it. */
+  /** Lay the stand-in shadow where the sun puts the ship's shadow on the ground. */
+  private placeShipShadow() {
+    const sh = this.shipShadow
+    const g = this.ship.group
+    const sun = this.sunDir
+    if (this.exploded || !g.visible || sun.y < 0.12 || g.position.y < 2) {
+      sh.visible = false
+      return
+    }
+    // Shadow of the base and of the nose.
+    const k0 = g.position.y / sun.y
+    const ax = g.position.x - sun.x * k0
+    const az = g.position.z - sun.z * k0
+    scratchA.set(0, SHIP.height, 0).applyQuaternion(g.quaternion).add(g.position)
+    const k1 = Math.max(0, scratchA.y) / sun.y
+    const bx = scratchA.x - sun.x * k1
+    const bz = scratchA.z - sun.z * k1
+    const cx = (ax + bx) / 2
+    const cz = (az + bz) / 2
+    // Inside the shadow map's footprint the real shadow is there: fade the stand-in out.
+    const cam = this.sun.shadow.camera
+    scratchA.set(cx, 0, cz).applyMatrix4(cam.matrixWorldInverse)
+    const edge = Math.max(Math.abs(scratchA.x) / cam.right, Math.abs(scratchA.y) / cam.top)
+    const fade = Math.max(0, Math.min(1, (edge - 0.86) / 0.12))
+    if (fade <= 0) {
+      sh.visible = false
+      return
+    }
+    const len = Math.hypot(bx - ax, bz - az) + SHIP.radius * 2
+    sh.visible = true
+    sh.position.set(cx, 0.4, cz)
+    sh.scale.set(SHIP.radius * 2.6, 1, len)
+    sh.rotation.y = Math.atan2(bx - ax, bz - az)
+    ;(sh.material as THREE.MeshBasicMaterial).opacity = 0.42 * fade
+  }
+
   private updateTopple(dt: number) {
     const tp = this.topple
     if (!tp) return
     const g = this.ship.group
     if (tp.down) {
-      // Flat on the water: it settles and goes under.
-      g.position.y -= 1.1 * dt
-      if (g.position.y < -16) {
-        g.visible = false
-        this.topple = null
-      }
+      // Flat on the water with empty tanks: it floats, rolling a little in the swell.
+      g.position.y = -2.4 + Math.sin(this.clock * 0.9) * 0.3
+      qB.setFromAxisAngle(scratchA.set(tp.dz, 0, -tp.dx), Math.PI / 2 - tp.th0 + Math.sin(this.clock * 0.6) * 0.02)
+      g.quaternion.copy(qB).multiply(tp.q0)
       return
     }
     // A tall cylinder pivoting on the edge of its base: the further over it is,
@@ -1323,8 +1401,8 @@ export class CatchEngine {
       // Start screen: belly-down over Starbase, the same shot the flight opens on.
       const mid = this.shipMid(scratchA)
       const portrait = cam.aspect < 1
-      // Held still: a drifting camera makes every thin edge on the site crawl.
-      this.camPos.set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34)
+      const drift = Math.sin(this.clock * 0.25) * 7
+      this.camPos.set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58) + Math.sin(this.clock * 0.17) * 3, mid.z + 34 + drift)
       this.camLook.set(mid.x + 60, mid.y - 110, mid.z - 12)
     } else if (this.phase === 'intro') {
       // Ride above and behind the fall, Starbase spread out far below, then
@@ -1332,7 +1410,8 @@ export class CatchEngine {
       const mid = this.shipMid(scratchA).clone()
       const u = smooth((this.phaseT - FLOP_END * 0.5) / (INTRO_T - FLOP_END * 0.5))
       const portrait = cam.aspect < 1
-      const side = v3().set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34)
+      const drift = Math.sin(this.clock * 0.25) * 7
+      const side = v3().set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34 + drift)
       const sideLook = v3().set(mid.x + 60, mid.y - 110, mid.z - 12)
       this.chase(1, true)
       this.camPos.lerpVectors(side, this.camPos, u)
@@ -1429,10 +1508,20 @@ export class CatchEngine {
     h.vAlong = s.vx
     h.vAcross = s.vz
     // Marker on the catch point.
+    // A point behind the camera projects mirrored through the screen centre.
+    // Flip it back and pin it to the edge, so the marker points the way to turn.
+    const behind = scratchA.set(SWEET_X, PAD1.railY, PAD1.z).applyMatrix4(this.camera.matrixWorldInverse).z > 0
     scratchA.set(SWEET_X, PAD1.railY, PAD1.z).project(this.camera)
-    h.tOnScreen = scratchA.z < 1 && Math.abs(scratchA.x) < 0.94 && Math.abs(scratchA.y) < 0.9
-    h.tx = Math.max(0.04, Math.min(0.96, scratchA.x * 0.5 + 0.5))
-    h.ty = Math.max(0.06, Math.min(0.94, -scratchA.y * 0.5 + 0.5))
+    let mx = scratchA.x
+    let my = scratchA.y
+    if (behind) {
+      const m = Math.max(Math.abs(mx), Math.abs(my), 1e-3)
+      mx = -mx / m
+      my = -my / m
+    }
+    h.tOnScreen = !behind && scratchA.z < 1 && Math.abs(mx) < 0.94 && Math.abs(my) < 0.9
+    h.tx = Math.max(0.04, Math.min(0.96, mx * 0.5 + 0.5))
+    h.ty = Math.max(0.06, Math.min(0.94, -my * 0.5 + 0.5))
     // One line of coaching, the most urgent thing first.
     h.prompt = ''
     h.promptTone = 'info'
@@ -1472,6 +1561,18 @@ export class CatchEngine {
   resize() {
     const w = this.canvas.clientWidth || 1
     const hgt = this.canvas.clientHeight || 1
+    // On a low-density desktop screen the towers' steel, the wall and the road
+    // are thinner than a pixel from the air, and crawl as the camera moves.
+    // Supersample to settle them: hardest on the start screen, where the
+    // camera drifts slowly and nothing else is happening, and within a pixel
+    // budget so a very large window is not asked for more than it can draw.
+    let ratio = this.baseRatio
+    if (!this.mobile) {
+      const still = this.phase === 'idle'
+      const budget = Math.sqrt((still ? 6.5e6 : 3.4e6) / (w * hgt))
+      ratio = Math.max(this.baseRatio, Math.min(still ? 2 : 1.5, budget))
+    }
+    if (Math.abs(ratio - this.renderer.getPixelRatio()) > 0.01) this.renderer.setPixelRatio(ratio)
     this.renderer.setSize(w, hgt, false)
     if (this.composer) {
       this.composer.setPixelRatio(this.renderer.getPixelRatio())

@@ -904,7 +904,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
     <button
       type="button"
       onClick={() => void share()}
-      className="relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 py-3 text-base font-extrabold text-black transition hover:brightness-110"
+      className="catch-share relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 py-3 text-base font-extrabold text-black transition hover:brightness-110"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
@@ -947,6 +947,14 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
 
   return (
     <div className="relative h-[100dvh] w-full select-none overflow-hidden bg-black text-white" style={{ touchAction: 'none', WebkitTouchCallout: 'none' }}>
+      {/* The share button's glow and shine, as on Touchdown. */}
+      <style>{`
+        @keyframes catch-shine { 0% { transform: translateX(-140%) skewX(-20deg); } 55%, 100% { transform: translateX(320%) skewX(-20deg); } }
+        @keyframes catch-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.6); } 55% { box-shadow: 0 0 0 12px rgba(251, 146, 60, 0); } }
+        .catch-share { animation: catch-glow 2.2s ease-out infinite; }
+        .catch-share::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent); animation: catch-shine 2.8s ease-in-out infinite; pointer-events: none; }
+        @media (prefers-reduced-motion: reduce) { .catch-share, .catch-share::after { animation: none; } }
+      `}</style>
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing"
@@ -1157,10 +1165,10 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold leading-none tracking-tight sm:mt-1 sm:text-[2.6rem]">STARSHIP CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              A Starship is falling out of the sky over Starbase. Brake, steer, and set it down in the tower&apos;s arms. Overshoot and it ends up in the Gulf. New wind every day.
+              A Starship is falling out of the sky over Starbase. Brake, steer, and set it down in the tower&apos;s arms. Overshoot and it ends up in the Gulf. New weather every day.
             </p>
             <p className="mt-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80">
-              Today: wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s
+              Today: {conditions.sky.toLowerCase()}, wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s
             </p>
             <div className="mt-3 flex items-stretch gap-2 sm:mt-4 sm:block">
               {modeToggle}
