@@ -10,7 +10,7 @@
 | ![[@Voyager]]               | [Roles](/docs/About/Roles), [Project System](/docs/Projects/Project-System)                                                                       |
 | ![[@Voting Member]]         | [Roles](/docs/About/Roles), [Governance Model](/docs/Governance/Governance-Model)                                                                   |
 | ![[Ethereum]]               | [MOONEY](/docs/About/Glossary/MOONEY)                                                                                                            |
-| ![[MIDAO]]                  | MoonDAO Legal Entity as a Marshall Island DAO LLC      |
+| ![[MIDAO]]                  | [Registered agent for Marshall Islands DAO LLCs](https://www.midao.org) |
 | ![[MoonDAO Discord server]] | [https://moondao.com/discord/](https://moondao.com/discord/)                                                                   |
 | ![[MOONEY]]                 | [Governance Model](/docs/Governance/Governance-Model), [Governance Tokens](/docs/Governance/Governance-Tokens), [vMOONEY](/docs/About/Glossary/vMOONEY)                  |
 | ![[MOU]]                    | Outbound SOP |
