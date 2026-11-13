@@ -537,9 +537,6 @@ jobs:
           SPLIT_INDEX: ${{ strategy.job-index }}
           CYPRESS_CHROME_OLD_HEADLESS: "1"
           CYPRESS_COMPONENT_BROWSER: ${{ steps.component-chrome.outputs.chrome-path }}
-          # The config manager OOMs while compiling a shard, then the parent
-          # sits until the 25-minute stop. The runner has room above the default heap.
-          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
