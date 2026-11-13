@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   <defs></defs>
   ${text(
     'x="56" y="78" font-size="40" font-weight="700" letter-spacing="3" stroke="#fff" stroke-width="1.2"',
-    'CATCH'
+    'CATCH STARSHIP'
   )}
   ${text('x="1144" y="78" font-size="26" text-anchor="end"', escapeXml(SHARE_URL_LABEL))}
   ${text(

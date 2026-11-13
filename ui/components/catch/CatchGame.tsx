@@ -879,6 +879,9 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
   const raceAndMore = result && (
     <>
       <CatchRacePanel compact={!desk} onMakeYourCall={() => trackCatch('catch_odds_click', { mode: result.mode, outcome: result.outcome })} />
+      <p className="px-0.5 text-xs leading-snug text-white/65">
+        Starship is our gateway to a Moon base: catch it, refly it, and the Moon gets a lot closer. See the base it could build.
+      </p>
       <div className="grid grid-cols-2 gap-2">
         <Link
           href={`/moonbase?race=${TOUCHDOWN_RACE_GOAL_ID}`}

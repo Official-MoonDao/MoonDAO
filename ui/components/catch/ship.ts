@@ -320,7 +320,21 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
   const closure = new THREE.Mesh(track(new THREE.CircleGeometry(SHIP.radius - 0.05, 40)), dark)
   closure.rotation.x = Math.PI / 2
   closure.position.y = 1.9
-  group.add(raceway, closure)
+  // Seen from behind, the skirt is a real ring: an inner wall, a rim on the
+  // aft edge and the bulkhead the engines hang from.
+  const skirtIn = new THREE.Mesh(
+    track(new THREE.CylinderGeometry(SHIP.radius - 0.09, SHIP.radius - 0.09, 1.95, 48, 1, true)),
+    track(new THREE.MeshStandardMaterial({ color: 0x4a4d52, roughness: 0.55, metalness: 0.9, envMap: env, envMapIntensity: 0.7, side: THREE.BackSide }))
+  )
+  skirtIn.position.y = 0.975
+  const rim = new THREE.Mesh(
+    track(new THREE.RingGeometry(SHIP.radius - 0.1, SHIP.radius + 0.01, 64)),
+    track(new THREE.MeshStandardMaterial({ color: 0xb9bdc2, roughness: 0.3, metalness: 1, envMap: env, envMapIntensity: 1.15, side: THREE.DoubleSide }))
+  )
+  rim.rotation.x = Math.PI / 2
+  rim.position.y = 0.005
+  closure.material = track(new THREE.MeshStandardMaterial({ color: 0x24262a, roughness: 0.6, metalness: 0.7, envMap: env, envMapIntensity: 0.6, side: THREE.DoubleSide }))
+  group.add(raceway, closure, skirtIn, rim)
 
   // Catch pins, one each side under the forward flaps.
   const pinGeo = track(new THREE.CylinderGeometry(0.34, 0.34, 1.7, 14))

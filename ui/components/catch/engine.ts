@@ -356,7 +356,8 @@ export class CatchEngine {
     wash.position.set(SWEET_X, 0.6, PAD1.z)
     this.bag.push(fillMat)
     this.targetRings.add(wash, deck, dot, outer1, outer2)
-    for (const m of this.targetRings.children) m.renderOrder = 2
+    // Coplanar and see-through: each needs its own place in the draw order or they swap from frame to frame.
+    this.targetRings.children.forEach((m, i) => (m.renderOrder = 2 + i * 0.1))
     const plumbMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.0, 1.0), transparent: true, opacity: 0.95, depthWrite: false, fog: false, side: THREE.DoubleSide })
     this.plumbRing = new THREE.Mesh(flat(4.2, 7.4), plumbMat)
     const plumbFill = new THREE.Mesh(flat(0, 4.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthWrite: false, fog: false, side: THREE.DoubleSide }))
@@ -1368,6 +1369,12 @@ export class CatchEngine {
       this.shake *= Math.pow(0.02, dt)
     }
     cam.lookAt(this.camLook)
+    // Push the near plane out when nothing is close: depth precision goes where the scene is.
+    const near = Math.max(4, Math.min(60, 0.2 * Math.min(cam.position.y, cam.position.distanceTo(this.ship.group.position) - SHIP.height)))
+    if (Math.abs(near - cam.near) > 0.5) {
+      cam.near = near
+      cam.updateProjectionMatrix()
+    }
   }
 
   // ---------------------------------------------------------------------------

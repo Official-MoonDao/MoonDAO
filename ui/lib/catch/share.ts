@@ -67,6 +67,11 @@ export function shareText(result: FlightResult, rank?: number): string {
       lines = [worst ? DAMAGE_POST[worst] : '💥 I just turned a Starship into a very large fireball.', `${score}${result.damage.length > 1 ? ` · ${result.damage.length} structures hit` : ''}`]
     }
   }
+  // The very best and the very worst flights get a tag; a middling crash sometimes apologizes.
+  const max = result.mode === 'pro' ? 1375 : 1100
+  if (result.outcome === 'caught' && !result.hard && result.score >= max * 0.93) lines.push('@elonmusk would be proud.')
+  else if (result.score <= -500) lines.push('@elonmusk is NOT happy.')
+  else if (result.outcome === 'crashed' && result.damage.length > 0 && Math.abs(result.score) % 3 === 0) lines.push('Sorry, @SpaceX.')
   return [...lines, '', DARE].join('\n')
 }
 
@@ -127,15 +132,10 @@ export function composeCard(args: { frame: HTMLCanvasElement; result: FlightResu
 
   g.fillStyle = '#fff'
   g.font = `800 34px ${head}`
-  g.fillText('CATCH', 48, 70)
-  const brandW = g.measureText('CATCH').width
-  g.font = `600 22px ${body}`
-  g.fillStyle = 'rgba(255,255,255,0.8)'
-  const tagline = 'Catch a Starship at Starbase'
-  g.fillText(tagline, 48 + brandW + 18, 68)
-  const taglineW = g.measureText(tagline).width
+  g.fillText('CATCH STARSHIP', 48, 70)
+  const brandW = g.measureText('CATCH STARSHIP').width
   if (result.mode === 'pro') {
-    const x = 48 + brandW + 18 + taglineW + 20
+    const x = 48 + brandW + 22
     g.fillStyle = '#ffd34d'
     roundRect(g, x, 38, 96, 42, 8)
     g.fill()
@@ -191,7 +191,7 @@ export function stampPhoto(photo: HTMLCanvasElement): HTMLCanvasElement {
   g.shadowBlur = 8 * s
   g.fillStyle = 'rgba(255,255,255,0.92)'
   g.font = `800 ${Math.round(26 * s)}px "Archivo", "Lato", system-ui, sans-serif`
-  g.fillText('CATCH', photo.width - 28 * s, photo.height - 54 * s)
+  g.fillText('CATCH STARSHIP', photo.width - 28 * s, photo.height - 54 * s)
   g.font = `700 ${Math.round(20 * s)}px "Lato", system-ui, sans-serif`
   g.fillText(SHARE_URL_LABEL, photo.width - 28 * s, photo.height - 26 * s)
   g.shadowBlur = 0

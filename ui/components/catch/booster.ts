@@ -13,6 +13,9 @@ export function buildBooster(env: THREE.Texture, bag: Bag): THREE.Group {
   const R = BOOSTER.radius
   const H = BOOSTER.height
   const steel = steelSkin(env, bag, H)
+  // Only ever seen from hundreds of meters: a softer finish keeps its highlights from sparkling.
+  steel.roughness = 1.25
+  steel.normalScale.set(0.1, 0.1)
   const dark = new THREE.MeshStandardMaterial({ color: 0x25272b, roughness: 0.6, metalness: 0.7, envMap: env })
   const plain = new THREE.MeshStandardMaterial({ color: 0xb0b4b9, roughness: 0.34, metalness: 1, envMap: env, envMapIntensity: 1.1 })
   bag.push(dark, plain)
