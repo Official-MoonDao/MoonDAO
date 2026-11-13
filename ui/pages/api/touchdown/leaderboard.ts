@@ -14,6 +14,7 @@ import { validateSubmission, type BoardResponse } from '@/lib/touchdown/leaderbo
 import {
   leaderboardRedis,
   rankOf,
+  readAllTimeHigh,
   readBoard,
   readYesterdaysWinner,
   removeEntry,
@@ -48,9 +49,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (!redis || !Number.isInteger(mission) || mission < 1 || mission > today) {
         return res.status(200).json(empty(Number.isInteger(mission) ? mission : today, mode))
       }
-      const [board, yesterday] = await Promise.all([
+      const [board, yesterday, allTime] = await Promise.all([
         readBoard(redis, mission, mode),
         readYesterdaysWinner(redis, mission, mode),
+        readAllTimeHigh(redis, mode, today),
       ])
       const score = Number(req.query.score)
       const rank = Number.isInteger(score) && score > 0 ? await rankOf(redis, mission, mode, score) : undefined
@@ -60,6 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         mode,
         ...board,
         ...(yesterday ? { yesterday } : {}),
+        ...(allTime ? { allTime } : {}),
         ...(rank ? { rank } : {}),
       })
     }
@@ -90,9 +93,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       )
       if (!checked.ok) return res.status(400).json(empty(today, mode, checked.error))
       const rank = await submitScore(redis, checked.value)
-      const [board, yesterday] = await Promise.all([
+      const [board, yesterday, allTime] = await Promise.all([
         readBoard(redis, checked.value.mission, checked.value.mode),
         readYesterdaysWinner(redis, checked.value.mission, checked.value.mode),
+        readAllTimeHigh(redis, checked.value.mode, today),
       ])
       return res.status(200).json({
         enabled: true,
@@ -100,6 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         mode: checked.value.mode,
         ...board,
         ...(yesterday ? { yesterday } : {}),
+        ...(allTime ? { allTime } : {}),
         rank,
         verifiedScore: checked.value.score,
       })

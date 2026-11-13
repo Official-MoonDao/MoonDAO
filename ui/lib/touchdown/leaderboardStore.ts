@@ -6,6 +6,10 @@
  *   <prefix>:n:<mission>:<mode>   hash         name key -> display name
  *   <prefix>:a:<mission>:<mode>   hash         name key -> attempts
  *
+ * All-time, per mode (never expires):
+ *   <prefix>:ath:z:<mode>         sorted set   name key -> best score on any day
+ *   <prefix>:ath:n:<mode>         hash         name key -> display name
+ *
  * Boards expire after three weeks. Only the production deployment uses the
  * live prefix (see isLiveBoard), so local and preview testing never writes to
  * the live board.
@@ -46,6 +50,13 @@ function keys(mission: number, mode: ModeId) {
     attempts: `${p}:a:${mission}:${mode}`,
   }
 }
+
+function allTimeKeys(mode: ModeId) {
+  const p = prefix()
+  return { scores: `${p}:ath:z:${mode}`, names: `${p}:ath:n:${mode}` }
+}
+/** Pilots kept on the all-time list; only the top one is shown. */
+const ALL_TIME_KEEP = 100
 
 /** Submissions per IP. Generous for real play (a flight takes about a minute), tight for a script. */
 export function submitLimiter(redis: Redis): Ratelimit {
@@ -96,6 +107,51 @@ export async function readYesterdaysWinner(
   return { name: String(name ?? id), score: Number(flat[1]) }
 }
 
+async function topOf(
+  redis: Redis,
+  scoresKey: string,
+  namesKey: string
+): Promise<{ id: string; name: string; score: number } | undefined> {
+  const flat = await redis.zrange<(string | number)[]>(scoresKey, 0, 0, { rev: true, withScores: true })
+  if (flat.length < 2) return undefined
+  const id = String(flat[0])
+  const name = await redis.hget<string>(namesKey, id)
+  return { id, name: String(name ?? id), score: Number(flat[1]) }
+}
+
+/**
+ * The best score ever saved in a mode. The list is filled as scores are
+ * saved; the first time it is read empty, it is seeded from the daily boards
+ * that still exist (up to `today`).
+ */
+export async function readAllTimeHigh(
+  redis: Redis,
+  mode: ModeId,
+  today: number
+): Promise<{ name: string; score: number } | undefined> {
+  const a = allTimeKeys(mode)
+  let best = await topOf(redis, a.scores, a.names)
+  if (!best) {
+    const missions: number[] = []
+    for (let m = Math.max(1, today - 21); m <= today; m++) missions.push(m)
+    const tops = await Promise.all(
+      missions.map((m) => {
+        const k = keys(m, mode)
+        return topOf(redis, k.scores, k.names)
+      })
+    )
+    for (const t of tops) {
+      if (!t) continue
+      await Promise.all([
+        redis.zadd(a.scores, { gt: true }, { score: t.score, member: t.id }),
+        redis.hset(a.names, { [t.id]: t.name }),
+      ])
+      if (!best || t.score > best.score) best = t
+    }
+  }
+  return best ? { name: best.name, score: best.score } : undefined
+}
+
 /** Rank a score would hold today: one more than the number of strictly better scores. */
 export async function rankOf(redis: Redis, mission: number, mode: ModeId, score: number): Promise<number> {
   const better = await redis.zcount(keys(mission, mode).scores, `(${score}`, '+inf')
@@ -111,6 +167,12 @@ export async function submitScore(redis: Redis, s: Submission): Promise<number> 
     redis.hset(k.names, { [id]: s.name }),
     redis.hincrby(k.attempts, id, 1),
   ])
+  const a = allTimeKeys(s.mode)
+  await Promise.all([
+    redis.zadd(a.scores, { gt: true }, { score: s.score, member: id }),
+    redis.hset(a.names, { [id]: s.name }),
+  ])
+  await redis.zremrangebyrank(a.scores, 0, -(ALL_TIME_KEEP + 1))
   await Promise.all([
     redis.expire(k.scores, TTL_SECONDS),
     redis.expire(k.names, TTL_SECONDS),
@@ -120,11 +182,17 @@ export async function submitScore(redis: Redis, s: Submission): Promise<number> 
   return rankOf(redis, s.mission, s.mode, Number(best ?? s.score))
 }
 
-/** Moderation: remove a pilot from a day's board. */
+/** Moderation: remove a pilot from a day's board and from the all-time list. */
 export async function removeEntry(redis: Redis, mission: number, mode: ModeId, name: string): Promise<boolean> {
   const k = keys(mission, mode)
   const id = nameKey(name)
   const removed = await redis.zrem(k.scores, id)
-  await Promise.all([redis.hdel(k.names, id), redis.hdel(k.attempts, id)])
+  const a = allTimeKeys(mode)
+  await Promise.all([
+    redis.hdel(k.names, id),
+    redis.hdel(k.attempts, id),
+    redis.zrem(a.scores, id),
+    redis.hdel(a.names, id),
+  ])
   return removed > 0
 }
