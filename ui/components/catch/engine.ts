@@ -12,6 +12,7 @@ import { botInput } from '@/lib/catch/autopilot'
 import type { Conditions } from '@/lib/catch/conditions'
 import { ARMS, MOUNT, PAD1, PAD2, SHIP, towerCentre } from '@/lib/catch/layout'
 import type { ModeConfig } from '@/lib/catch/modes'
+import { EARTH_G } from '@/lib/catch/modes'
 import {
   BLAST_POINTS,
   COM_Y,
@@ -163,7 +164,7 @@ export class CatchEngine {
   /** How each catch arm fails, chosen afresh for every wreck. */
   private armFx: { sagL: number; sagR: number; yawL: number; yawR: number; offL: boolean; offR: boolean; t: number } | null = null
   /** A ship set down intact has no legs: it stands a moment, then goes over. */
-  private topple: { t: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion } | null = null
+  private topple: { th: number; th0: number; w: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion; down: boolean } | null = null
   private endHoldUntil = 0
   private flapTrim = 0
   private flapRoll = 0
@@ -991,16 +992,23 @@ export class CatchEngine {
         this.audio.splash?.()
         this.fx.splash(s.px, s.pz, 1.4)
       }
+      // It goes over the way it was already leaning and sliding, starting from
+      // the angle it landed at and with the turn its sideways speed gives it.
       const hs = Math.hypot(s.vx, s.vz)
-      const a = Math.random() * 6.283
-      this.topple = {
-        // Still sliding when it touched: it goes over sooner.
-        t: Math.min(1.6, hs * 0.14),
-        dx: hs > 0.6 ? s.vx / hs : Math.cos(a),
-        dz: hs > 0.6 ? s.vz / hs : Math.sin(a),
-        boom: !wet,
-        q0: this.ship.group.quaternion.clone(),
+      const m = s.m
+      let dx = m[1] * 6 + s.vx * 0.5
+      let dz = m[7] * 6 + s.vz * 0.5
+      const dl = Math.hypot(dx, dz)
+      if (dl < 0.05) {
+        const a = Math.random() * 6.283
+        dx = Math.cos(a)
+        dz = Math.sin(a)
+      } else {
+        dx /= dl
+        dz /= dl
       }
+      const th0 = Math.max(0.02, Math.acos(Math.min(1, Math.max(-1, m[4]))))
+      this.topple = { th: th0, th0, w: (hs / COM_Y) * 0.5, dx, dz, boom: !wet, q0: this.ship.group.quaternion.clone(), down: false }
       this.say(wet ? 'Splashdown. Soft, wet, and nowhere near the tower.' : 'Down in one piece. It has no legs.', 'warn')
       this.endLook.set(s.px, 22, s.pz)
       this.endAngle = Math.atan2(this.camera.position.z - s.pz, this.camera.position.x - s.px) + 0.4
@@ -1020,21 +1028,41 @@ export class CatchEngine {
   private updateTopple(dt: number) {
     const tp = this.topple
     if (!tp) return
-    tp.t += dt
     const g = this.ship.group
-    const ang = Math.min(Math.PI / 2, 0.012 * Math.exp(2.1 * Math.max(0, tp.t - 0.5)))
+    if (tp.down) {
+      // Flat on the water: it settles and goes under.
+      g.position.y -= 1.1 * dt
+      if (g.position.y < -16) {
+        g.visible = false
+        this.topple = null
+      }
+      return
+    }
+    // A tall cylinder pivoting on the edge of its base: the further over it is,
+    // the harder gravity pulls it, so it starts almost imperceptibly and ends
+    // fast. In water it also has to push the sea aside.
+    const pull = (1.5 * EARTH_G) / SHIP.height
+    const steps = Math.max(1, Math.ceil(dt / 0.01))
+    const h = dt / steps
+    for (let i = 0; i < steps; i++) {
+      tp.w += (pull * Math.sin(tp.th) - (tp.boom ? 0 : 0.5 * tp.w)) * h
+      tp.th += tp.w * h
+    }
+    const ang = Math.min(Math.PI / 2, tp.th) - tp.th0
     // Tip the top toward (dx, dz): a turn about the horizontal axis square to it.
     qB.setFromAxisAngle(scratchA.set(tp.dz, 0, -tp.dx), ang)
     g.quaternion.copy(qB).multiply(tp.q0)
-    if (!tp.boom) g.position.y = Math.max(-2.5, g.position.y - dt * 0.5)
-    if (ang >= Math.PI / 2 - 0.001) {
-      this.topple = null
+    if (!tp.boom) g.position.y = Math.max(-2.5, g.position.y - dt * 0.3)
+    if (tp.th >= Math.PI / 2) {
       const nx = g.position.x + tp.dx * 30
       const nz = g.position.z + tp.dz * 30
       if (tp.boom) {
+        this.topple = null
         this.shake = Math.max(this.shake, 2)
-        this.explode(0.42, false)
+        // It lands harder the faster it was turning when it hit.
+        this.explode(Math.min(0.7, 0.3 + 0.25 * tp.w), false)
       } else {
+        tp.down = true
         this.fx.splash(nx, nz, 2.2)
         this.audio.splash?.()
         this.shake = Math.max(this.shake, 0.8)
@@ -1071,7 +1099,8 @@ export class CatchEngine {
     this.audio.explosion?.(size)
     this.flash.position.set(bx, by + 20, bz)
     this.flash.intensity = 3e5 * (0.4 + 0.6 * violence)
-    if (!sea && by < 60) {
+    // Water does not scorch.
+    if (!sea && !seaAt(bx, bz) && by < 60) {
       this.scorch.position.set(bx, 0.3, bz)
       this.scorch.scale.set(150 * size, 1, 150 * size)
       this.scorch.visible = true
@@ -1325,7 +1354,7 @@ export class CatchEngine {
         this.camPos.lerpVectors(this.endFrom, this.endTo, e)
         this.camLook.lerpVectors(this.endLookFrom, this.endLook, e)
         const wait = 1.4
-        if (u >= 1 && this.phaseT > T + wait && !this.topple && this.clock > this.endHoldUntil && !this.endFired) {
+        if (u >= 1 && this.phaseT > T + wait && (!this.topple || this.topple.down) && this.clock > this.endHoldUntil && !this.endFired) {
           this.endFired = true
           this.phase = 'result'
           this.phaseT = 0

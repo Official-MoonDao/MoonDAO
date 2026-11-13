@@ -507,6 +507,16 @@ export class Effects {
     // Wreckage: ballistic, tumbling, trailing fire until it comes to rest.
     for (const d of this.debris) {
       if (d.rest) continue
+      if (d.wet) {
+        // In the water: it rolls over slowly and goes under.
+        d.obj.position.y -= (1.1 + 0.5 / Math.max(1, d.r)) * dt
+        d.obj.rotateOnWorldAxis(scratch.copy(d.w).normalize(), 0.25 * dt)
+        if (d.obj.position.y < -d.r * 2.2 - 3) {
+          d.obj.visible = false
+          d.rest = true
+        }
+        continue
+      }
       d.v.y -= 9.81 * dt
       d.v.multiplyScalar(Math.exp(-0.05 * dt))
       d.obj.position.addScaledVector(d.v, dt)
@@ -523,9 +533,8 @@ export class Effects {
           if (!d.wet && d.v.length() > 8) this.splash(d.obj.position.x, d.obj.position.z, Math.min(1, d.r / 8))
           d.wet = true
           d.v.set(0, 0, 0)
-          d.w.multiplyScalar(0)
-          d.rest = true
-          d.obj.position.y = -d.r * 0.3
+          if (d.w.lengthSq() < 1e-4) d.w.set(1, 0, 0.3)
+          d.obj.position.y = -d.r * 0.2
         } else if (Math.abs(d.v.y) < 3) {
           d.rest = true
         } else {

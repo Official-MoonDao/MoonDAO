@@ -59,7 +59,7 @@ export default function CatchRaceView({ live, onMakeYourCall, compact = false }:
 
   const max = Math.max(0.01, ...rows.map((r) => r.odds))
   // Only call it the underdog when the numbers say so.
-  const standing = !hls ? '' : hlsRank === 1 ? 'Right now it leads the field.' : hlsRank <= 3 ? `Right now it is running #${hlsRank}.` : 'Right now it is the underdog.'
+  const standing = !hls ? '' : hlsRank === 1 ? 'Right now it leads.' : hlsRank <= 3 ? `Right now it’s running #${hlsRank}.` : 'Right now it’s the underdog.'
 
   return (
     <section className={`rounded-xl border border-white/10 bg-white/[0.04] ${compact ? 'p-3' : 'p-3.5'}`}>
@@ -79,8 +79,7 @@ export default function CatchRaceView({ live, onMakeYourCall, compact = false }:
           {isLive ? 'Live odds' : 'Atlas forecast'}
         </span>
       </div>
-      <p className="mt-1.5 text-sm font-semibold leading-snug text-white">Think Starship HLS will land on the Moon? Make your prediction.</p>
-      {standing && <p className="mt-0.5 text-xs leading-snug text-white/60">Next upright lunar landing. {standing}</p>}
+      <p className="mt-1.5 text-sm font-semibold leading-snug text-white">Think Starship will land on the Moon? {standing}</p>
 
       <ul className={compact ? 'mt-2 space-y-1' : 'mt-3 space-y-1.5'}>
         {rows.map((r) => (

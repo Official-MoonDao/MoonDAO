@@ -356,13 +356,10 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
     const tz = dtan(s.gz)
     const inv = 1 / Math.sqrt(tx * tx + 1 + tz * tz)
     if (burning) {
-      throttle = 1
-      if (mode.sinkFloor > 0) {
-        // Easy: BURN is a brake, not a launch. Once the ship is down to a crawl
-        // the computer eases the throttle back to hold a slow sink, so holding
-        // BURN never sends it back up.
-        throttle = clamp((EARTH_G + 1.4 * (-mode.sinkFloor - s.vy)) / (mode.engineAccel * inv), mode.idleThrottle, 1)
-      }
+      // BURN is a brake, not a launch. Once the ship is down to its settling
+      // sink rate the computer eases the throttle back to hold it, so holding
+      // BURN never sends the ship back up.
+      throttle = clamp((EARTH_G + 1.4 * (-mode.burnSink - s.vy)) / (mode.engineAccel * inv), mode.idleThrottle, 1)
     }
     const k = mode.engineAccel * throttle * inv
     fx += k * tx

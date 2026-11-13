@@ -879,23 +879,21 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
   const raceAndMore = result && (
     <>
       <CatchRacePanel compact={!desk} onMakeYourCall={() => trackCatch('catch_odds_click', { mode: result.mode, outcome: result.outcome })} />
-      <p className="px-0.5 text-xs leading-snug text-white/65">
-        Starship is our gateway to a Moon base: catch it, refly it, and the Moon gets a lot closer. See the base it could build.
-      </p>
+      <p className="px-0.5 text-[11px] leading-snug text-white/55">Starship is our gateway to a Moon base.</p>
       <div className="grid grid-cols-2 gap-2">
         <Link
           href={`/moonbase?race=${TOUCHDOWN_RACE_GOAL_ID}`}
           onClick={() => trackCatch('catch_moonbase_click', { mode: result.mode, outcome: result.outcome })}
           className="flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-2 py-2.5 text-center text-[13px] font-bold text-white transition hover:bg-white/10"
         >
-          Explore Moon Base Zero →
+          Moon Base Zero →
         </Link>
         <Link
           href="/touchdown"
           onClick={() => trackCatch('catch_touchdown_click', { mode: result.mode, outcome: result.outcome })}
           className="flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-2 py-2.5 text-center text-[13px] font-bold text-white transition hover:bg-white/10"
         >
-          Now land on the Moon →
+          Land on the Moon →
         </Link>
       </div>
     </>
@@ -1139,7 +1137,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
               </button>
             </div>
             <p className="mt-2 text-[11px] leading-snug text-white/55 sm:mt-3 sm:text-xs">
-              {pro ? 'Pro: faster, less fuel, full wind, full thrust only, and you close the arms yourself. Score ×1.25.' : 'Easy: holding BURN never sends it back up, and the tower closes the arms for you.'}
+              {pro ? 'Pro: faster, less fuel, full wind, harder braking, and you close the arms yourself. Score ×1.25.' : 'Easy: holding BURN never sends it back up, and the tower closes the arms for you.'}
               {isTouch ? ' Left thumb steers. Right thumb holds BURN.' : ''}
             </p>
             {screen === 'error' && <p className="mt-2 text-xs text-rose-200">This browser could not start WebGL. Try another browser or device.</p>}

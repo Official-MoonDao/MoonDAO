@@ -8,7 +8,8 @@
  *    let go of BURN and the ship still falls.
  *  - BURN takes the engines to full thrust: it is the brake. On Easy the flight
  *    computer eases the throttle back once the ship is down to a crawl, so
- *    holding BURN settles into a slow sink and never sends it back up.
+ *    holding BURN settles into a slow sink and never sends it back up. Pro
+ *    brakes harder and settles slower, but does not climb either.
  *  - The ship stays upright. Steering swivels the engines while they burn: the
  *    flame swings out one way and pushes the ship the other.
  *  - It comes in high, fast and at a steep slant over the launch site. Leave
@@ -41,6 +42,13 @@ export type ModeConfig = {
    * holds it, so the ship never climbs. Zero: BURN is always full thrust.
    */
   sinkFloor: number
+  /**
+   * m/s. The sink rate holding BURN settles to. The landing burn is a brake:
+   * the flight computer never lets it turn into a second launch. Easy settles
+   * to a steady descent; Pro to a crawl, so a late pilot can nearly hover but
+   * cannot climb back up for another go.
+   */
+  burnSink: number
   /** true: the arms close by themselves once the ship is in the catch zone */
   autoArms: boolean
   /** seconds for the arms to swing from open to closed */
@@ -66,6 +74,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     fuelSeconds: 30,
     maxGimbalDeg: 22,
     sinkFloor: 3.2,
+    burnSink: 3.2,
     autoArms: true,
     armCloseSeconds: 1.0,
     pinLimit: 12,
@@ -85,6 +94,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     fuelSeconds: 25,
     maxGimbalDeg: 20,
     sinkFloor: 0,
+    burnSink: 0.9,
     autoArms: false,
     armCloseSeconds: 1.3,
     pinLimit: 9,
