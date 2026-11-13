@@ -151,7 +151,6 @@ export class CatchEngine {
   private ring!: THREE.Mesh
   private beam!: THREE.Mesh
   /** Target circles on the ground and the mount deck, straight under the catch point. */
-  private targetRings = new THREE.Group()
   /** Where the ship is heading: a circle on the ground at its predicted arrival point, and a line to it. */
   private plumbRing!: THREE.Mesh
   private plumbLine!: THREE.Line
@@ -337,30 +336,13 @@ export class CatchEngine {
     this.beam.position.set(SWEET_X, PAD1.railY + 130, PAD1.z)
     this.scene.add(this.ring, this.beam)
 
-    // Ground target: circles painted under the catch point, like a landing pad.
-    // Line the ship's own ground circle up with them and it is over the arms.
+    // Flat rings on the ground: the ship's own heading circle.
     const flat = (inner: number, outer: number) => {
       const g = new THREE.RingGeometry(inner, outer, 72)
       g.rotateX(-Math.PI / 2)
       this.bag.push(g)
       return g
     }
-    const targetMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.25, 1.9, 1.15), transparent: true, opacity: 0.9, depthWrite: false, fog: false, side: THREE.DoubleSide })
-    const fillMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 1.4, 0.85), transparent: true, opacity: 0.2, depthWrite: false, fog: false, side: THREE.DoubleSide })
-    const deck = new THREE.Mesh(flat(4.6, 7.2), targetMat)
-    deck.position.set(SWEET_X, MOUNT.top + 0.7, PAD1.z)
-    const dot = new THREE.Mesh(flat(0, 1.8), targetMat)
-    dot.position.copy(deck.position)
-    const outer1 = new THREE.Mesh(flat(21, 25), targetMat)
-    outer1.position.set(SWEET_X, 0.7, PAD1.z)
-    const outer2 = new THREE.Mesh(flat(40, 44), targetMat)
-    outer2.position.set(SWEET_X, 0.7, PAD1.z)
-    const wash = new THREE.Mesh(flat(0, 44), fillMat)
-    wash.position.set(SWEET_X, 0.6, PAD1.z)
-    this.bag.push(fillMat)
-    this.targetRings.add(wash, deck, dot, outer1, outer2)
-    // Coplanar and see-through: each needs its own place in the draw order or they swap from frame to frame.
-    this.targetRings.children.forEach((m, i) => (m.renderOrder = 2 + i * 0.1))
     const plumbMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.0, 1.0), transparent: true, opacity: 0.95, depthWrite: false, fog: false, side: THREE.DoubleSide })
     this.plumbRing = new THREE.Mesh(flat(4.2, 7.4), plumbMat)
     const plumbFill = new THREE.Mesh(flat(0, 4.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthWrite: false, fog: false, side: THREE.DoubleSide }))
@@ -372,8 +354,8 @@ export class CatchEngine {
     const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, fog: false })
     this.plumbLine = new THREE.Line(lineGeo, lineMat)
     this.plumbLine.frustumCulled = false
-    this.scene.add(this.targetRings, this.plumbRing, this.plumbLine)
-    this.bag.push(targetMat, plumbMat, lineGeo, lineMat)
+    this.scene.add(this.plumbRing, this.plumbLine)
+    this.bag.push(plumbMat, lineGeo, lineMat)
 
     const c = document.createElement('canvas')
     c.width = c.height = 256
@@ -483,7 +465,6 @@ export class CatchEngine {
     this.scorch.visible = false
     this.ring.visible = true
     this.beam.visible = true
-    this.targetRings.visible = true
     if (this.booster) {
       this.booster.visible = true
       this.booster.position.copy(this.boosterHome)
@@ -802,7 +783,6 @@ export class CatchEngine {
     const blink = this.clock % 1.8 < 0.3
     for (const b of this.base.beacons) b.visible = blink
     const guide = this.phase === 'flying' || this.phase === 'intro'
-    this.targetRings.visible = guide || this.phase === 'idle'
     this.plumbRing.visible = this.plumbLine.visible = this.phase === 'flying' && !this.exploded
     if (this.plumbRing.visible) {
       // Where the ship is heading: the spot on the ground it will be over when
@@ -978,7 +958,6 @@ export class CatchEngine {
     this.endLookFrom.copy(this.camLook)
     this.ring.visible = false
     this.beam.visible = false
-    this.targetRings.visible = false
     const o = this.result.outcome
     if (o === 'caught') {
       this.syncShip()
@@ -1344,8 +1323,8 @@ export class CatchEngine {
       // Start screen: belly-down over Starbase, the same shot the flight opens on.
       const mid = this.shipMid(scratchA)
       const portrait = cam.aspect < 1
-      const drift = Math.sin(this.clock * 0.25) * 7
-      this.camPos.set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58) + Math.sin(this.clock * 0.17) * 3, mid.z + 34 + drift)
+      // Held still: a drifting camera makes every thin edge on the site crawl.
+      this.camPos.set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34)
       this.camLook.set(mid.x + 60, mid.y - 110, mid.z - 12)
     } else if (this.phase === 'intro') {
       // Ride above and behind the fall, Starbase spread out far below, then
@@ -1353,8 +1332,7 @@ export class CatchEngine {
       const mid = this.shipMid(scratchA).clone()
       const u = smooth((this.phaseT - FLOP_END * 0.5) / (INTRO_T - FLOP_END * 0.5))
       const portrait = cam.aspect < 1
-      const drift = Math.sin(this.clock * 0.25) * 7
-      const side = v3().set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34 + drift)
+      const side = v3().set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34)
       const sideLook = v3().set(mid.x + 60, mid.y - 110, mid.z - 12)
       this.chase(1, true)
       this.camPos.lerpVectors(side, this.camPos, u)
@@ -1472,7 +1450,7 @@ export class CatchEngine {
       } else if (!s.burning && s.vy < -4 && slack < 150 && s.mode.coaching) {
         h.prompt = 'Falling. Get ready to BURN'
       } else if (s.mode.coaching) {
-        if (s.burning && h.above > 70 && s.vy > -7) h.prompt = 'Braked too high: let go and fall'
+        if (s.burning && h.above > 70 && s.vy > -7) h.prompt = 'Too high to brake: let go and fall'
         else if (s.vx > 3 && toRing < stop + 5 && s.gx > -0.1) {
           h.prompt = `Coming in fast: BURN and ${back} to brake`
           h.promptTone = 'warn'
@@ -1485,7 +1463,7 @@ export class CatchEngine {
         } else if (Math.abs(h.across) > 4 && h.above < 220) {
           h.prompt = h.across > 0 ? 'Off to the right: BURN and steer left' : 'Off to the left: BURN and steer right'
         } else if (h.dist <= 6 && h.above > 14 && h.hspeed < 4) h.prompt = 'Lined up. Let it down between the arms'
-        else if (h.dist <= 6 && h.above <= 14 && h.above > 0) h.prompt = 'Easy. Let the pins settle on the rails'
+        else if (h.dist <= 6 && h.above <= 14 && h.above > 0) h.prompt = 'Gently. Let the pins settle on the rails'
       }
     }
         this.cb.onHud(h)
