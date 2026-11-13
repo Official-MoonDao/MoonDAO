@@ -2,10 +2,13 @@
 import { expect } from 'chai'
 import fs from 'fs'
 import path from 'path'
+import type { Contribution } from '../lib/contributions/getSheetContributions'
 import {
+  buildContent,
   FIRST_RUN_ANNOUNCE_WINDOW_MS,
   isWithinAnnounceWindow,
   parseContributionTimestamp,
+  suppressLinkPreviews,
 } from '../lib/contributions/notifyNewContributions'
 
 describe('contribution Discord announce window', () => {
@@ -53,5 +56,45 @@ describe('contribution notification cron', () => {
   it('fails the job unless the notifier reports ok', () => {
     expect(workflow).to.include('"ok":true')
     expect(workflow).to.include('exit 1')
+  })
+})
+
+describe('contribution Discord link previews', () => {
+  it('brackets bare URLs so Discord shows no preview', () => {
+    expect(suppressLinkPreviews('https://www.youtube.com/watch?v=DczVqy4fAYQ')).to.equal(
+      '<https://www.youtube.com/watch?v=DczVqy4fAYQ>'
+    )
+    expect(suppressLinkPreviews('see https://a.com/x, and http://b.org.')).to.equal(
+      'see <https://a.com/x>, and <http://b.org>.'
+    )
+  })
+
+  it('leaves already-bracketed URLs alone', () => {
+    expect(suppressLinkPreviews('<https://a.com/x>')).to.equal('<https://a.com/x>')
+  })
+
+  it('handles masked links and wiki-style parens', () => {
+    expect(suppressLinkPreviews('[demo](https://a.com/x)')).to.equal('[demo](<https://a.com/x>)')
+    expect(suppressLinkPreviews('https://en.wikipedia.org/wiki/Moon_(disambiguation)')).to.equal(
+      '<https://en.wikipedia.org/wiki/Moon_(disambiguation)>'
+    )
+    expect(suppressLinkPreviews('**https://a.com**')).to.equal('**<https://a.com>**')
+  })
+
+  it('brackets every link in the announcement, including ours', () => {
+    const content = buildContent({
+      name: 'Ada',
+      title: 'Lunar demo',
+      area: 'Media',
+      description: 'Watch https://youtu.be/abc and read https://blog.example.com/post.',
+      links: 'www.example.com/video',
+      walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
+      timestamp: '10/6/2026 15:44:02',
+    } as Contribution)
+    expect(content).to.include('<https://youtu.be/abc>')
+    expect(content).to.include('<https://blog.example.com/post>.')
+    expect(content).to.include('🔗 <https://www.example.com/video>')
+    expect(content).to.match(/View all contributions → <https?:\/\/[^\s>]+\/contributions>/)
+    expect(content).to.not.match(/(^|[^<])https?:\/\//m)
   })
 })
