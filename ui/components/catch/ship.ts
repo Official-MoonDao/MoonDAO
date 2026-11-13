@@ -82,7 +82,7 @@ export function steelSkin(env: THREE.Texture, bag: Bag, height: number): THREE.M
   const H = 2048
   const rings = Math.round(height / 1.83)
   const draw = (rough: boolean) => (g: CanvasRenderingContext2D) => {
-    g.fillStyle = rough ? '#404040' : '#c9ccd0'
+    g.fillStyle = rough ? '#707070' : '#c9ccd0'
     g.fillRect(0, 0, W, H)
     let seed = 7
     const rnd = () => {
@@ -94,7 +94,8 @@ export function steelSkin(env: THREE.Texture, bag: Bag, height: number): THREE.M
       const hgt = H / rings
       const v = rnd()
       if (rough) {
-        const c = 34 + v * 58
+        // Brushed, weathered stainless: it blurs what it reflects and never mirrors it.
+        const c = 88 + v * 62
         g.fillStyle = `rgb(${c},${c},${c})`
       } else {
         const c = 200 + v * 26
@@ -167,12 +168,14 @@ export function steelSkin(env: THREE.Texture, bag: Bag, height: number): THREE.M
     color: 0xffffff,
     map,
     roughnessMap,
-    roughness: 0.62,
-    metalness: 1,
+    roughness: 1,
+    // A little short of fully metallic, so the hull keeps a grey body of its own
+    // under any sky and is never just a picture of the sea behind the camera.
+    metalness: 0.82,
     normalMap,
     normalScale: new THREE.Vector2(0.55, 0.55),
     envMap: env,
-    envMapIntensity: 1.2,
+    envMapIntensity: 1.0,
   })
   bag.push(mat)
   return mat
@@ -285,7 +288,7 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
   const flapTileMat = track(
     new THREE.MeshStandardMaterial({ color: 0xffffff, map: flapTiles, roughness: 0.38, metalness: 0.1, envMap: env, envMapIntensity: 1.0 })
   )
-  const flapSteel = track(new THREE.MeshStandardMaterial({ color: 0xb9bdc2, roughness: 0.3, metalness: 1, envMap: env, envMapIntensity: 1.2 }))
+  const flapSteel = track(new THREE.MeshStandardMaterial({ color: 0xb9bdc2, roughness: 0.44, metalness: 0.82, envMap: env, envMapIntensity: 1.0 }))
   const dark = track(new THREE.MeshStandardMaterial({ color: 0x1b1c1f, roughness: 0.7, metalness: 0.5, envMap: env }))
   const engineGlow = track(
     new THREE.MeshStandardMaterial({
