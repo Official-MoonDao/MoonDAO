@@ -63,7 +63,9 @@ export function MoonbaseEngagement() {
 
     document.addEventListener('visibilitychange', syncVisible)
     window.addEventListener('focus', syncVisible)
+    window.addEventListener('blur', syncVisible)
     window.addEventListener('pageshow', syncVisible)
+    window.addEventListener('pagehide', syncVisible)
     document.addEventListener('pointerdown', onInteract, true)
     document.addEventListener('wheel', onInteract, true)
     document.addEventListener('touchstart', onInteract, true)
@@ -72,7 +74,9 @@ export function MoonbaseEngagement() {
     return () => {
       document.removeEventListener('visibilitychange', syncVisible)
       window.removeEventListener('focus', syncVisible)
+      window.removeEventListener('blur', syncVisible)
       window.removeEventListener('pageshow', syncVisible)
+      window.removeEventListener('pagehide', syncVisible)
       document.removeEventListener('pointerdown', onInteract, true)
       document.removeEventListener('wheel', onInteract, true)
       document.removeEventListener('touchstart', onInteract, true)

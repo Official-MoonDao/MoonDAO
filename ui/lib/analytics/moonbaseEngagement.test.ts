@@ -160,8 +160,18 @@ describe('moonbase engagement clock', () => {
     advance(MOONBASE_VISIBLE_MS)
     assert.deepStrictEqual(fires, [])
     engagement.setVisible(isDocumentActive({ visibilityState: 'hidden', hasFocus: () => true }))
-    advance(MOONBASE_VISIBLE_MS)
-    assert.deepStrictEqual(fires, [MOONBASE_VISIBLE_MS * 2])
+    advance(4_000)
+    assert.deepStrictEqual(fires, [])
+    // Backgrounding an in-app browser may not fire visibilitychange. blur and
+    // pagehide re-read focus, and a hidden document that lost focus pauses.
+    engagement.setVisible(isDocumentActive({ visibilityState: 'hidden', hasFocus: () => false }))
+    advance(30_000)
+    assert.deepStrictEqual(fires, [])
+    engagement.setVisible(isDocumentActive({ visibilityState: 'hidden', hasFocus: () => true }))
+    advance(MOONBASE_VISIBLE_MS - 4_000)
+    assert.deepStrictEqual(fires, [
+      MOONBASE_VISIBLE_MS + 4_000 + 30_000 + (MOONBASE_VISIBLE_MS - 4_000),
+    ])
   })
 
   it('wires the page effect to the stable router events emitter', () => {
@@ -173,6 +183,8 @@ describe('moonbase engagement clock', () => {
     assert.equal(src.includes('retainMoonbaseEngagement'), true)
     assert.equal(src.includes("events.on('routeChangeComplete'"), true)
     assert.equal(src.includes('isDocumentActive'), true)
+    assert.equal(src.includes("addEventListener('blur', syncVisible)"), true)
+    assert.equal(src.includes("addEventListener('pagehide', syncVisible)"), true)
     const app = fs.readFileSync(path.join(__dirname, '../../pages/_app.tsx'), 'utf8')
     assert.equal(app.includes('<MoonbaseEngagement />'), true)
   })
