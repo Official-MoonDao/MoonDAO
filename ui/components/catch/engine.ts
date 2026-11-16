@@ -883,9 +883,12 @@ export class CatchEngine {
     // Flame length follows the throttle; its direction follows the engine swivel.
     this.ship.plume.scale.set(1, 0.45 + 0.6 * p, 1)
     if (this.phase === 'flying' && !this.exploded) {
-      // Body frame (x belly, z pins) to the model's (z belly, x pins); the swing is drawn a little large to read.
+      // The swivel is in world axes; the ship flies turned half a turn about
+      // its hull (belly west), so both sideways parts flip going into the
+      // model's frame (z belly, x pins). The flame must point away from the
+      // way the ship is being pushed. Drawn a little large to read.
       const k = 1.5
-      scratchA.set(Math.tan(sim.gz * k), -1, -Math.tan(sim.gx * k)).normalize()
+      scratchA.set(-Math.tan(sim.gz * k), -1, Math.tan(sim.gx * k)).normalize()
       this.ship.plume.quaternion.setFromUnitVectors(DOWN, scratchA)
     } else this.ship.plume.quaternion.identity()
     this.ship.engineGlow.emissiveIntensity = 2.8 * p
