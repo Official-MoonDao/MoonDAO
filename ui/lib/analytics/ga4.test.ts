@@ -37,6 +37,7 @@ import {
   trackMissionContribution,
   trackMoonbaseEngaged,
   trackProposalVote,
+  reportAnalyticsConsent,
   trackSignUp,
   gaDebugEnabled,
   isMoonbasePath,
@@ -689,18 +690,180 @@ describe('moonbase and forecast events', () => {
     assert.strictEqual(rememberEntryPath('/deprize/2', storage), '/moonbase')
   })
 
-  it('fires moonbase_engaged once per tab', () => {
+  it('fires moonbase_engaged once per tab on a direct /moonbase load', () => {
     const calls = installGtag()
     const storage = memoryStorage()
     const win = (global as unknown as { window: Record<string, unknown> }).window
     win.sessionStorage = storage
-    win.location = { hostname: 'moondao.com', search: '', pathname: '/moonbase' }
+    win.localStorage = memoryStorage({ cookie_consent: 'true' })
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/moonbase?race=1&email=a@b.com',
+      origin: 'https://moondao.com',
+      search: '?race=1&email=a@b.com',
+      pathname: '/moonbase',
+    }
     trackMoonbaseEngaged()
     trackMoonbaseEngaged()
     resetAnalyticsState()
     trackMoonbaseEngaged()
-    assert.deepStrictEqual(calls, [['event', 'moonbase_engaged', {}]])
+    assert.deepStrictEqual(calls, [
+      ['event', 'moonbase_engaged', { page_location: 'https://moondao.com/moonbase' }],
+    ])
     assert.strictEqual(storage.getItem('md_moonbase_engaged'), '1')
+  })
+
+  it('stamps /moonbase after client navigation, not the page where the hit flushes', () => {
+    const calls = installGtag()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage()
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/',
+      origin: 'https://moondao.com',
+      search: '',
+      pathname: '/',
+    }
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/moonbase?year=2030',
+      origin: 'https://moondao.com',
+      search: '?year=2030',
+      pathname: '/moonbase',
+    }
+    reportAnalyticsConsent('prompt')
+    trackMoonbaseEngaged()
+    assert.equal(calls.length, 0)
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/deprize/2',
+      origin: 'https://moondao.com',
+      search: '',
+      pathname: '/deprize/2',
+    }
+    reportAnalyticsConsent('granted')
+    assert.deepStrictEqual(calls, [
+      ['event', 'moonbase_engaged', { page_location: 'https://moondao.com/moonbase' }],
+    ])
+    reportAnalyticsConsent('granted')
+    trackMoonbaseEngaged()
+    assert.equal(calls.length, 1)
+  })
+
+  it('forwards an explicit denial once and does not upgrade it if consent is granted later', () => {
+    const calls = installGtag()
+    const stored = memoryStorage()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage()
+    win.localStorage = stored
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/moonbase',
+      origin: 'https://moondao.com',
+      search: '',
+      pathname: '/moonbase',
+    }
+    reportAnalyticsConsent('prompt')
+    trackMoonbaseEngaged()
+    assert.equal(calls.length, 0)
+    stored.setItem('cookie_consent', 'false')
+    reportAnalyticsConsent('denied')
+    assert.equal(calls.length, 1)
+    stored.setItem('cookie_consent', 'true')
+    reportAnalyticsConsent('granted')
+    assert.equal(calls.length, 1)
+  })
+
+  it('holds an early interaction until the banner decides, then sends once', () => {
+    const calls = installGtag()
+    let queued: (() => void) | null = null
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage()
+    win.localStorage = memoryStorage()
+    win.setTimeout = (fn: () => void) => {
+      queued = fn
+      return 1
+    }
+    win.clearTimeout = () => {
+      queued = null
+    }
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/moonbase',
+      origin: 'https://moondao.com',
+      search: '',
+      pathname: '/moonbase',
+    }
+    trackMoonbaseEngaged()
+    assert.equal(calls.length, 0)
+    reportAnalyticsConsent('prompt')
+    assert.equal(calls.length, 0)
+    assert.equal(queued, null)
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/deprize/2',
+      origin: 'https://moondao.com',
+      search: '',
+      pathname: '/deprize/2',
+    }
+    reportAnalyticsConsent('granted')
+    assert.deepStrictEqual(calls, [
+      ['event', 'moonbase_engaged', { page_location: 'https://moondao.com/moonbase' }],
+    ])
+  })
+
+  it('sends the held event if the banner never decides', () => {
+    const calls = installGtag()
+    let queued: (() => void) | null = null
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage()
+    win.setTimeout = (fn: () => void, ms: number) => {
+      assert.ok(ms >= 1000)
+      queued = fn
+      return 1
+    }
+    win.clearTimeout = () => {
+      queued = null
+    }
+    win.location = {
+      hostname: 'moondao.com',
+      href: 'https://moondao.com/moonbase/tour',
+      origin: 'https://moondao.com',
+      search: '',
+      pathname: '/moonbase/tour',
+    }
+    trackMoonbaseEngaged()
+    assert.equal(calls.length, 0)
+    assert.equal(typeof queued, 'function')
+    queued!()
+    assert.deepStrictEqual(calls, [
+      ['event', 'moonbase_engaged', { page_location: 'https://moondao.com/moonbase/tour' }],
+    ])
+    queued!()
+    assert.equal(calls.length, 1)
+  })
+
+  it('keeps moonbase_engaged when events queue past the pending cap before gtag exists', () => {
+    const storage = memoryStorage()
+    ;(global as { window?: unknown }).window = {
+      sessionStorage: storage,
+      location: {
+        hostname: 'moondao.com',
+        href: 'https://moondao.com/moonbase',
+        origin: 'https://moondao.com',
+        search: '',
+        pathname: '/moonbase',
+      },
+    }
+    reportAnalyticsConsent('passthrough')
+    trackMoonbaseEngaged()
+    for (let i = 0; i < 40; i++) trackJoinCtaClick({ cta_location: 'hero', plan: 'citizen' })
+    const calls = installGtag()
+    flushPendingGa4()
+    const engaged = calls.filter((call) => call[1] === 'moonbase_engaged')
+    assert.equal(engaged.length, 1)
+    assert.deepStrictEqual(engaged[0][2], { page_location: 'https://moondao.com/moonbase' })
+    assert.ok(calls.length <= 30)
   })
 
   it('adds debug_mode on a preview and keeps it off production', () => {
@@ -711,13 +874,20 @@ describe('moonbase and forecast events', () => {
       true
     )
     const calls = installGtag()
-    ;(global as { window: { location: unknown } }).window.location = {
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.localStorage = memoryStorage({ cookie_consent: 'true' })
+    win.location = {
       hostname: 'moon-git-preview.vercel.app',
+      href: 'https://moon-git-preview.vercel.app/moonbase',
+      origin: 'https://moon-git-preview.vercel.app',
       search: '',
       pathname: '/moonbase',
     }
     trackMoonbaseEngaged()
-    assert.deepStrictEqual(calls[0][2], { debug_mode: true })
+    assert.deepStrictEqual(calls[0][2], {
+      debug_mode: true,
+      page_location: 'https://moon-git-preview.vercel.app/moonbase',
+    })
   })
 
   it('sends forecast_submitted with the stored entry path, not the current page', () => {
