@@ -1028,9 +1028,10 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
         {/* Top view of the arms: steer the dot into the ring. */}
         <div className="absolute left-3 top-[6.6rem] rounded-xl border border-white/10 bg-black/55 p-1.5 backdrop-blur-sm sm:bottom-24 sm:left-auto sm:right-3 sm:top-auto sm:p-2">
           <svg viewBox="-24 -32 48 78" className="block h-[6.6rem] w-[4.1rem] sm:h-[11rem] sm:w-[6.8rem]" aria-hidden>
-            <rect x="-6" y="-32" width="12" height="10" fill="#5b6068" />
-            <line x1="-5.7" y1="-20.5" x2="-5.7" y2="15.5" stroke="#9aa0a8" strokeWidth="1.6" />
-            <line x1="5.7" y1="-20.5" x2="5.7" y2="15.5" stroke="#9aa0a8" strokeWidth="1.6" />
+            {/* The tower is nearest the pilot, its arms reaching away: the ship comes in over it. */}
+            <rect x="-6" y="22" width="12" height="12" fill="#5b6068" />
+            <line x1="-5.7" y1="20.5" x2="-5.7" y2="-15.5" stroke="#9aa0a8" strokeWidth="1.6" />
+            <line x1="5.7" y1="20.5" x2="5.7" y2="-15.5" stroke="#9aa0a8" strokeWidth="1.6" />
             <circle cx="0" cy="0" r="5.2" fill="none" stroke="#7dffb0" strokeWidth="1.2" />
             <line ref={guideVelRef} x1="0" y1="30" x2="0" y2="30" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1" />
             <circle ref={guideShipRef} cx="0" cy="30" r="3.6" fill="#ffffff" />
@@ -1169,7 +1170,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold leading-none tracking-tight sm:mt-1 sm:text-[2.6rem]">STARSHIP CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              A Starship is falling out of the sky over Starbase. Brake, steer, and set it down in the tower&apos;s arms. Overshoot and it ends up in the Gulf. New weather every day. Excitement guaranteed.
+              A Starship is coming in over the Gulf. Brake, clear the top of the tower, and drop it into the arms. Go long and you find the tank farm. New weather every day. Excitement guaranteed.
             </p>
             <p className="mt-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80">
               Today: {conditions.sky.toLowerCase()}, wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s

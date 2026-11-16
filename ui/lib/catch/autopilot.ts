@@ -6,7 +6,7 @@
  *
  * Dependency-free.
  */
-import { PAD1 } from './layout'
+import { PAD1, SHIP, TOWER } from './layout'
 import { EARTH_G } from './modes'
 import { pinX, pinY, pinZ, SWEET_MARGIN, SWEET_X, type Sim, type SimInput } from './physics'
 
@@ -20,8 +20,13 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
   const mode = s.mode
   const rail = PAD1.railY
   const above = pinY(s) - rail
-  // Aim a little short of the sweet spot while still high, then slide in.
-  const dx = SWEET_X - (above > 18 ? 5 : 0) - pinX(s)
+  const px = pinX(s)
+  // The ship comes in over the tower. Until the hull is past the tower's west
+  // face it has to stay above the mast.
+  const clearX = PAD1.x + TOWER.catchDist - TOWER.width / 2 - SHIP.radius - 3
+  const clearAbove = TOWER.mastTop + 8 + SHIP.catchY - rail
+  const overTower = px > clearX
+  const dx = SWEET_X - px
   const dz = PAD1.z - pinZ(s)
   const dist = Math.hypot(dx, dz)
   const hspeed = Math.hypot(s.vx, s.vz)
@@ -37,8 +42,8 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
     const v = a < 3 ? a * 0.6 : Math.sqrt(2 * brake * a)
     return Math.sign(d) * v
   }
-  // Never speed up toward the tower: only shed speed, or creep when close.
-  const wx = dx > 0 && s.vx > 0 ? Math.min(want(dx), Math.max(s.vx, 6)) : want(dx)
+  // Never speed up toward the arms: only shed speed, or creep when close.
+  const wx = dx < 0 && s.vx < 0 ? Math.max(want(dx), Math.min(s.vx, -6)) : want(dx)
   const axCmd = 2.2 * (wx - s.vx)
   const azCmd = 2.0 * (want(dz) - s.vz)
   const thrust = mode.engineAccel * 0.9
@@ -51,7 +56,13 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
   const low = s.fuel / mode.fuelSeconds < 0.2
   const settled = held || (dist < (low ? 5 : 3) && hspeed < (low ? 3 : 2.2))
   // BURN cannot hover or climb in either mode, so stop a little high and use the slow sink to line up.
-  const hold = mode.sinkFloor > 0 ? 16 : 32
+  let hold = mode.sinkFloor > 0 ? 16 : 32
+  if (overTower) {
+    // BURN only slows the fall, so be this much higher now to still be above
+    // the mast when the hull gets there.
+    const toGo = (px - clearX) / Math.max(-s.vx, 4)
+    hold = Math.max(hold, clearAbove + mode.burnSink * toGo)
+  }
   let vyWant: number
   if (settled) vyWant = above > 5 ? -4.5 : -2.6
   else {

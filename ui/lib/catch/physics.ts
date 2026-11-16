@@ -13,9 +13,12 @@
  * too late and the pins have already gone past.
  *
  * Units are SI with unit mass, so forces are accelerations.
- * Axes: x east (the approach direction), y up, z south (screen-right from the
- * chase camera). Body frame: y along the hull, x toward the tiled belly, z
- * through the catch pins. The origin of the body frame is the centre of mass.
+ * Axes: x east, y up, z south. The ship comes in from the east, over the
+ * Gulf, heading west: it crosses over the top of the tower and comes down
+ * into the arms on the tower's far side, heat shield facing away from the
+ * tower, as the real ship does. Body frame: y along the hull, x toward the
+ * tiled belly, z through the catch pins. The origin of the body frame is the
+ * centre of mass.
  *
  * The step uses only exactly-defined arithmetic (see detmath.ts), so a
  * recorded flight replays identically on the server.
@@ -216,22 +219,23 @@ export type Sim = {
 }
 
 export function createSim(mode: ModeConfig, conditions: Conditions): Sim {
-  // Upright at hand-over: the flip has just finished.
-  const half = 0
+  // Upright at hand-over: the flip has just finished. Turned half a turn
+  // about the hull, so the tiled belly faces west, the way the ship is going.
+  const half = Math.PI / 2
   const sim: Sim = {
     mode,
     conditions,
     t: 0,
-    px: PAD1.x - mode.startDistance,
+    px: PAD1.x + mode.startDistance,
     py: mode.startAltitude,
     pz: PAD1.z + conditions.lateral,
-    vx: mode.startHorizontalSpeed,
+    vx: -mode.startHorizontalSpeed,
     vy: mode.startVerticalSpeed,
     vz: 0,
     qw: dcos(half),
     qx: 0,
-    qy: 0,
-    qz: dsin(half),
+    qy: dsin(half),
+    qz: 0,
     wx: 0,
     wy: 0,
     wz: 0,
@@ -400,8 +404,8 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   // --- Attitude control ---------------------------------------------------------
   let ax: number
   let az: number
-  // Heading hold: keep the pins square to the arms.
-  const yaw = datan2(-m[6], m[0])
+  // Heading hold: keep the pins square to the arms, belly to the west.
+  const yaw = datan2(m[6], -m[0])
   let ay = -4 * yaw - 3.5 * s.wy
   // The hull is held upright, leaning a little into whatever the engines are pushing.
   const dxu = dtan(LEAN * s.gx)
