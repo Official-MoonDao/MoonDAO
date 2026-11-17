@@ -120,8 +120,10 @@ export default function ProjectPanel({
   const outcome = bound && outcomeIndex >= 0 ? outcomes?.[outcomeIndex] : undefined
   // A competitive race with no DePrize still takes free predictions, one
   // outcome per competitor, under a reserved forecast id. No ETH market.
-  const forecastBook =
-    hasRace && !bound ? atlasForecastBook(betGoal!.id, betGoal!.projectIds) : undefined
+  const forecastBook = useMemo(
+    () => (hasRace && !bound ? atlasForecastBook(betGoal!.id, betGoal!.projectIds) : undefined),
+    [hasRace, bound, betGoal]
+  )
   const forecastVoteId = bound ? marketDeprizeId : forecastBook?.voteId
   const forecastOutcomeCount = bound ? numOutcomes : forecastBook ? forecastBook.numOutcomes : 0
   const forecastIndex = bound
@@ -154,11 +156,17 @@ export default function ProjectPanel({
 
   const outcomeLabels = useMemo(() => {
     if (!bound) {
-      return (betGoal?.projectIds ?? []).map(
-        (projectId, index) =>
-          (projectId === project.id ? project : projectById(SEED_ATLAS, projectId))?.name ??
-          `Team #${index + 1}`
-      )
+      // Slot order, not the editable roster order. A saved pick is only an index.
+      const ids = forecastBook ? forecastBook.outcomeIds : betGoal?.projectIds ?? []
+      return ids.map((projectId, index) => {
+        const named =
+          projectId === project.id
+            ? project
+            : projectId
+            ? projectById(SEED_ATLAS, projectId)
+            : undefined
+        return named?.name ?? `Team #${index + 1}`
+      })
     }
     return Array.from({ length: numOutcomes }, (_, index) => {
       const slot = binding?.outcomes[index]
@@ -167,7 +175,7 @@ export default function ProjectPanel({
       if (slot.projectId === project.id) return project.name
       return `Team #${index + 1}`
     })
-  }, [bound, betGoal?.projectIds, numOutcomes, binding, project])
+  }, [bound, forecastBook, betGoal?.projectIds, numOutcomes, binding, project])
 
   const openPredict = () => {
     if (

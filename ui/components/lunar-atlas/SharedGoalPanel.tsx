@@ -177,15 +177,18 @@ export default function SharedGoalPanel({
 
   // A race with no DePrize still takes free predictions, one outcome per
   // competitor, under a reserved forecast id. No ETH market is implied.
-  const forecastBook = !bound && hasRace ? atlasForecastBook(goal.id, goal.projectIds) : undefined
-  const bookLabels = useMemo(
-    () =>
-      goal.projectIds.map(
-        (projectId, index) =>
-          competitors.find((c) => c.project.id === projectId)?.project.name ?? `Team #${index + 1}`
-      ),
-    [goal.projectIds, competitors]
+  // Labels follow the frozen slot list. Roster order is editorial.
+  const forecastBook = useMemo(
+    () => (!bound && hasRace ? atlasForecastBook(goal.id, goal.projectIds) : undefined),
+    [bound, hasRace, goal.id, goal.projectIds]
   )
+  const bookLabels = useMemo(() => {
+    const ids = forecastBook ? forecastBook.outcomeIds : goal.projectIds
+    return ids.map(
+      (projectId, index) =>
+        competitors.find((c) => c.project.id === projectId)?.project.name ?? `Team #${index + 1}`
+    )
+  }, [forecastBook, goal.projectIds, competitors])
   const forecastVoteId = bound ? marketDeprizeId : forecastBook?.voteId
   const forecastOutcomeCount = bound ? numOutcomes : forecastBook ? forecastBook.numOutcomes : 0
   const forecastLabels = bound ? outcomeLabels : bookLabels
