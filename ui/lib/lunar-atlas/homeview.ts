@@ -73,7 +73,7 @@ export function ridgePoint(
 // shared heading from the HORIZONTAL bearing between these two points (see
 // facingYaw in ProjectModel), so raising the aim point cannot rotate the base.
 // The target also sits just south-east of the base centre rather than on it.
-// TrackballControls runs with noPan, so the target is the point the colony
+// OrbitControls runs with noPan, so the target is the point the colony
 // swings around on a drag; its eccentricity is held to the ~22 m the home view
 // has always had.
 export const HOME_TARGET = ridgePoint(85, 65, CAP_CENTER_HEIGHT_M + 69)
