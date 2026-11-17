@@ -272,12 +272,6 @@ export default function GoalDePrizeDetail({
                   </p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 -mt-1">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-3 w-1 rounded-full bg-zinc-400" />
-                  Unofficial — not confirmed
-                </span>
-              </div>
               {outcomes.map((o) => {
                 const competitor = competitors[o.outcome.index]
                 const org = competitor?.organization

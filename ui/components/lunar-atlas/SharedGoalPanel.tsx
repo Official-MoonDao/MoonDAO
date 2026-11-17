@@ -143,9 +143,8 @@ export default function SharedGoalPanel({
   }
   const kinds = competitors.map((c) => participationFor(c.project.rosterStatus))
   const anyOfficial = kinds.includes('official')
-  const anyUnofficial = kinds.includes('unofficial')
   const anyDeclined = kinds.includes('declined')
-  const showParticipationLegend = anyOfficial || anyUnofficial || anyDeclined
+  const showParticipationLegend = anyOfficial || anyDeclined
 
   // Predict / cash-out. Reset during render when the race changes so a
   // stale index can never target the next market.
@@ -324,14 +323,6 @@ export default function SharedGoalPanel({
                       className={`h-3 w-1 rounded-full ${PARTICIPATION_BAR_CLASSES.official}`}
                     />
                     Official participant
-                  </span>
-                )}
-                {anyUnofficial && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span
-                      className={`h-3 w-1 rounded-full ${PARTICIPATION_BAR_CLASSES.unofficial}`}
-                    />
-                    Unofficial — not confirmed
                   </span>
                 )}
                 {anyDeclined && (
@@ -590,12 +581,6 @@ export default function SharedGoalPanel({
               </Link>
             )}
 
-            {!bound && hasRace && anyUnofficial && (
-              <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                Unofficial competitors are listed at MoonDAO&apos;s editorial discretion. That does
-                not mean the organization has agreed to participate in any MoonDAO prize.
-              </p>
-            )}
           </div>
         )}
 
