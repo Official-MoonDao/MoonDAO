@@ -11,7 +11,7 @@
 // The world is still a sphere mathematically — positions are directions
 // scaled by a radius — so all the geo.ts framing math carries over; only the
 // rendered patch is the ridge.
-import { TrackballControls } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer, Noise, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { BlendFunction, ToneMappingMode } from 'postprocessing'
@@ -204,7 +204,7 @@ const SKY_VIEW_OPTS = {
 // ONLY while a transition is active. It arcs the view direction and eases the
 // distance/target rather than sliding in a straight line. Once it arrives (or
 // the moment the user grabs the controls) it fully releases the camera back
-// to the TrackballControls, so the user can always freely rotate.
+// to the OrbitControls, so the user can always freely rotate.
 function CameraRig({
   focus,
   controlsRef,
@@ -226,7 +226,7 @@ function CameraRig({
   const desiredPos = useRef(DEFAULT_CAM.clone())
   const desiredTarget = useRef(HOME_TARGET.clone())
   const desiredUp = useRef(HOME_UP.clone())
-  // The look-at point when there is no TrackballControls to hold one.
+  // The look-at point when there are no OrbitControls to hold one.
   const ownTarget = useRef(HOME_TARGET.clone())
   const animating = useRef(false)
   // Per-transition easing base (larger = slower, more cinematic glide).
@@ -341,7 +341,7 @@ function CameraRig({
     if (controls) {
       const pivotDist = camera.position.distanceTo(curTarget)
       const feel = Math.sqrt(THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1))
-      controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
+      controls.rotateSpeed = THREE.MathUtils.lerp(0.35, 0.9, feel)
       controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
     }
 
@@ -402,7 +402,7 @@ function CameraRig({
       }
       return
     }
-    // Idle: the camera holds still. TrackballControls owns free rotation.
+    // Idle: the camera holds still. OrbitControls owns free rotation.
   })
 
   return null
@@ -1123,8 +1123,16 @@ export default function MoonGlobe({
         glide={glide}
       />
 
-      {/* Trackball gives full free tumble around the current pivot. The pivot
-          starts at the ridge center; drill-ins move it to the focused site.
+      {/* Orbit, not trackball. Trackball tumbled freely and let the camera
+          roll, so dragging around the base tipped the horizon until the ridge
+          hung diagonally across the screen. Orbit keeps camera.up — which the
+          CameraRig sets to the local ground normal — pointing up, so dragging
+          turns around the site and tilts the view, and the horizon stays level.
+          OrbitControls re-reads camera.up on every update, so the rig's roll
+          easing between framings still works.
+
+          The pivot starts at the ridge center; drill-ins move it to the
+          focused site.
           Distances are real: from 12 m off a rover out to 40 km above the
           patch — past that there is nothing more to see.
 
@@ -1136,13 +1144,18 @@ export default function MoonGlobe({
           filled the screen with the inside of the end wall. Underground the only
           real limit is the near plane. */}
       {interactive && (
-        <TrackballControls
+        <OrbitControls
           ref={controlsRef}
           makeDefault
-          noPan
-          rotateSpeed={2.2}
+          enablePan={false}
+          rotateSpeed={0.9}
           zoomSpeed={1.2}
-          dynamicDampingFactor={0.12}
+          enableDamping
+          dampingFactor={0.1}
+          // Keep the eye above the horizon on the surface (the terrain floor
+          // in CameraRig still catches the ground itself). The cutaway eye is
+          // underground on purpose, so it gets the full sweep.
+          maxPolarAngle={focus?.view === 'sub' ? Math.PI : Math.PI * 0.495}
           minDistance={
             (focus?.view === 'sub'
               ? 1.5

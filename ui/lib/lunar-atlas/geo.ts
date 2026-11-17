@@ -296,7 +296,7 @@ export const HERO_STANDOFF_FLOOR_M = 6
 //
 // The floors are the camera's limits rather than taste. The eye may not go
 // below CAMERA_CLEARANCE, and the standoff has to stay outside the controls'
-// minimum distance or TrackballControls shoves the camera back out on the
+// minimum distance or OrbitControls shoves the camera back out on the
 // first frame and undoes the framing — which is why heroMinDistanceM is
 // derived from this same function rather than written down twice.
 export function heroFraming(subjectM?: number): {
