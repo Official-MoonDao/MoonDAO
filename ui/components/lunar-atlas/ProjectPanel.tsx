@@ -11,6 +11,8 @@ import {
 import { DEPRIZE_PREDICT_CTA, positionRedeemValue, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import { atlasForecastBook } from '@/lib/forecasts/atlasBook'
+import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import {
   LOCATION_PRECISION_LABEL,
   MILESTONE_STATUS_CLASSES,
@@ -23,7 +25,7 @@ import {
   participationKind,
   orgColor,
 } from '@/lib/lunar-atlas/display'
-import { parseAtlasYear, raceStandingForProject } from '@/lib/lunar-atlas/selectors'
+import { parseAtlasYear, projectById, raceStandingForProject } from '@/lib/lunar-atlas/selectors'
 import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 import ForecastPredictModal from '@/components/deprize/ForecastPredictModal'
@@ -116,7 +118,18 @@ export default function ProjectPanel({
     ? binding.outcomes.findIndex((o) => !o.field && o.projectId === project.id)
     : -1
   const outcome = bound && outcomeIndex >= 0 ? outcomes?.[outcomeIndex] : undefined
-  const canBack = hasRace && bound && marketDeprizeId !== undefined && outcomeIndex >= 0
+  // A competitive race with no DePrize still takes free predictions, one
+  // outcome per competitor, under a reserved forecast id. No ETH market.
+  const forecastBook =
+    hasRace && !bound ? atlasForecastBook(betGoal!.id, betGoal!.projectIds) : undefined
+  const forecastVoteId = bound ? marketDeprizeId : forecastBook?.voteId
+  const forecastOutcomeCount = bound ? numOutcomes : forecastBook ? forecastBook.numOutcomes : 0
+  const forecastIndex = bound
+    ? outcomeIndex >= 0
+      ? outcomeIndex
+      : undefined
+    : forecastBook?.outcomeIndexOf(project.id)
+  const canBack = hasRace && forecastVoteId !== undefined && forecastIndex !== undefined
   const holding = bound && !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
   const heldValueEth = outcome?.balance
   const redeemValueEth =
@@ -139,20 +152,31 @@ export default function ProjectPanel({
     setExitOpen(false)
   }
 
-  const outcomeLabels = useMemo(
-    () =>
-      Array.from({ length: numOutcomes }, (_, index) => {
-        const slot = binding?.outcomes[index]
-        if (!slot) return `Team #${index + 1}`
-        if (slot.field) return 'Open Field'
-        if (slot.projectId === project.id) return project.name
-        return `Team #${index + 1}`
-      }),
-    [numOutcomes, binding, project.id, project.name]
-  )
+  const outcomeLabels = useMemo(() => {
+    if (!bound) {
+      return (betGoal?.projectIds ?? []).map(
+        (projectId, index) =>
+          (projectId === project.id ? project : projectById(SEED_ATLAS, projectId))?.name ??
+          `Team #${index + 1}`
+      )
+    }
+    return Array.from({ length: numOutcomes }, (_, index) => {
+      const slot = binding?.outcomes[index]
+      if (!slot) return `Team #${index + 1}`
+      if (slot.field) return 'Open Field'
+      if (slot.projectId === project.id) return project.name
+      return `Team #${index + 1}`
+    })
+  }, [bound, betGoal?.projectIds, numOutcomes, binding, project])
 
   const openPredict = () => {
-    if (payoutPending || outcomeIndex < 0 || numOutcomes <= outcomeIndex) return
+    if (
+      (bound && payoutPending) ||
+      forecastIndex === undefined ||
+      forecastOutcomeCount <= forecastIndex
+    ) {
+      return
+    }
     setPredictArmed(true)
     setPredictOpen(true)
   }
@@ -209,7 +233,11 @@ export default function ProjectPanel({
             <button
               type="button"
               onClick={openPredict}
-              disabled={payoutPending || numOutcomes <= outcomeIndex}
+              disabled={
+                (bound && payoutPending) ||
+                forecastIndex === undefined ||
+                forecastOutcomeCount <= forecastIndex
+              }
               aria-label={`${DEPRIZE_PREDICT_CTA} ${project.name}`}
               className="rounded-md px-3 py-1.5 text-xs font-semibold text-white transition-all
                 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
@@ -431,16 +459,16 @@ export default function ProjectPanel({
         !resolved &&
         chain &&
         chainSlug &&
-        marketDeprizeId !== undefined && (
+        forecastVoteId !== undefined && (
           <ForecastPredictModal
             chain={chain}
             chainSlug={chainSlug}
-            deprizeId={marketDeprizeId}
-            numOutcomes={numOutcomes}
+            deprizeId={forecastVoteId}
+            numOutcomes={forecastOutcomeCount}
             labels={outcomeLabels}
             reported={resolved}
-            marketLoading={payoutPending}
-            outcomeIndex={predictOpen ? outcomeIndex : null}
+            marketLoading={bound && payoutPending}
+            outcomeIndex={predictOpen ? forecastIndex ?? null : null}
             teamName={project.name}
             onClose={() => setPredictOpen(false)}
           />
