@@ -10,7 +10,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { botInput } from '@/lib/catch/autopilot'
 import type { Conditions } from '@/lib/catch/conditions'
-import { ARMS, MOUNT, PAD1, PAD2, SHIP, towerCentre } from '@/lib/catch/layout'
+import { ARMS, MOUNT, PAD1, PAD2, SHIP, TOWER, towerCentre } from '@/lib/catch/layout'
 import type { ModeConfig } from '@/lib/catch/modes'
 import { EARTH_G } from '@/lib/catch/modes'
 import {
@@ -29,6 +29,7 @@ import {
   type Sim,
   type SimInput,
   type StructureId,
+  baseAltitude,
 } from '@/lib/catch/physics'
 import { quantise, recordTape, tapeToBase64 } from '@/lib/catch/replay'
 import { scoreFlight, type FlightResult } from '@/lib/catch/scoring'
@@ -712,7 +713,11 @@ export class CatchEngine {
       cam.fov = 48
       cam.updateProjectionMatrix()
       const d = this.endDist * 1.05
-      cam.position.set(this.endLook.x + Math.cos(this.endAngle) * d, Math.max(8, this.endLook.y + d * 0.2), this.endLook.z + Math.sin(this.endAngle) * d)
+      // A catch is photographed from the west: the ship in front with its heat
+      // shield to the camera, the tower behind it and the Gulf beyond. Anything
+      // else is seen from where the end shot settled.
+      const ang = this.result?.outcome === 'caught' ? Math.PI + 1.05 : this.endAngle
+      cam.position.set(this.endLook.x + Math.cos(ang) * d, Math.max(8, this.endLook.y + d * 0.2), this.endLook.z + Math.sin(ang) * d)
       // Aim a little low so the subject clears the card's bottom text block.
       cam.lookAt(scratchA.copy(this.endLook).setY(this.endLook.y - d * 0.1))
     })
@@ -757,8 +762,12 @@ export class CatchEngine {
     else if (t < FLOP_END + 1.7) phi = -Math.PI / 2 + (Math.PI / 2 + lean + 0.16) * smooth((t - FLOP_END) / 1.7)
     else phi = lean + 0.16 * (1 - smooth((t - FLOP_END - 1.7) / (T - FLOP_END - 1.7)))
     const roll = Math.sin(t * 1.7 + 1) * 0.02 * (1 - smooth((t - FLOP_END) / 1.2))
-    qA.setFromAxisAngle(Z_AXIS, phi)
+    // The ship flies west, belly leading: the upright attitude is half a turn
+    // about the hull, and the fall pitches it nose-west from there.
+    qA.setFromAxisAngle(Z_AXIS, -phi)
     qB.setFromAxisAngle(X_AXIS, roll)
+    qA.multiply(qB)
+    qB.setFromAxisAngle(Y_AXIS, Math.PI)
     qA.multiply(qB)
     this.placeShip(x, y, s.pz, qA)
     this.plumePower = smooth((t - FLOP_END - 0.15) / 0.5) * (t > T - 0.5 ? 1 - 0.55 * smooth((t - (T - 0.5)) / 0.5) : 1)
@@ -828,8 +837,9 @@ export class CatchEngine {
           }
         }
         // The stick is relative to where the camera is looking.
-        const c = Math.cos(this.camYaw)
-        const s = Math.sin(this.camYaw)
+        // The camera sits east of the ship looking west, so "forward" is -x.
+        const c = -Math.cos(this.camYaw)
+        const s = -Math.sin(this.camYaw)
         this.simInput.y = this.stick.y * c - this.stick.x * s
         this.simInput.x = this.stick.y * s + this.stick.x * c
         this.simInput.burn = this.want.burn
@@ -873,9 +883,12 @@ export class CatchEngine {
     // Flame length follows the throttle; its direction follows the engine swivel.
     this.ship.plume.scale.set(1, 0.45 + 0.6 * p, 1)
     if (this.phase === 'flying' && !this.exploded) {
-      // Body frame (x belly, z pins) to the model's (z belly, x pins); the swing is drawn a little large to read.
+      // The swivel is in world axes; the ship flies turned half a turn about
+      // its hull (belly west), so both sideways parts flip going into the
+      // model's frame (z belly, x pins). The flame must point away from the
+      // way the ship is being pushed. Drawn a little large to read.
       const k = 1.5
-      scratchA.set(Math.tan(sim.gz * k), -1, -Math.tan(sim.gx * k)).normalize()
+      scratchA.set(-Math.tan(sim.gz * k), -1, Math.tan(sim.gx * k)).normalize()
       this.ship.plume.quaternion.setFromUnitVectors(DOWN, scratchA)
     } else this.ship.plume.quaternion.identity()
     this.ship.engineGlow.emissiveIntensity = 2.8 * p
@@ -926,8 +939,8 @@ export class CatchEngine {
     const live = this.phase === 'flying' ? 1 : 0
     // Small, slow corrections: a few degrees, never a flutter.
     const k = 1 - Math.pow(0.02, 1 / 60)
-    this.flapTrim += (0.16 * s.gx * live - this.flapTrim) * k
-    this.flapRoll += (0.14 * s.gz * live - this.flapRoll) * k
+    this.flapTrim += (-0.16 * s.gx * live - this.flapTrim) * k
+    this.flapRoll += (-0.14 * s.gz * live - this.flapRoll) * k
     this.setFlaps(0, this.flapTrim, -this.flapTrim, this.flapRoll)
   }
 
@@ -1077,9 +1090,9 @@ export class CatchEngine {
         this.say('The pins missed. It is hanging by its forward flaps.', 'warn')
       } else this.say(this.result.closingSpeed < 3 ? 'Catch. The tower has the ship.' : 'Caught. That one rang the tower.', 'good')
       this.endLook.set(PAD1.x + 6, PAD1.railY - 8, PAD1.z)
-      // The chase camera is west of the tower. Everything from here turns the
-      // same way round it: on to the north side, then round to seaward.
-      this.endAngle = Math.PI + 0.6
+      // The chase camera is east of the tower, a little to the north. The
+      // lap starts from there and keeps turning the same way.
+      this.endAngle = Math.atan2(this.camera.position.z - this.endLook.z, this.camera.position.x - this.endLook.x)
       this.endDist = 132
     } else if (o === 'splashdown' || o === 'ditched') {
       // Down in one piece, but with no legs to stand on: it goes over.
@@ -1433,7 +1446,11 @@ export class CatchEngine {
     // levels out, as the ship comes down to the arms.
     const back = Math.max(130, Math.min(360, 120 + high * 0.34)) * this.camZoom
     const pitch = Math.max(-0.1, Math.min(1.4, 0.34 + 0.3 * Math.min(1, high / 420) + this.camPitch))
-    const yaw = this.camYaw + SIDE_YAW
+    // East of the ship, looking west along its path. The tower stands between
+    // this camera and the arms, so it swings out to the north as the ship
+    // closes on the tower and the catch is seen past the tower's side.
+    const closing = smooth(1 - Math.min(1, Math.hypot(mid.x - PAD1.x, mid.z - PAD1.z) / 280))
+    const yaw = this.camYaw + Math.PI + SIDE_YAW + 0.56 * closing
     const cy = Math.cos(yaw)
     const sy = Math.sin(yaw)
     // Aim part-way from the ship toward the pad, but never so far that the ship leaves the frame.
@@ -1465,8 +1482,8 @@ export class CatchEngine {
       const mid = this.shipMid(scratchA)
       const portrait = cam.aspect < 1
       const drift = Math.sin(this.clock * 0.25) * 7
-      this.camPos.set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58) + Math.sin(this.clock * 0.17) * 3, mid.z + 34 + drift)
-      this.camLook.set(mid.x + 60, mid.y - 110, mid.z - 12)
+      this.camPos.set(mid.x + (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58) + Math.sin(this.clock * 0.17) * 3, mid.z + 34 + drift)
+      this.camLook.set(mid.x - 60, mid.y - 110, mid.z - (portrait ? 26 : 78))
     } else if (this.phase === 'intro') {
       // Ride above and behind the fall, Starbase spread out far below, then
       // drop in behind the ship for the hand-over.
@@ -1474,8 +1491,8 @@ export class CatchEngine {
       const u = smooth((this.phaseT - FLOP_END * 0.5) / (INTRO_T - FLOP_END * 0.5))
       const portrait = cam.aspect < 1
       const drift = Math.sin(this.clock * 0.25) * 7
-      const side = v3().set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34 + drift)
-      const sideLook = v3().set(mid.x + 60, mid.y - 110, mid.z - 12)
+      const side = v3().set(mid.x + (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34 + drift)
+      const sideLook = v3().set(mid.x - 60, mid.y - 110, mid.z - (portrait ? 26 : 78))
       this.chase(1, true)
       this.camPos.lerpVectors(side, this.camPos, u)
       this.camLook.lerpVectors(sideLook, this.camLook, u)
@@ -1506,8 +1523,10 @@ export class CatchEngine {
           // Far enough round that the tower does not stand in front of the ship,
           // and far enough back that ship, Tower 2 and the factory all sit in
           // the open middle of the screen, between the result panels.
-          const a1 = Math.PI * 2 - 0.75
-          const k = smooth(Math.min(1, Math.max(0, (this.phaseT - 0.4) / (4 + (a1 - a0) * 1.5))))
+          // East of the tower and a little north: the ship hangs clear of the
+          // tower's edge, with Tower 2 and the factory behind it.
+          const a1 = -0.66
+          const k = smooth(Math.min(1, Math.max(0, (this.phaseT - 0.4) / (4 + Math.abs(a1 - a0) * 1.5))))
           const d0 = this.endDist * (portrait ? 1.5 : 1)
           const d1 = portrait ? 430 : 300
           const d = (d0 + (d1 - d0) * k) * this.camZoom
@@ -1566,10 +1585,12 @@ export class CatchEngine {
     h.burning = flying ? s.burning : this.plumePower > 0.5
     h.armsClosing = s.armsClosing
     h.throttle = flying ? s.throttle : 0
-    h.along = px - SWEET_X
-    h.across = pz - PAD1.z
-    h.vAlong = s.vx
-    h.vAcross = s.vz
+    // As the pilot sees it, flying west: `along` is how far past the ring the
+    // pins are (negative on the way in), `across` how far to the right.
+    h.along = SWEET_X - px
+    h.across = PAD1.z - pz
+    h.vAlong = -s.vx
+    h.vAcross = -s.vz
     // Marker on the catch point.
     // A point behind the camera projects mirrored through the screen centre.
     // Flip it back and pin it to the edge, so the marker points the way to turn.
@@ -1593,21 +1614,27 @@ export class CatchEngine {
       const need = (s.vy * s.vy) / (2 * net)
       const slack = h.above - 4 - need
       const toRing = -h.along
-      const stop = (s.vx * s.vx) / (2 * 3)
+      const stop = (h.vAlong * h.vAlong) / (2 * 3)
+      // The hull is clear of the tower once the pins are this close to the ring.
+      const overTower = toRing > TOWER.catchDist - TOWER.width / 2 - SHIP.radius - SWEET_X + PAD1.x
+      const lowForTower = overTower && toRing < 160 && baseAltitude(s) < TOWER.mastTop + 6 + toRing * 0.25
       const back = this.touch ? 'pull the stick back' : 'hold ↓'
       const fwd = this.touch ? 'push the stick forward' : 'hold ↑'
-      if (!s.burning && s.vy < -4 && slack < 20 + 0.5 * -s.vy) {
+      if (lowForTower) {
+        h.prompt = s.burning ? 'Too low: the tower is in the way' : 'Tower ahead: BURN to stay above it'
+        h.promptTone = 'warn'
+      } else if (!s.burning && s.vy < -4 && slack < 20 + 0.5 * -s.vy) {
         h.prompt = 'BURN NOW'
         h.promptTone = 'warn'
       } else if (!s.burning && s.vy < -4 && slack < 150 && s.mode.coaching) {
         h.prompt = 'Falling. Get ready to BURN'
       } else if (s.mode.coaching) {
-        if (s.burning && h.above > 70 && s.vy > -7) h.prompt = 'Too high to brake: let go and fall'
-        else if (s.vx > 3 && toRing < stop + 5 && s.gx > -0.1) {
+        if (s.burning && !overTower && h.above > 70 && s.vy > -7) h.prompt = 'Too high to brake: let go and fall'
+        else if (h.vAlong > 3 && toRing < stop + 5 && s.gx < 0.1) {
           h.prompt = `Coming in fast: BURN and ${back} to brake`
           h.promptTone = 'warn'
-        } else if (toRing > 9 && s.vx < 4 && h.above < 220) {
-          h.prompt = `Short of the tower: BURN and ${fwd}`
+        } else if (toRing > 9 && h.vAlong < 4 && h.above < 220) {
+          h.prompt = `Short of the ring: BURN and ${fwd}`
           h.promptTone = 'warn'
         } else if (toRing < -5) {
           h.prompt = `Past the ring: BURN and ${back}`
@@ -1683,6 +1710,7 @@ const scratchC = new THREE.Vector3()
 const qA = new THREE.Quaternion()
 const qB = new THREE.Quaternion()
 const X_AXIS = new THREE.Vector3(1, 0, 0)
+const Y_AXIS = new THREE.Vector3(0, 1, 0)
 const DOWN = new THREE.Vector3(0, -1, 0)
 const Z_AXIS = new THREE.Vector3(0, 0, 1)
 /** Body frame to model frame: a quarter turn about the hull axis. */

@@ -54,7 +54,7 @@ export function shareText(result: FlightResult, rank?: number): string {
         : ['🥢 I caught a Starship out of the sky with the tower arms.', `${score} · ${result.closingSpeed.toFixed(1)} m/s onto the arms`]
       break
     case 'splashdown':
-      lines = ['🌊 Soft landing! In the Gulf. I flew right past the tower.', score]
+      lines = ['🌊 Soft landing! In the Gulf. I never made it to the tower.', score]
       break
     case 'ditched':
       lines = ['🫠 Landed a Starship gently on the ground. It has no legs. It fell over.', score]

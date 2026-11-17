@@ -12,8 +12,9 @@
  *    settles to a faster sink still: less time to line up, and no hovering.
  *  - The ship stays upright. Steering swivels the engines while they burn: the
  *    flame swings out one way and pushes the ship the other.
- *  - It comes in high, fast and at a steep slant over the launch site. Leave
- *    the braking too late and it sails past the tower toward the Gulf.
+ *  - It comes in high, fast and at a steep slant from over the Gulf, and has
+ *    to cross above the tower before it can drop into the arms. Leave the
+ *    braking too late and it sails on over the launch site.
  */
 
 export type ModeId = 'easy' | 'pro'
@@ -23,7 +24,7 @@ export type ModeConfig = {
   label: string
   /** m, height of the ship's centre of mass at hand-over */
   startAltitude: number
-  /** m west of the catch point at hand-over */
+  /** m east of the catch point, out over the Gulf, at hand-over */
   startDistance: number
   /** m/s toward the tower */
   startHorizontalSpeed: number
@@ -71,7 +72,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     startVerticalSpeed: -58,
     engineAccel: 17,
     idleThrottle: 0.16,
-    fuelSeconds: 30,
+    fuelSeconds: 36,
     maxGimbalDeg: 22,
     sinkFloor: 3.2,
     burnSink: 3.2,
@@ -91,7 +92,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     startVerticalSpeed: -68,
     engineAccel: 15.5,
     idleThrottle: 0.16,
-    fuelSeconds: 25,
+    fuelSeconds: 28,
     maxGimbalDeg: 20,
     sinkFloor: 0,
     burnSink: 4.6,

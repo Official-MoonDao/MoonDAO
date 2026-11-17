@@ -10,8 +10,10 @@
  * Sourced: tower 143 m (146 m with mast); ship 52.1 m x 9 m; booster about
  * 71 m x 9 m; the two pads about 370 m apart, south of the highway. Estimated
  * from photos: tower width, arm length and depth, mount sizes, catch heights.
- * Game licence: Pad 1 is turned so its arms reach west, toward a ship that
- * comes in over the production site; an overshoot ends in the Gulf.
+ * Game licence: Pad 1 is turned so its arms reach west. The ship comes in
+ * from the east, over the Gulf, crosses the top of the tower and drops into
+ * the arms beyond it; going long ends in the tank farm, coming up short in
+ * the Gulf.
  */
 
 export const SHIP = {
@@ -63,7 +65,7 @@ export type Pad = {
   railY: number
 }
 
-/** Pad 1: the player's target. Its arms reach west, toward the incoming ship. */
+/** Pad 1: the player's target. Its arms reach west, away from the incoming ship. */
 export const PAD1: Pad = { x: 0, z: 0, ax: -1, az: 0, railY: 118 }
 /** Pad 2: arms reach south. A booster hangs in them. */
 export const PAD2: Pad = { x: -362, z: -70, ax: 0, az: 1, railY: 112 }

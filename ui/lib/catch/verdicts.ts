@@ -39,10 +39,10 @@ const HARD = [
 ]
 
 const SPLASH = [
-  'Soft, upright, and in the Gulf. The tower watched you go by.',
-  'A perfect landing, 400 meters east of where the arms are.',
+  'Soft, upright, and in the Gulf. The tower is still waiting.',
+  'A perfect landing, a few hundred meters short of where the arms are.',
   'Splashdown. The fish are impressed. The tower is not.',
-  'You overshot a 140-meter tower and found an entire ocean.',
+  'You had one tower to reach and stopped at an entire ocean.',
   'It floats! Somebody call a tugboat.',
   'Down soft, tipped over, still floating. The recovery ship is not amused.',
 ]
@@ -165,8 +165,9 @@ export function formatScore(n: number): string {
 /** The numbers people quote, in one short line. */
 export function bragLine(r: FlightResult): string {
   if (r.outcome === 'caught') {
-    // What the Catch figure was measured on, then the arrival.
-    const along = Math.abs(r.along) < 0.05 ? 'on the mark' : `${Math.abs(r.along).toFixed(1)} m ${r.along > 0 ? 'deep' : 'short'}`
+    // What the Catch figure was measured on, then the arrival. The ship comes
+    // in over the tower, so nearer the tower is short and nearer the arm tips is long.
+    const along = Math.abs(r.along) < 0.05 ? 'on the mark' : `${Math.abs(r.along).toFixed(1)} m ${r.along > 0 ? 'short' : 'long'}`
     return `${Math.abs(r.across).toFixed(1)} m off center · ${along} · ${r.catchTilt.toFixed(1)}° tilt · ${r.closingSpeed.toFixed(1)} m/s`
   }
   if (r.damage.length) return `${r.damage.length} ${r.damage.length === 1 ? 'structure' : 'structures'} hit · ${Math.round(r.closingSpeed)} m/s at impact`
