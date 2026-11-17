@@ -30,8 +30,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { wallet, deprizeId, chainId } = check.request
 
   const mintAddress = mintAddressForChain(chainId)
-  if (!/^0x[a-fA-F0-9]{40}$/.test(mintAddress) || !complianceSignerAddress()) {
-    return res.status(503).json({ allowed: false, error: 'Permits are unavailable' })
+  if (!/^0x[a-fA-F0-9]{40}$/.test(mintAddress)) {
+    console.error('[deprize] agent permit: no mint address for chain', chainId)
+    return res.status(503).json({ allowed: false, error: 'No mint is configured for this chain' })
+  }
+  if (!complianceSignerAddress()) {
+    const raw = process.env.DEPRIZE_COMPLIANCE_SIGNER_KEY ?? ''
+    console.error(
+      `[deprize] agent permit: DEPRIZE_COMPLIANCE_SIGNER_KEY is ${raw ? `set but invalid (length ${raw.trim().length}, expected 64 hex characters, optional 0x prefix)` : 'not set'}`
+    )
+    return res.status(503).json({ allowed: false, error: 'Permit signer is not configured' })
   }
 
   const sanctions = await screenWallet(wallet)
@@ -78,7 +86,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   } catch (err) {
     console.error('[deprize] house agent permit failed', err)
-    return res.status(503).json({ allowed: false, error: 'Permits are unavailable' })
+    return res.status(503).json({ allowed: false, error: 'Could not sign the permit' })
   }
 }
 
