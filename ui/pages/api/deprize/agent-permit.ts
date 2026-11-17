@@ -35,7 +35,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(503).json({ allowed: false, error: 'No mint is configured for this chain' })
   }
   if (!complianceSignerAddress()) {
-    console.error('[deprize] agent permit: set DEPRIZE_COMPLIANCE_SIGNER_KEY (64 hex characters)')
+    const raw = process.env.DEPRIZE_COMPLIANCE_SIGNER_KEY ?? ''
+    console.error(
+      `[deprize] agent permit: DEPRIZE_COMPLIANCE_SIGNER_KEY is ${raw ? `set but invalid (length ${raw.trim().length}, expected 64 hex characters, optional 0x prefix)` : 'not set'}`
+    )
     return res.status(503).json({ allowed: false, error: 'Permit signer is not configured' })
   }
 
@@ -83,7 +86,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   } catch (err) {
     console.error('[deprize] house agent permit failed', err)
-    return res.status(503).json({ allowed: false, error: 'Permits are unavailable' })
+    return res.status(503).json({ allowed: false, error: 'Could not sign the permit' })
   }
 }
 
