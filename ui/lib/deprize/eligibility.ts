@@ -14,6 +14,7 @@ export type EligibilityReason =
   | 'wallet-denied'
   | 'insider-wallet'
   | 'over-cap'
+  | 'house-agent'
 
 export type EligibilityInput = {
   country: string | null
@@ -72,6 +73,7 @@ export function eligibilityMessage(reason: EligibilityReason): string {
   switch (reason) {
     case 'ok':
     case 'dev-bypass':
+    case 'house-agent':
       return 'Eligible to bet.'
     case 'invalid-wallet':
       return 'Connect a valid wallet to bet.'
