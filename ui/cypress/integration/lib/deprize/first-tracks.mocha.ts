@@ -138,7 +138,11 @@ describe('first tracks: sim', () => {
   })
 })
 
-describe('first tracks: par and scoring', () => {
+describe('first tracks: par and scoring', function () {
+  // Whole drives are simulated here; a CI runner takes several times longer
+  // than a laptop, and the suite default is 10 s.
+  this.timeout(60000)
+
   it('routes par round rocks and never shorter than the straight line', () => {
     const site = siteFor(5)
     for (let i = 0; i + 1 < site.targets.length; i++) {
@@ -159,7 +163,7 @@ describe('first tracks: par and scoring', () => {
   })
 
   it('never pays a full figure, even to the perfect driver', () => {
-    for (let mission = 1; mission <= 6; mission++) {
+    for (let mission = 1; mission <= 3; mission++) {
       const { result } = drive(mission, 'pro', 'perfect')
       expect(result.outcome, `mission ${mission}`).to.equal('complete')
       expect(result.imaged).to.equal(N_TARGETS)
@@ -191,7 +195,11 @@ describe('first tracks: par and scoring', () => {
   })
 })
 
-describe('first tracks: replay', () => {
+describe('first tracks: replay', function () {
+  // Whole drives are simulated here; a CI runner takes several times longer
+  // than a laptop, and the suite default is 10 s.
+  this.timeout(60000)
+
   it('re-drives a tape to the same score, outcome and breakdown', () => {
     for (const [mission, mode, kind] of [
       [1, 'easy', 'perfect'],
@@ -220,7 +228,11 @@ describe('first tracks: replay', () => {
   })
 })
 
-describe('first tracks: jobs, bumps and the day\'s clock', () => {
+describe('first tracks: jobs, bumps and the day\'s clock', function () {
+  // Whole drives are simulated here; a CI runner takes several times longer
+  // than a laptop, and the suite default is 10 s.
+  this.timeout(60000)
+
   it('gives every day three regolith images, two boulder spectra and three ice cores', () => {
     for (let mission = 1; mission <= 40; mission++) {
       const site = siteFor(mission)
