@@ -836,7 +836,7 @@ export default function MoonBaseZeroIndex() {
                     <h1 className="text-sm font-semibold text-white">Moon Base Zero</h1>
                   </div>
                   <Link
-                    href="/moonbase/tour"
+                    href="/moonbase/tour#power"
                     className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
                   >
                     <PlayIcon className="h-3.5 w-3.5" />
@@ -857,7 +857,7 @@ export default function MoonBaseZeroIndex() {
                     racing to land. Each site is a race you can follow and predict.
                   </p>
                   <Link
-                    href="/moonbase/tour"
+                    href="/moonbase/tour#power"
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-300 px-4 py-2.5 text-sm font-bold text-black shadow-[0_0_24px_rgba(103,232,249,0.35)] transition hover:bg-cyan-200"
                   >
                     <PlayIcon className="h-4 w-4" />

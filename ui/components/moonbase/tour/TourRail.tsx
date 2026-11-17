@@ -4,6 +4,7 @@ import {
   TOUR_STOPS,
   type TourStopId,
 } from '@/lib/moonbase-tour/stops'
+import { scrollToStop } from './scrollToStop'
 
 type TourRailProps = {
   active: TourStopId | null
@@ -12,11 +13,7 @@ type TourRailProps = {
 // Where you are on the tour and what is left, down the right edge. Every stop
 // is a link to its own chapter, so the tour doubles as the page's contents.
 export default function TourRail({ active }: TourRailProps) {
-  const go = (id: TourStopId) => {
-    const el = document.querySelector<HTMLElement>(`[data-tour-stop="${id}"]`)
-    if (!el) return
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY, behavior: 'smooth' })
-  }
+  const go = (id: TourStopId) => scrollToStop(id)
 
   return (
     <nav
