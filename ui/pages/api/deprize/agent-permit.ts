@@ -30,8 +30,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { wallet, deprizeId, chainId } = check.request
 
   const mintAddress = mintAddressForChain(chainId)
-  if (!/^0x[a-fA-F0-9]{40}$/.test(mintAddress) || !complianceSignerAddress()) {
-    return res.status(503).json({ allowed: false, error: 'Permits are unavailable' })
+  if (!/^0x[a-fA-F0-9]{40}$/.test(mintAddress)) {
+    console.error('[deprize] agent permit: no mint address for chain', chainId)
+    return res.status(503).json({ allowed: false, error: 'No mint is configured for this chain' })
+  }
+  if (!complianceSignerAddress()) {
+    console.error('[deprize] agent permit: set DEPRIZE_COMPLIANCE_SIGNER_KEY (64 hex characters)')
+    return res.status(503).json({ allowed: false, error: 'Permit signer is not configured' })
   }
 
   const sanctions = await screenWallet(wallet)
