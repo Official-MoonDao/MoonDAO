@@ -1,0 +1,688 @@
+<meta charset="utf-8">
+<title>First Tracks Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: full-bleed 3D view, mission-control HUD pinned to the edges, overlays centred. Single dark look on purpose. */
+:root{
+  --void:#04060b; --panel:rgba(9,12,20,.84); --line:rgba(190,205,230,.16);
+  --fg:#e9edf5; --muted:#8e97ab; --signal:#8fd3ff; --good:#86e3a8; --warn:#ffbf5e; --bad:#ff7a6b;
+  --display:"Chakra Petch",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--fg);font-family:var(--body)}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.lbl{font:500 10px/1 var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+#hud{position:fixed;inset:0;pointer-events:none;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;justify-content:space-between}
+#hud[hidden]{display:none!important}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.tl,.tc{display:flex;flex-direction:column;gap:5px}
+.tc{align-items:center;position:absolute;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px))}
+#mis{font:600 14px/1 var(--display);letter-spacing:.06em}
+#timer{font:700 34px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+#timer.low{color:var(--warn)}
+#age{font:500 11px/1 var(--mono);color:var(--signal)}
+#map{width:150px;height:150px;border-radius:50%;background:rgba(6,9,16,.72);border:1px solid var(--line)}
+.bottom{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.val{font:600 16px/1 var(--display);font-variant-numeric:tabular-nums}
+.bar{position:relative;height:8px;width:150px;max-width:100%;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;width:0;background:var(--good);border-radius:4px}
+#sinkBar{background:var(--warn)}
+#wire{position:relative;width:190px;max-width:100%;height:14px;border-top:1px dashed var(--line);margin-top:6px}
+#wire span{position:absolute;top:-5px;width:9px;height:9px;margin-left:-4px;border-radius:50%;background:var(--signal);box-shadow:0 0 8px var(--signal)}
+.ends{display:flex;justify-content:space-between;font:500 9px/1 var(--mono);color:var(--muted);letter-spacing:.1em}
+#hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));font:500 13px/1.3 var(--mono);color:var(--signal);text-align:center;pointer-events:none;text-shadow:0 1px 4px #000;padding-inline:16px;width:max-content;max-width:90vw}
+#toasts{position:fixed;left:50%;top:32%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(90vw,520px)}
+.toast{font:600 17px/1.25 var(--display);letter-spacing:.03em;padding:8px 14px;border-radius:6px;background:var(--panel);border:1px solid var(--line);text-align:center;transition:opacity .5s}
+.toast.good{color:var(--good)} .toast.warn{color:var(--warn)} .toast.bad{color:var(--bad)} .toast.info{color:var(--signal)}
+#keys{font:500 11px/1.5 var(--mono);color:var(--muted);text-align:right;margin-left:auto}
+#touch{position:fixed;inset:auto 0 0 0;display:none;justify-content:space-between;padding:0 max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));pointer-events:none}
+#touch .pad{display:flex;gap:10px;pointer-events:auto}
+#touch .pad.v{flex-direction:column}
+#touch button{width:64px;height:64px;border-radius:50%;border:1px solid var(--line);background:rgba(12,16,26,.7);color:var(--fg);font:600 22px/1 var(--display);touch-action:none;user-select:none;-webkit-user-select:none}
+#touch button.on{background:rgba(143,211,255,.25);border-color:var(--signal)}
+@media (pointer:coarse){#touch{display:flex}#keys{display:none}}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,rgba(4,6,11,.35),rgba(4,6,11,.88));padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:24px;max-width:560px;width:100%;display:flex;flex-direction:column;gap:16px;margin:auto}
+h1{font:700 44px/1 var(--display);letter-spacing:.02em;margin:0;text-wrap:balance}
+h2{font:700 26px/1.1 var(--display);margin:0;text-wrap:balance}
+.lead{font-size:15px;line-height:1.55;color:#c9d0de;margin:0;max-width:62ch}
+.lead b{color:var(--fg)}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.facts div{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.facts strong{font:600 18px/1.1 var(--display)}
+.facts span{font-size:12px;color:var(--muted);line-height:1.35}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{flex:1 1 140px;font:600 15px/1 var(--display);letter-spacing:.05em;padding:14px 16px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--fg);cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left}
+.btn small{font:400 12px/1.3 var(--body);color:var(--muted);letter-spacing:0}
+.btn.primary{background:rgba(143,211,255,.14);border-color:rgba(143,211,255,.5)}
+.btn:hover{border-color:var(--signal)}
+.btn:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.ctrl{font:400 12px/1.5 var(--mono);color:var(--muted)}
+#result .card{max-width:920px;flex-direction:row;flex-wrap:wrap;align-items:flex-start}
+#shotWrap{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:8px}
+#shot{width:100%;aspect-ratio:1;max-width:100%;border-radius:6px;border:1px solid var(--line);background:#111}
+#resInfo{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:14px}
+#score{font:700 56px/1 var(--display);font-variant-numeric:tabular-nums}
+#verdict{font-size:15px;line-height:1.45;color:#d6dce8;margin:0}
+table{width:100%;border-collapse:collapse;font:400 13px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+td{padding:6px 0;border-bottom:1px solid var(--line)} td:last-child{text-align:right;color:var(--fg)} td:first-child{color:#b7bfcf}
+tr.total td{border-bottom:0;font-weight:500;color:var(--fg)}
+#best{font:400 12px/1.3 var(--mono);color:var(--muted)}
+@media (max-width:560px){
+  h1{font-size:36px} #map{width:104px;height:104px} #timer{font-size:28px}
+  .bar{width:110px} #wire{width:120px} .facts{grid-template-columns:1fr}
+  .tc{top:calc(56px + env(safe-area-inset-top,0px))}
+  #hint{bottom:calc(196px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<canvas id="gl"></canvas>
+
+<div id="hud" hidden>
+  <div class="top">
+    <div class="tl"><span class="lbl">Mission</span><span id="mis">#1</span></div>
+    <div class="tc"><span class="lbl">Comms window</span><span id="timer">1:00</span><span id="age">Picture is 1.3 s old</span></div>
+    <canvas id="map" width="300" height="300"></canvas>
+  </div>
+  <div class="bottom">
+    <div class="stat"><span class="lbl">First tracks</span><span class="val" id="odo">0.0 / 10 m</span><div class="bar"><i id="odoBar"></i></div></div>
+    <div class="stat"><span class="lbl">Science</span><span class="val" id="sci">0 / 5</span></div>
+    <div class="stat"><span class="lbl">Battery</span><span class="val" id="batt">100%</span><div class="bar"><i id="battBar" style="width:100%;background:var(--signal)"></i></div></div>
+    <div class="stat"><span class="lbl">Wheel sinkage</span><div class="bar"><i id="sinkBar"></i></div></div>
+    <div class="stat"><span class="lbl">Commands in flight · <span id="lag">1.3 s</span></span><div id="wire"></div><div class="ends"><span>EARTH</span><span>MOON</span></div></div>
+    <div id="keys">W / ↑ forward · S / ↓ reverse<br>A D / ← → steer</div>
+  </div>
+</div>
+<div id="hint"></div>
+<div id="toasts"></div>
+
+<div id="touch">
+  <div class="pad"><button data-k="left" aria-label="Steer left">◀</button><button data-k="right" aria-label="Steer right">▶</button></div>
+  <div class="pad v"><button data-k="up" aria-label="Forward">▲</button><button data-k="down" aria-label="Reverse">▼</button></div>
+</div>
+
+<div id="start" class="overlay">
+  <div class="card">
+    <span class="lbl" id="startMis">Prototype · Mission #1</span>
+    <h1>First Tracks</h1>
+    <p class="lead">Drive a commercial rover off its lander and across the day's landing site. <b>Every command takes 1.3 seconds to reach the Moon, and every picture takes 1.3 seconds to come back.</b> You are always steering where the rover was.</p>
+    <div class="facts">
+      <div><strong>10 m</strong><span>Driven after leaving the lander wins the prize. Get there first.</span></div>
+      <div><strong>8 targets</strong><span>Stop in a ring for a second to image it. Each one adds time to the clock.</span></div>
+      <div><strong>Clock</strong><span>Starts when you're off the lander. When it runs out, an orbiter photographs your tracks.</span></div>
+    </div>
+    <p class="ctrl">Rocks taller than the wheels stop you. Steep crater walls tip you. Dark, smooth ground is soft: cross it straight, don't turn in it, back out if you start sinking. Every start, stop, spin on the spot and wasted metre drains the battery, and the score knows a better line than yours.</p>
+    <div class="row">
+      <button class="btn primary" id="goEasy">EASY<small>0.5 s each way, and a ghost shows where the rover will be. 45 s on the clock, +12 s per target.</small></button>
+      <button class="btn" id="goPro">PRO<small>The real 1.3 s each way, no ghost, lower sun. 90 s, +15 s per target. Score ×1.25.</small></button>
+    </div>
+  </div>
+</div>
+
+<div id="result" class="overlay" hidden>
+  <div class="card">
+    <div id="shotWrap"><img id="shot" alt="Orbiter view of the landing site with the rover's tracks"><span class="lbl">Orbiter pass · the independent check the prize needs</span></div>
+    <div id="resInfo">
+      <span class="lbl" id="resLbl">Mission #1 · Easy</span>
+      <h2 id="resTitle">Tracks confirmed</h2>
+      <div id="score">0</div>
+      <p id="verdict"></p>
+      <table id="parts"></table>
+      <span id="best"></span>
+      <div class="row">
+        <button class="btn primary" id="again">DRIVE AGAIN<small>Same site, same mode. R also works.</small></button>
+        <button class="btn" id="swap">TRY PRO<small>Switch modes.</small></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+// ---------------- seed: same site for everyone each UTC day (Touchdown's epoch) ----------------
+const EPOCH = Date.UTC(2026, 10, 11), DAY = 86400000
+const qs = new URLSearchParams(location.search)
+const MISSION = Math.max(1, +qs.get('mission') || Math.floor((Date.now() - EPOCH) / DAY) + 1)
+function hash32(n){let h=(n|0)^0x9e3779b9;h=Math.imul(h^(h>>>16),0x85ebca6b);h=Math.imul(h^(h>>>13),0xc2b2ae35);return (h^(h>>>16))>>>0}
+function mulberry32(seed){let a=seed>>>0;return()=>{a=(a+0x6d2b79f5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+const SEED = hash32(MISSION * 7919 + 0x7d0) ^ hash32(0xf1257)
+const rng = mulberry32(SEED)
+
+const MODES = {
+  // window: seconds on the clock once off the lander; bonus: seconds each imaged target adds
+  easy: { id:'easy', label:'Easy', up:0.5, down:0.5, ghost:true, sunBonus:5, mult:1, window:45, bonus:12 },
+  pro:  { id:'pro',  label:'Pro',  up:1.3, down:1.3, ghost:false, sunBonus:0, mult:1.25, window:90, bonus:15 },
+}
+let mode = MODES.easy
+
+// ---------------- constants ----------------
+const DT = 1/60
+const VMAX = 1.0, TURN = 0.55, HALF_W = 0.45, HALF_L = 0.5, COLL_R = 0.58, CLEAR = 0.2
+const TIP_ROLL = 25*Math.PI/180, TIP_PITCH = 33*Math.PI/180
+const DECK_Y = 1.2
+const DECK = {x0:-1.6,x1:1.6,z0:-0.5,z1:1.3}, BODY = {x0:-1.6,x1:1.6,z0:-2.9,z1:-0.5}, RAMP = {x0:-0.8,x1:0.8,z0:1.3,z1:4.4}
+const clamp=(v,a,b)=>v<a?a:v>b?b:v
+const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)}
+const inRect=(r,x,z,p=0)=>x>=r.x0-p&&x<=r.x1+p&&z>=r.z0-p&&z<=r.z1+p
+
+// ---------------- terrain ----------------
+function makeNoise(r){const P=new Uint8Array(512),p=[...Array(256).keys()];for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[p[i],p[j]]=[p[j],p[i]]}for(let i=0;i<512;i++)P[i]=p[i&255];const G=new Float32Array(256).map(()=>r()*2-1);
+  const v=(x,z)=>G[P[(x&255)+P[z&255]]]
+  return (x,z)=>{const xi=Math.floor(x),zi=Math.floor(z),xf=x-xi,zf=z-zi,u=xf*xf*(3-2*xf),w=zf*zf*(3-2*zf);const a=v(xi,zi),b=v(xi+1,zi),c=v(xi,zi+1),d=v(xi+1,zi+1);return a+(b-a)*u+(c-a)*w+(a-b-c+d)*u*w}}
+const N = makeNoise(rng)
+
+const craters = []
+for (let tries=0; craters.length<16 && tries<400; tries++) {
+  const r = 1.5 + 7.5*rng()**2, a = rng()*Math.PI*2, d = 8 + rng()*44
+  const x = Math.sin(a)*d, z = Math.cos(a)*d
+  if (Math.hypot(x, z-2) < r + 9) continue
+  if (craters.some(c => Math.hypot(c.x-x, c.z-z) < (c.r+r)*0.9)) continue
+  craters.push({x, z, r, D:0.22*r, R:0.07*r, reach2:(1.9*r)**2})
+}
+function ground(x,z){
+  let h = 0.55*N(x/17,z/17) + 0.22*N(x/6.3+11,z/6.3-7) + 0.06*N(x/2.1-3,z/2.1+5)
+  h *= smooth(5, 13, Math.hypot(x, z+0.7))
+  for (const c of craters){const dx=x-c.x,dz=z-c.z,d2=dx*dx+dz*dz;if(d2>c.reach2)continue;const d=Math.sqrt(d2)/c.r;h+=d<1?c.D*(d*d-1)+c.R:c.R*Math.exp(-(((d-1)/0.35)**2))}
+  return h
+}
+function landerH(x,z){ if(inRect(DECK,x,z)) return DECK_Y; if(inRect(RAMP,x,z)) return DECK_Y*(1-(z-RAMP.z0)/(RAMP.z1-RAMP.z0)); return null }
+function driveH(eg,x,z){ const g=ground(x,z); if(eg) return g; const l=landerH(x,z); return l===null?g:Math.max(l,g) }
+
+// targets first so soft ground and rocks can be placed around them
+// A web of targets: each one 9-15 m from one already placed, so there is a route to plan.
+const N_TARGETS = 8
+const targets = []
+for (let k=0; targets.length<N_TARGETS && k<2000; k++){
+  const from = targets.length ? targets[rng()<0.6 ? targets.length-1 : Math.floor(rng()*targets.length)] : {x:0,z:4.9}
+  const a = targets.length ? rng()*Math.PI*2 : (rng()*2-1)*1.2, d = targets.length ? 9+rng()*6 : 10+rng()*3
+  const x = from.x + Math.sin(a)*d, z = from.z + Math.cos(a)*d
+  if (Math.hypot(x,z) > 48 || Math.hypot(x,z-2) < 9) continue
+  if (craters.some(c=>Math.hypot(c.x-x,c.z-z)<c.r*1.15+1.5)) continue
+  if (targets.some(t=>Math.hypot(t.x-x,t.z-z)<8)) continue
+  targets.push({x,z,done:false,hold:0})
+}
+const softs = []
+for (let i=0;i<10;i++){
+  let x,z
+  const r = 2.5 + rng()*3.5
+  if (i<5 && targets[i]) { const f=0.3+rng()*0.4, t=targets[i]; x=t.x*f+(rng()-0.5)*4; z=4.4+(t.z-4.4)*f+(rng()-0.5)*4 }
+  else { const a=rng()*Math.PI*2, d=10+rng()*36; x=Math.sin(a)*d; z=Math.cos(a)*d }
+  if (Math.hypot(x, z-5) < r+5) continue
+  if (targets.some(t=>Math.hypot(t.x-x,t.z-z)<r+1.2)) continue
+  softs.push({x,z,r})
+}
+function softAt(x,z){ let s=0; for(const p of softs){ const d=Math.hypot(x-p.x,z-p.z)*(1+0.18*N(x*0.7+40,z*0.7)); if(d<p.r) s=Math.max(s,1-smooth(p.r*0.55,p.r,d)) } return s }
+
+// rocks: hazards collide, small ones are driven over, pebbles are looks only
+const rocks = [], grid = new Map(), CELL = 4
+const keyOf=(x,z)=>Math.floor(x/CELL)+','+Math.floor(z/CELL)
+function okRock(x,z,h){
+  if (Math.abs(x)>55||Math.abs(z)>55) return false
+  if (Math.hypot(x,z-1) < (h>CLEAR?6:3.5)) return false
+  if (h>CLEAR && Math.abs(x)<2.2 && z>0 && z<11) return false
+  if (h>CLEAR && targets.some(t=>Math.hypot(t.x-x,t.z-z)<2.6)) return false
+  return true
+}
+function addRock(x,z,h,r){ if(!okRock(x,z,h)) return; const k={x,z,h,r,y:ground(x,z),rot:rng()*6.28,sq:0.75+rng()*0.4}; rocks.push(k); if(h>CLEAR){const key=keyOf(x,z);(grid.get(key)||grid.set(key,[]).get(key)).push(k)} }
+function rockSpot(nearRim){
+  if (nearRim && craters.length){ const c=craters[Math.floor(rng()**0.6*craters.length)]; const a=rng()*6.283, d=c.r*(1+rng()*0.7); return [c.x+Math.sin(a)*d, c.z+Math.cos(a)*d] }
+  const a=rng()*6.283, d=Math.sqrt(rng())*52; return [Math.sin(a)*d, Math.cos(a)*d]
+}
+for (let i=0;i<175;i++){ const [x,z]=rockSpot(rng()<0.45); const h=0.22+rng()**1.6*0.4; addRock(x,z,h,h*(1.1+rng()*0.5)) }
+for (let i=0;i<18;i++){ const [x,z]=rockSpot(rng()<0.5); const h=0.7+rng()*0.8; addRock(x,z,h,h*1.2) }
+for (let i=0;i<480;i++){ const [x,z]=rockSpot(rng()<0.3); const h=0.05+rng()*0.12; addRock(x,z,h,h*1.4) }
+
+// ---------------- par: the best safe route for a leg, kept hidden from the player ----------------
+// Grid A* round rocks taller than the wheels, the lander and slopes steep enough to tip on,
+// then string-pulled so the line is as short as a perfect driver could make it.
+const PG = 0.5, PH = 50, PN = Math.round(2*PH/PG)
+const pBlock = new Uint8Array(PN*PN), pSoft = new Float32Array(PN*PN)
+const cellX = i => -PH + (i+0.5)*PG
+for (let j=0;j<PN;j++) for (let i=0;i<PN;i++){
+  const x=cellX(i), z=cellX(j), k=i+j*PN, e=0.3
+  const gx=(ground(x+e,z)-ground(x-e,z))/(2*e), gz=(ground(x,z+e)-ground(x,z-e))/(2*e)
+  if (Math.hypot(gx,gz) > 0.42) pBlock[k]=1
+  if (inRect(DECK,x,z,0.6)||inRect(BODY,x,z,0.6)||inRect(RAMP,x,z,0.6)) pBlock[k]=1
+  pSoft[k]=softAt(x,z)
+}
+for (const list of grid.values()) for (const r of list){
+  const m=COLL_R+r.r*0.8+0.05, i0=Math.floor((r.x-m+PH)/PG), i1=Math.floor((r.x+m+PH)/PG), j0=Math.floor((r.z-m+PH)/PG), j1=Math.floor((r.z+m+PH)/PG)
+  for(let j=Math.max(0,j0);j<=Math.min(PN-1,j1);j++)for(let i=Math.max(0,i0);i<=Math.min(PN-1,i1);i++) if(Math.hypot(cellX(i)-r.x,cellX(j)-r.z)<m) pBlock[i+j*PN]=1
+}
+const toCell = v => clamp(Math.floor((v+PH)/PG),0,PN-1)
+function blockedAt(x,z){ return pBlock[toCell(x)+toCell(z)*PN]===1 }
+function clearLine(ax,az,bx,bz){ const d=Math.hypot(bx-ax,bz-az), n=Math.ceil(d/0.2); for(let i=1;i<n;i++){const f=i/n; if(blockedAt(ax+(bx-ax)*f,az+(bz-az)*f)) return false} return true }
+function parPath(ax,az,bx,bz){
+  const s0=toCell(ax)+toCell(az)*PN, g0=toCell(bx)+toCell(bz)*PN
+  const gi=g0%PN, gj=(g0/PN)|0, H=k=>{const di=Math.abs(k%PN-gi),dj=Math.abs(((k/PN)|0)-gj);return (Math.max(di,dj)+0.414*Math.min(di,dj))*PG}
+  const gS=new Float32Array(PN*PN).fill(Infinity), came=new Int32Array(PN*PN).fill(-1), closed=new Uint8Array(PN*PN)
+  const heap=[]; const push=(k,f)=>{heap.push([f,k]);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p}}
+  const pop=()=>{const top=heap[0],end=heap.pop();if(heap.length){heap[0]=end;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m}}return top}
+  gS[s0]=0; push(s0,H(s0))
+  const free=k=>k===s0||k===g0||!pBlock[k]
+  while(heap.length){ const [,k]=pop(); if(closed[k]) continue; closed[k]=1; if(k===g0) break
+    const i=k%PN, j=(k/PN)|0
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){ if(!di&&!dj) continue; const ni=i+di,nj=j+dj; if(ni<0||nj<0||ni>=PN||nj>=PN) continue
+      const n=ni+nj*PN; if(!free(n)||closed[n]) continue
+      if(di&&dj&&(!free(i+di+j*PN)||!free(i+(j+dj)*PN))) continue
+      const c=gS[k]+(di&&dj?1.414:1)*PG*(1+1.2*pSoft[n]); if(c<gS[n]){gS[n]=c;came[n]=k;push(n,c+H(n))} } }
+  if(came[g0]<0&&g0!==s0) return [[ax,az],[bx,bz]]
+  const cells=[]; for(let k=g0;k!==-1;k=came[k]){cells.push([cellX(k%PN),cellX((k/PN)|0)]); if(k===s0) break}
+  cells.reverse(); cells[0]=[ax,az]; cells[cells.length-1]=[bx,bz]
+  const out=[cells[0]]; let a=0
+  while(a<cells.length-1){ let b=cells.length-1; while(b>a+1&&!clearLine(cells[a][0],cells[a][1],cells[b][0],cells[b][1])) b--; out.push(cells[b]); a=b }
+  return out
+}
+
+// ---------------- battery ----------------
+const E_IDLE=0.6, E_M=1.0, E_CLIMB=4, E_SPIN=1.6, E_ROLLTURN=0.3, E_ACC=1.5, E_STALL=2.0, BATTERY=420
+// Energy a perfect driver would spend on a par leg: one start, rolling turns, one stop to image.
+function parEnergy(path, headingIn){
+  let e=VMAX*E_ACC + 1.0*E_IDLE, turn=0, h=headingIn
+  for(let i=1;i<path.length;i++){ const [ax,az]=path[i-1],[bx,bz]=path[i], L=Math.hypot(bx-ax,bz-az), n=Math.max(1,Math.ceil(L/0.25))
+    const hd=Math.atan2(bx-ax,bz-az); if(h!=null){let d=hd-h;d=Math.atan2(Math.sin(d),Math.cos(d));turn+=Math.abs(d)} h=hd
+    for(let k=0;k<n;k++){ const f0=k/n,f1=(k+1)/n, x0=ax+(bx-ax)*f0,z0=az+(bz-az)*f0,x1=ax+(bx-ax)*f1,z1=az+(bz-az)*f1, ds=L/n, so=softAt((x0+x1)/2,(z0+z1)/2)
+      e+=ds*E_M*(1+2*so) + Math.max(0,ground(x1,z1)-ground(x0,z0))*E_CLIMB + ds/(VMAX*(1-0.5*so))*E_IDLE } }
+  e+=turn/TURN*E_ROLLTURN
+  return {e,h}
+}
+
+// daily light
+const SUN_EL = 5 + rng()*7, SUN_AZ = rng()*Math.PI*2
+// The rover is parked across the deck, not facing the ramp: lining up is the first job.
+const START_H = (rng()<0.5?-1:1)*(1.0+rng()*0.9)
+
+// ---------------- three.js scene ----------------
+const canvas = document.getElementById('gl')
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true})
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75))
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x020306)
+const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 600)
+
+const amb = new THREE.AmbientLight(0x4a5670, 0.22); scene.add(amb)
+const sun = new THREE.DirectionalLight(0xfff6ea, 1.7)
+sun.castShadow = true; sun.shadow.mapSize.set(2048,2048)
+Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:220})
+sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.04
+scene.add(sun, sun.target)
+let sunDir = new THREE.Vector3()
+function setSun(){ const el=(SUN_EL+mode.sunBonus)*Math.PI/180; sunDir.set(Math.sin(SUN_AZ)*Math.cos(el), Math.sin(el), Math.cos(SUN_AZ)*Math.cos(el)) }
+
+// sky
+{ const g=new THREE.BufferGeometry(), n=1800, p=new Float32Array(n*3); const sr=mulberry32(SEED^99)
+  for(let i=0;i<n;i++){const u=sr()*2-1,t=sr()*6.283,s=Math.sqrt(1-u*u);p[i*3]=s*Math.cos(t)*400;p[i*3+1]=Math.abs(u)*400+5;p[i*3+2]=s*Math.sin(t)*400}
+  g.setAttribute('position',new THREE.BufferAttribute(p,3)); scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xcfd8ff,size:1.1,sizeAttenuation:false})))
+  const earth=new THREE.Mesh(new THREE.SphereGeometry(7,32,16),new THREE.MeshBasicMaterial({color:0x5d8fd6})); const ea=SUN_AZ+2.2
+  earth.position.set(Math.sin(ea)*300,95,Math.cos(ea)*300); scene.add(earth); var earthMesh=earth }
+
+// ground mesh
+{ const S=120, seg=300, g=new THREE.PlaneGeometry(S,S,seg,seg); g.rotateX(-Math.PI/2)
+  const pos=g.attributes.position, col=new Float32Array(pos.count*3)
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,ground(x,z));const s=softAt(x,z)
+    let c=0.47+0.055*N(x/1.7+9,z/1.7)*(1-0.7*s)+0.03*N(x/0.55,z/0.55+3)*(1-s); c*=1-0.17*s
+    col[i*3]=c;col[i*3+1]=c*0.985;col[i*3+2]=c*0.96}
+  g.setAttribute('color',new THREE.BufferAttribute(col,3)); g.computeVertexNormals()
+  const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true})); m.receiveShadow=true; m.castShadow=true; scene.add(m) }
+
+// rocks
+{ const geo=new THREE.DodecahedronGeometry(1,0), mat=new THREE.MeshLambertMaterial({color:0x8a8a88,flatShading:true})
+  const im=new THREE.InstancedMesh(geo,mat,rocks.length), o=new THREE.Object3D()
+  rocks.forEach((k,i)=>{o.position.set(k.x,k.y-k.h*0.25,k.z);o.rotation.set(k.rot*0.3,k.rot,k.rot*0.2);o.scale.set(k.r,k.h,k.r*k.sq);o.updateMatrix();im.setMatrixAt(i,o.matrix)})
+  im.castShadow=true; im.receiveShadow=true; scene.add(im)
+  const pr=mulberry32(SEED^7), n=3200, pm=new THREE.InstancedMesh(geo,mat,n)
+  for(let i=0;i<n;i++){const a=pr()*6.283,d=Math.sqrt(pr())*55,x=Math.sin(a)*d,z=Math.cos(a)*d,s=0.02+pr()**2*0.05;o.position.set(x,ground(x,z),z);o.rotation.set(pr()*3,pr()*3,0);o.scale.set(s,s*0.7,s);o.updateMatrix();pm.setMatrixAt(i,o.matrix)}
+  pm.castShadow=true; scene.add(pm) }
+
+// lander
+const lander = new THREE.Group(); scene.add(lander)
+{ const foil=new THREE.MeshLambertMaterial({color:0xc9a45a}), white=new THREE.MeshLambertMaterial({color:0xd8dde4}), dark=new THREE.MeshLambertMaterial({color:0x2a2f38})
+  const add=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;lander.add(m);return m}
+  add(new THREE.BoxGeometry(3.4,0.14,4.4),white,0,DECK_Y-0.07,-0.8)
+  add(new THREE.BoxGeometry(3.2,2.2,2.4),foil,0,DECK_Y+1.1,-1.7)
+  add(new THREE.CylinderGeometry(0.55,0.75,0.9,16),dark,0,DECK_Y-0.5,-1.0)
+  add(new THREE.BoxGeometry(3.0,1.0,1.8),foil,0,DECK_Y-0.6,-1.4)
+  const panel=add(new THREE.BoxGeometry(3.0,0.05,1.6),new THREE.MeshLambertMaterial({color:0x1b2a4a}),0,DECK_Y+2.3,-1.7); panel.rotation.x=0.15
+  for(const [sx,sz] of [[1,1],[-1,1],[1,-1],[-1,-1]]){const leg=add(new THREE.CylinderGeometry(0.06,0.06,2.0,6),white,sx*2.0,0.6,-0.8+sz*2.3);leg.rotation.z=sx*0.45;leg.rotation.x=-sz*0.35;add(new THREE.CylinderGeometry(0.35,0.4,0.08,12),white,sx*2.4,0.04,-0.8+sz*2.75)}
+  const len=Math.hypot(RAMP.z1-RAMP.z0,DECK_Y), ramp=add(new THREE.BoxGeometry(1.6,0.05,len),new THREE.MeshLambertMaterial({color:0x9aa3ad}),0,DECK_Y/2,(RAMP.z0+RAMP.z1)/2)
+  ramp.rotation.x=Math.atan2(DECK_Y,RAMP.z1-RAMP.z0)
+  for(const sx of [-0.8,0.8]){const rail=add(new THREE.BoxGeometry(0.06,0.12,len),dark,sx,DECK_Y/2+0.06,(RAMP.z0+RAMP.z1)/2);rail.rotation.x=ramp.rotation.x} }
+
+// rover
+function buildRover(ghost){
+  const g=new THREE.Group()
+  const mk=(c)=>ghost?new THREE.MeshBasicMaterial({color:0x8fd3ff,transparent:true,opacity:0.22,depthWrite:false}):new THREE.MeshLambertMaterial({color:c})
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.3,1.0),mk(0xe6e9ee)); body.position.y=0.42; g.add(body)
+  if(!ghost){
+    const foil=new THREE.Mesh(new THREE.BoxGeometry(0.74,0.16,0.9),mk(0xd2a650)); foil.position.y=0.34; g.add(foil)
+    const panel=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.03,0.95),mk(0x1d2c52)); panel.position.y=0.59; g.add(panel)
+    const mast=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.5,6),mk(0xcfd4da)); mast.position.set(0.22,0.84,0.38); g.add(mast)
+    const head=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.1,0.1),mk(0x30363f)); head.position.set(0.22,1.1,0.42); g.add(head)
+    const ant=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.02,0.06,12),mk(0xe6e9ee)); ant.position.set(-0.22,0.72,-0.3); g.add(ant)
+  }
+  const wg=new THREE.CylinderGeometry(0.2,0.2,0.14,14); wg.rotateZ(Math.PI/2)
+  g.wheels=[]
+  for(const [x,z] of [[HALF_W,HALF_L],[-HALF_W,HALF_L],[HALF_W,-HALF_L],[-HALF_W,-HALF_L]]){const w=new THREE.Mesh(wg,mk(0x3a3f47));w.position.set(x,0.2,z);g.add(w);g.wheels.push(w)}
+  g.traverse(o=>{if(o.isMesh){o.castShadow=!ghost;o.receiveShadow=!ghost}})
+  g.rotation.order='YXZ'
+  return g
+}
+const rover = buildRover(false), ghost = buildRover(true); scene.add(rover, ghost)
+function pose(obj,st){ obj.position.set(st.x,st.y,st.z); obj.rotation.set(-st.p,st.h,-st.r); if(obj.wheels) for(const w of obj.wheels) w.rotation.x=st.wr }
+
+// science beacons
+const beaconMat = new THREE.MeshBasicMaterial({color:0x8fd3ff,transparent:true,opacity:0.22,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})
+for (const t of targets){
+  const grp=new THREE.Group(), gy=ground(t.x,t.z)
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,9,12,1,true),beaconMat.clone()); beam.position.y=4.5
+  const ring=new THREE.Mesh(new THREE.RingGeometry(1.35,1.6,48),new THREE.MeshBasicMaterial({color:0x8fd3ff,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.y=0.06
+  grp.add(beam,ring); grp.position.set(t.x,gy,t.z); scene.add(grp); t.mesh=grp; t.beam=beam; t.ring=ring
+}
+
+// tracks: two strips of quads laid behind the wheels as the picture shows them
+const MAXQ = 9000
+const tPos = new Float32Array(MAXQ*4*3), tIdx = new Uint32Array(MAXQ*6)
+for(let q=0;q<MAXQ;q++){const b=q*4;tIdx.set([b,b+2,b+1,b+1,b+2,b+3],q*6)}
+const tGeo = new THREE.BufferGeometry(); tGeo.setAttribute('position',new THREE.BufferAttribute(tPos,3)); tGeo.setIndex(new THREE.BufferAttribute(tIdx,1)); tGeo.setDrawRange(0,0)
+const tracks = new THREE.Mesh(tGeo,new THREE.MeshLambertMaterial({color:0x2c2c2a,transparent:true,opacity:0.62,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}))
+tracks.frustumCulled=false; tracks.receiveShadow=true; scene.add(tracks)
+let nQ=0, prevW=null, trackPts=[], tenMark=null
+function quad(ax,az,bx,bz,w){ if(nQ>=MAXQ) return; const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1,px=-dz/l*w/2,pz=dx/l*w/2,o=nQ*12
+  const ay=ground(ax,az)+0.02, by=ground(bx,bz)+0.02
+  tPos.set([ax+px,ay,az+pz, ax-px,ay,az-pz, bx+px,by,bz+pz, bx-px,by,bz-pz],o); nQ++ }
+function depositTracks(ds){
+  if(!ds.eg) return
+  const fx=Math.sin(ds.h),fz=Math.cos(ds.h),rx=-Math.cos(ds.h),rz=Math.sin(ds.h)
+  const L=[ds.x-rx*HALF_W-fx*0.1,ds.z-rz*HALF_W-fz*0.1], R=[ds.x+rx*HALF_W-fx*0.1,ds.z+rz*HALF_W-fz*0.1]
+  if(!prevW){prevW={L,R,x:ds.x,z:ds.z};return}
+  if(Math.hypot(ds.x-prevW.x,ds.z-prevW.z)<0.12) return
+  quad(prevW.L[0],prevW.L[1],L[0],L[1],0.15); quad(prevW.R[0],prevW.R[1],R[0],R[1],0.15)
+  prevW={L,R,x:ds.x,z:ds.z}; trackPts.push([ds.x,ds.z])
+  if(!tenMark && ds.odo>=10) tenMark=[ds.x,ds.z]
+  tGeo.attributes.position.needsUpdate=true; tGeo.setDrawRange(0,nQ*6)
+}
+
+// ---------------- simulation ----------------
+let s, cmds, hist, events, wall, phase='idle', ghostOn=false
+function freshState(){ return {t:0,x:0,z:0.55,h:START_H,windowEnd:Infinity,v:0,y:DECK_Y,p:0,r:0,wr:0,odo:0,eg:false,sink:0,peakSink:0,bumps:0,lastBump:-9,tipT:0,status:'rolling',cause:'',endT:0,energy:0,legs:[],legOdo:0,legE:0,legFrom:[0,5.2]} }
+function cmdAt(t){ for(let i=cmds.length-1;i>=0;i--) if(cmds[i].t<=t) return cmds[i]; return cmds[0] }
+function emit(text,kind){ events.push({t:s.t,text,kind,shown:false}) }
+
+function wheelPose(st){
+  const fx=Math.sin(st.h),fz=Math.cos(st.h),rx=-Math.cos(st.h),rz=Math.sin(st.h)
+  const hh=(a,b)=>driveH(st.eg,st.x+fx*a+rx*b,st.z+fz*a+rz*b)
+  const fr=hh(HALF_L,HALF_W),fl=hh(HALF_L,-HALF_W),br=hh(-HALF_L,HALF_W),bl=hh(-HALF_L,-HALF_W)
+  st.y=(fr+fl+br+bl)/4; st.p=Math.atan2((fr+fl)-(br+bl),4*HALF_L); st.r=Math.atan2((fr+br)-(fl+bl),4*HALF_W)
+}
+
+function step(st,cmd,dt,live){
+  if(st.status!=='rolling') return
+  st.t+=dt
+  const v0=st.v, y0=st.y
+  const fx=Math.sin(st.h),fz=Math.cos(st.h)
+  const soft=st.eg?softAt(st.x,st.z):0
+  const e=0.4, grade=(driveH(st.eg,st.x+fx*e,st.z+fz*e)-driveH(st.eg,st.x-fx*e,st.z-fz*e))/(2*e)
+  let target=cmd.th>=0?cmd.th*VMAX:cmd.th*VMAX*0.6
+  const climb=Math.sign(target)*grade
+  if(climb>0) target*=clamp(1-climb*1.6,0.2,1)
+  target*=(1-0.5*soft)*(1-0.6*st.sink)
+  const a=Math.abs(target)>Math.abs(st.v)?0.9:1.6
+  st.v+=clamp(target-st.v,-a*dt,a*dt)
+  st.h-=cmd.st*TURN*(1-0.3*soft)*dt
+  let nx=st.x+Math.sin(st.h)*st.v*dt, nz=st.z+Math.cos(st.h)*st.v*dt
+  // the lander itself
+  const blockLander = st.eg ? (inRect(DECK,nx,nz,0.55)||inRect(BODY,nx,nz,0.55)||inRect(RAMP,nx,nz,0)) :inRect(BODY,nx,nz,0.55)
+  if(blockLander||Math.abs(nx)>56||Math.abs(nz)>56){ nx=st.x; nz=st.z; if(Math.abs(st.v)>0.15&&live&&st.t-st.lastBump>0.8){st.bumps++;st.lastBump=st.t;emit('Bumped the lander','warn')} st.v=0 }
+  // rocks taller than the wheels
+  const cx=Math.floor(nx/CELL),cz=Math.floor(nz/CELL)
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const list=grid.get((cx+i)+','+(cz+j));if(!list)continue
+    for(const k of list){const dx=nx-k.x,dz=nz-k.z,d=Math.hypot(dx,dz),m=COLL_R+k.r*0.8
+      if(d<m){ if(live&&Math.abs(st.v)>0.12&&st.t-st.lastBump>0.8){st.bumps++;st.lastBump=st.t;emit(k.h>0.6?'Hit a boulder':'Hit a rock','warn')} st.v*=0.0; nx=k.x+dx/(d||1)*m; nz=k.z+dz/(d||1)*m }}}
+  const moved=Math.hypot(nx-st.x,nz-st.z)*Math.sign(st.v||1)
+  st.x=nx; st.z=nz; st.wr+=moved/0.2
+  if(st.eg) st.odo+=Math.abs(moved)
+  wheelPose(st)
+  // battery: avionics always, plus driving, climbing, scrubbing turns, every start, spinning wheels
+  if(st.eg){
+    let de=E_IDLE*dt + Math.abs(moved)*E_M*(1+2*soft) + Math.max(0,st.y-y0)*E_CLIMB
+    de+=Math.abs(cmd.st)*(Math.abs(st.v)<0.15?E_SPIN:E_ROLLTURN)*dt
+    const gain=Math.abs(st.v)-Math.abs(v0); if(gain>0) de+=gain*E_ACC
+    if(Math.abs(cmd.th)>0.1&&Math.abs(st.v)<0.05) de+=E_STALL*dt
+    st.energy+=de
+    if(st.energy>=BATTERY){ st.status='flat'; st.cause='Battery flat'; if(live) emit('Battery flat. The rover is asleep.','bad'); return }
+  }
+  // soft ground
+  if(st.eg && soft>0.15){
+    if(cmd.th>0.1) st.sink+=soft*(0.045+0.12*Math.abs(cmd.st)+(Math.abs(st.v)<0.1?0.1:0))*dt
+    else if(cmd.th<-0.1) st.sink-=0.2*dt
+    else st.sink-=0.02*dt
+  } else st.sink-=0.3*dt
+  st.sink=clamp(st.sink,0,1); st.peakSink=Math.max(st.peakSink,st.sink)
+  if(st.sink>=1){ st.status='stuck'; st.cause='Wheels dug in'; if(live) emit('Stuck. The wheels dug in.','bad'); return }
+  // tipping
+  if(Math.abs(st.r)>TIP_ROLL||Math.abs(st.p)>TIP_PITCH){ st.tipT+=dt; if(st.tipT>0.2){ st.status='tipped'; st.cause=st.eg?'Tipped over':'Fell off the lander'; if(live) emit(st.eg?'Tipped over':'Off the edge of the lander','bad'); return } } else st.tipT=0
+  // egress
+  if(!st.eg){ const fx2=Math.sin(st.h),fz2=Math.cos(st.h),rx=-Math.cos(st.h),rz=Math.sin(st.h); let off=true
+    for(const [a,b] of [[HALF_L,HALF_W],[HALF_L,-HALF_W],[-HALF_L,HALF_W],[-HALF_L,-HALF_W]]){const x=st.x+fx2*a+rx*b,z=st.z+fz2*a+rz*b;if(inRect(DECK,x,z)||inRect(RAMP,x,z)){off=false;break}}
+    if(off&&st.y<0.3){ st.eg=true; st.clockStart=st.t; st.windowEnd=st.t+mode.window; if(live) emit('Clear of the lander. The clock is running.','info') } }
+  if(live){
+    for(const t of targets){ if(t.done) continue
+      if(Math.hypot(st.x-t.x,st.z-t.z)<1.6&&Math.abs(st.v)<0.06){ t.hold+=dt; if(t.hold>=1){t.done=true;t.doneT=st.t;st.windowEnd+=mode.bonus
+        st.legs.push({from:st.legFrom,to:[t.x,t.z],odo:st.odo-st.legOdo,e:st.energy-st.legE,off:Math.hypot(st.x-t.x,st.z-t.z)})
+        st.legFrom=[t.x,t.z]; st.legOdo=st.odo; st.legE=st.energy;emit('Target imaged · +'+mode.bonus+' s','good')
+        if(targets.every(q=>q.done)){ st.timeLeft=st.windowEnd-st.t; st.status='window'; st.cause='All targets imaged'; emit('All targets imaged!','good') } } } else t.hold=0 }
+    if(st.status!=='rolling') return
+    if(st.eg&&st.odo>=10&&!st.ten){ st.ten=true; emit('10 m. First tracks!','good') }
+    if(st.t>=st.windowEnd){ st.status='window'; st.cause='Comms window closed' }
+  }
+}
+
+function snapshot(st){ return {t:st.t,x:st.x,y:st.y,z:st.z,h:st.h,p:st.p,r:st.r,wr:st.wr,odo:st.odo,eg:st.eg,sink:st.sink} }
+function sample(t){
+  if(t<=hist[0].t) return hist[0]
+  const last=hist[hist.length-1]; if(t>=last.t) return last
+  let lo=0,hi=hist.length-1; while(hi-lo>1){const m=(lo+hi)>>1; if(hist[m].t<=t) lo=m; else hi=m}
+  const a=hist[lo],b=hist[hi],f=(t-a.t)/(b.t-a.t),L=(p,q)=>p+(q-p)*f
+  return {t,x:L(a.x,b.x),y:L(a.y,b.y),z:L(a.z,b.z),h:L(a.h,b.h),p:L(a.p,b.p),r:L(a.r,b.r),wr:L(a.wr,b.wr),odo:L(a.odo,b.odo),eg:b.eg&&a.eg,sink:L(a.sink,b.sink)}
+}
+
+// ---------------- input ----------------
+const keys={up:false,down:false,left:false,right:false}
+const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'}
+addEventListener('keydown',e=>{ const k=KEYMAP[e.code]; if(k){keys[k]=true;e.preventDefault()} if(e.code==='KeyR'&&phase==='done') start(mode) })
+addEventListener('keyup',e=>{ const k=KEYMAP[e.code]; if(k) keys[k]=false })
+addEventListener('blur',()=>{for(const k in keys) keys[k]=false})
+document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k
+  const on=e=>{e.preventDefault();keys[k]=true;b.classList.add('on')}, off=e=>{keys[k]=false;b.classList.remove('on')}
+  b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off); b.addEventListener('pointercancel',off); b.addEventListener('pointerleave',off)})
+let lastTh=0,lastSt=0
+function readInput(){ const th=(keys.up?1:0)-(keys.down?1:0), st=(keys.right?1:0)-(keys.left?1:0)
+  if(th!==lastTh||st!==lastSt){ lastTh=th; lastSt=st; cmds.push({t:wall+mode.up,th,st}) } }
+
+// ---------------- HUD ----------------
+const $=id=>document.getElementById(id)
+const hud=$('hud'), mapC=$('map'), mctx=mapC.getContext('2d'), wire=$('wire')
+const dots=[...Array(16)].map(()=>{const d=document.createElement('span');d.hidden=true;wire.appendChild(d);return d})
+function toast(text,kind){ const el=document.createElement('div'); el.className='toast '+kind; el.textContent=text; $('toasts').appendChild(el)
+  setTimeout(()=>el.style.opacity='0',2200); setTimeout(()=>el.remove(),2800); while($('toasts').children.length>3) $('toasts').firstChild.remove() }
+function drawMap(ds){
+  const W=mapC.width, c=W/2, R=c-6, sc=R/32, fx=Math.sin(ds.h),fz=Math.cos(ds.h),rx=-Math.cos(ds.h),rz=Math.sin(ds.h)
+  const P=(x,z)=>{const dx=x-ds.x,dz=z-ds.z;return [c+(dx*rx+dz*rz)*sc, c-(dx*fx+dz*fz)*sc]}
+  mctx.clearRect(0,0,W,W); mctx.save(); mctx.beginPath(); mctx.arc(c,c,R+5,0,6.283); mctx.clip()
+  mctx.strokeStyle='rgba(190,205,230,.22)'; mctx.lineWidth=2
+  for(const k of craters){const [x,y]=P(k.x,k.z);mctx.beginPath();mctx.arc(x,y,k.r*sc,0,6.283);mctx.stroke()}
+  mctx.fillStyle='rgba(60,60,58,.0)'
+  mctx.strokeStyle='rgba(255,255,255,.35)'; mctx.lineWidth=3; mctx.beginPath()
+  trackPts.forEach((p,i)=>{const [x,y]=P(p[0],p[1]); i?mctx.lineTo(x,y):mctx.moveTo(x,y)}); mctx.stroke()
+  const corners=[[BODY.x0,BODY.z0],[BODY.x1,BODY.z0],[DECK.x1,DECK.z1],[DECK.x0,DECK.z1]].map(q=>P(q[0],q[1]))
+  mctx.fillStyle='#c9a45a'; mctx.beginPath(); corners.forEach((q,i)=>i?mctx.lineTo(q[0],q[1]):mctx.moveTo(q[0],q[1])); mctx.fill()
+  for(const t of targets){ let [x,y]=P(t.x,t.z); const dx=x-c,dy=y-c,d=Math.hypot(dx,dy); if(d>R-6){x=c+dx/d*(R-6);y=c+dy/d*(R-6)}
+    mctx.fillStyle=t.done?'#86e3a8':'#8fd3ff'; mctx.beginPath(); mctx.arc(x,y,t.done?5:7,0,6.283); mctx.fill() }
+  mctx.restore()
+  mctx.fillStyle='#fff'; mctx.beginPath(); mctx.moveTo(c,c-11); mctx.lineTo(c+8,c+9); mctx.lineTo(c,c+4); mctx.lineTo(c-8,c+9); mctx.closePath(); mctx.fill()
+}
+
+// ---------------- game flow ----------------
+function resetTargets(){ for(const t of targets){t.done=false;t.hold=0;t.doneT=null;t.beam.material.opacity=0.22;t.ring.material.color.set(0x8fd3ff)} }
+function start(m){
+  mode=m; setSun(); s=freshState(); wheelPose(s); cmds=[{t:0,th:0,st:0}]; hist=[snapshot(s)]; events=[]; wall=0
+  nQ=0; prevW=null; trackPts=[]; tenMark=null; tGeo.setDrawRange(0,0); resetTargets(); lastTh=lastSt=0
+  ghostOn=mode.ghost; ghost.visible=ghostOn
+  amb.intensity = mode.id==='easy'?0.3:0.2
+  $('mis').textContent='#'+MISSION+' · '+mode.label.toUpperCase()
+  $('age').textContent='Picture is '+mode.down.toFixed(1)+' s old'; $('lag').textContent=mode.up.toFixed(1)+' s'
+  $('start').hidden=true; $('result').hidden=true; hud.hidden=false
+  camBlend=0; phase='play'; setTimeout(()=>toast('Turn to face the ramp. Commands take '+mode.up.toFixed(1)+' s to arrive.','info'),300)
+}
+$('goEasy').onclick=()=>start(MODES.easy); $('goPro').onclick=()=>start(MODES.pro)
+$('again').onclick=()=>start(mode); $('swap').onclick=()=>start(mode.id==='easy'?MODES.pro:MODES.easy)
+$('startMis').textContent='Prototype · Mission #'+MISSION+' · same site for everyone today'
+
+const VERDICTS={
+  deck:['Rolled off the deck. The ramp was right there.','The prize says fully leave the lander. Not like that.'],
+  tipped:['The wheels are now pointing at the stars.','That slope looked friendlier from 384,000 km away.','Rovers have a right way up. You found the other one.'],
+  stuck:['Spirit sends its regards from the sand on Mars.','Dug in. The regolith keeps what it catches.','Turning in soft ground is how wheels disappear.'],
+  short:['Signal lost before 10 m. The line was right there.','Some tracks, but not enough for the prize.'],
+  ten:['Ten metres. Tracks confirmed from orbit.','First tracks laid. The orbiter saw it all.'],
+  great:['Clean tracks and a full camera roll. Mission control is on its feet.','Most of the science on a sensible battery. There is still a better line out there.'],
+}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+/*
+ * Scoring: three figures on sliding scales, each falling fastest close to perfect.
+ *   Targets 400  per target 15 for imaging it + 35 for how close to the centre the rover stopped
+ *   Route   300  per leg, metres driven against the hidden par route (30% over par scores nothing)
+ *   Battery 300  per leg, energy used against what a perfect driver would spend (double scores nothing)
+ * An empty battery ends the run.
+ * Route and battery are shared out over all 8 legs, so legs never driven earn nothing.
+ * Plus 2 a second left on the clock if every target is imaged. Then condition, then Pro x1.25.
+ * The player is never shown par, only how well each figure went.
+ */
+const curve=(excess,limit,p=0.5)=>1-Math.pow(clamp(excess/limit,0,1),p)
+function scoreRun(){
+  const NT=targets.length, legs=s.legs, perLeg=300/NT
+  let tgt=0,route=0,batt=0,qT=0,qR=0,qB=0, h=0
+  const detail=[]
+  for(const L of legs){
+    const c=curve(L.off,1.6,0.75); tgt+=15+35*c; qT+=c
+    const path=parPath(L.from[0],L.from[1],L.to[0],L.to[1]); let len=0; for(let i=1;i<path.length;i++) len+=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1])
+    const pe=parEnergy(path,h); h=pe.h
+    const r=curve(L.odo/len-1,0.3), b=curve(L.e/pe.e-1,1.0); route+=perLeg*r; batt+=perLeg*b; qR+=r; qB+=b
+    detail.push({drove:+L.odo.toFixed(1),par:+len.toFixed(1),used:+L.e.toFixed(0),parE:+pe.e.toFixed(0),off:+L.off.toFixed(2)})
+  }
+  const n=Math.max(1,legs.length), grade=q=>!legs.length?'—':q>=0.9?'Near perfect':q>=0.7?'Tidy':q>=0.45?'Room to improve':'Wasteful'
+  const parts={targets:Math.round(tgt),route:Math.round(route),battery:Math.round(batt),time:Math.round((s.timeLeft||0)*2)}
+  let cond=1,label='Rolling at sign-off'
+  if(s.status==='stuck'){cond=0.6;label='Stuck in soft ground'}
+  if(s.status==='tipped'){cond=s.eg?0.25:0.1;label=s.eg?'Tipped over':'Fell off the lander'}
+  if(s.status==='flat'){cond=0.8;label='Battery flat'}
+  if(s.timeLeft) label='All targets imaged'
+  const sum=parts.targets+parts.route+parts.battery+parts.time
+  const R={parts,cond,label,sci:legs.length,grades:{targets:grade(qT/n),route:grade(qR/n),battery:grade(qB/n)},detail,total:Math.round(sum*cond*mode.mult)}
+  window.__ftScore=R
+  return R
+}
+function finish(){
+  phase='done'; hud.hidden=true; $('hint').textContent=''
+  const R=scoreRun()
+  let v = s.status==='tipped'?(s.eg?VERDICTS.tipped:VERDICTS.deck):s.status==='stuck'?VERDICTS.stuck:s.odo<10?VERDICTS.short:(R.sci>=6&&R.grades.route!=='Wasteful'&&R.grades.battery!=='Wasteful'?VERDICTS.great:VERDICTS.ten)
+  $('verdict').textContent=pick(v)
+  $('resTitle').textContent = s.eg&&s.odo>=10 ? 'First tracks: '+s.odo.toFixed(1)+' m' : s.eg ? s.odo.toFixed(1)+' m driven' : 'Never left the lander'
+  $('resLbl').textContent='Mission #'+MISSION+' · '+mode.label+' · '+R.label
+  $('score').textContent=R.total.toLocaleString()
+  const row=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>'
+  const g=w=>' <span style="color:var(--muted)">· '+w+'</span>'
+  $('parts').innerHTML=row('Targets: '+R.sci+' of '+targets.length+g(R.grades.targets),R.parts.targets+' / 400')
+    +row('Route'+g(R.grades.route),R.parts.route+' / 300')+row('Battery'+g(R.grades.battery),R.parts.battery+' / 300')
+    +(s.timeLeft?row('Time left ('+Math.round(s.timeLeft)+' s × 2)',R.parts.time):'')+row('Condition',(R.cond===1?'×1':'×'+R.cond))+(mode.mult!==1?row('Pro','×1.25'):'')
+    +'<tr class="total"><td>Score</td><td>'+R.total.toLocaleString()+'</td></tr>'
+  let best=R.total; try{const k='ft2:best:'+MISSION+':'+mode.id; best=Math.max(best,+(localStorage.getItem(k)||0)); localStorage.setItem(k,best)}catch(e){}
+  $('best').textContent='Your best today on '+mode.label+': '+best.toLocaleString()
+  $('swap').firstChild.textContent = mode.id==='easy'?'TRY PRO':'TRY EASY'
+  $('shot').src=orbiterShot()
+  $('result').hidden=false
+}
+
+// ---------------- orbiter pass: top-down picture of the tracks ----------------
+function orbiterShot(){
+  let x0=-5,x1=5,z0=-5,z1=7
+  for(const [x,z] of trackPts.concat([[s.x,s.z]])){x0=Math.min(x0,x);x1=Math.max(x1,x);z0=Math.min(z0,z);z1=Math.max(z1,z)}
+  const side=Math.max(26,Math.max(x1-x0,z1-z0)+10), cx=(x0+x1)/2, cz=(z0+z1)/2, S=1024
+  const cam=new THREE.OrthographicCamera(-side/2,side/2,side/2,-side/2,1,400); cam.up.set(0,0,1); cam.position.set(cx,150,cz); cam.lookAt(cx,0,cz)
+  const hide=[ghost,earthMesh,...targets.map(t=>t.mesh)]; const vis=hide.map(o=>o.visible); hide.forEach(o=>o.visible=false)
+  const sc=sun.shadow.camera, keep=[sc.left,sc.right,sc.top,sc.bottom]
+  Object.assign(sc,{left:-side*0.8,right:side*0.8,top:side*0.8,bottom:-side*0.8}); sc.updateProjectionMatrix()
+  sun.target.position.set(cx,0,cz); sun.position.copy(sun.target.position).addScaledVector(sunDir,120)
+  const rt=new THREE.WebGLRenderTarget(S,S); renderer.setRenderTarget(rt); renderer.render(scene,cam)
+  const buf=new Uint8Array(S*S*4); renderer.readRenderTargetPixels(rt,0,0,S,S,buf); renderer.setRenderTarget(null); rt.dispose()
+  Object.assign(sc,{left:keep[0],right:keep[1],top:keep[2],bottom:keep[3]}); sc.updateProjectionMatrix(); hide.forEach((o,i)=>o.visible=vis[i])
+  const cv=document.createElement('canvas'); cv.width=cv.height=S; const g=cv.getContext('2d'), img=g.createImageData(S,S), gr=mulberry32(SEED^3)
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){const si=((S-1-y)*S+x)*4,di=(y*S+x)*4; let l=0.3*buf[si]+0.59*buf[si+1]+0.11*buf[si+2]; l=(l-105)*1.4+118+(gr()-0.5)*22; l=clamp(l,0,255); img.data[di]=img.data[di+1]=img.data[di+2]=l; img.data[di+3]=255}
+  g.putImageData(img,0,0)
+  const px=(x,z)=>[(0.5+(cx-x)/side)*S,(0.5-(z-cz)/side)*S], ppm=S/side
+  g.font='600 26px "IBM Plex Mono", monospace'; g.fillStyle='rgba(0,0,0,.55)'; g.fillRect(0,0,S,52); g.fillStyle='#fff'
+  g.fillText('ORBITER PASS · FIRST TRACKS · MISSION #'+MISSION,22,35)
+  g.font='500 20px "IBM Plex Mono", monospace'
+  const call=(x,z,label,col)=>{const [u,v]=px(x,z);g.strokeStyle=col;g.lineWidth=3;g.strokeRect(u-22,v-22,44,44);g.fillStyle=col;g.fillText(label,u+28,v+7)}
+  call(0,-0.8,'LANDER','#fff')
+  for(const t of targets) if(t.done) call(t.x,t.z,'SCI','#86e3a8')
+  if(tenMark) call(tenMark[0],tenMark[1],'10 m','#ffbf5e')
+  if(s.eg) call(s.x,s.z,'ROVER','#8fd3ff')
+  g.fillStyle='rgba(0,0,0,.55)'; g.fillRect(16,S-66,10*ppm+40,50); g.fillStyle='#fff'; g.fillRect(36,S-34,10*ppm,6); g.fillText('10 m',36,S-42)
+  return cv.toDataURL('image/jpeg',0.9)
+}
+
+// ---------------- frame loop ----------------
+let camBlend=0, last=performance.now(), camPos=new THREE.Vector3(9,5,9), camLook=new THREE.Vector3(0,1,2), idleT=0
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.fov=w<h?72:58; camera.updateProjectionMatrix() }
+addEventListener('resize',resize); resize(); setSun()
+function frame(now){ requestAnimationFrame(frame); tick(now) }
+// test hook: advance the game by hand when the tab is in the background
+window.__ft={ run(sec){ for(let i=0;i<sec*60;i++) tick(last+1000/60) }, keys, get state(){return s}, get phase(){return phase}, targets, camera, render(){renderer.render(scene,camera)} }
+function tick(now){
+  const dt=clamp((now-last)/1000,0,0.1); last=Math.max(last,now)
+  let ds
+  if(phase==='play'){
+    wall+=dt; readInput()
+    while(s.status==='rolling'&&s.t+DT<=wall){ step(s,cmdAt(s.t),DT,true); hist.push(snapshot(s)); if(s.status!=='rolling') s.endT=s.t }
+    const td=wall-mode.down; ds=sample(td)
+    for(const e of events) if(!e.shown&&e.t<=td){e.shown=true;toast(e.text,e.kind)}
+    for(const t of targets) if(t.done&&t.doneT<=td&&!t.shownDone){t.shownDone=true;t.beam.material.opacity=0.05;t.ring.material.color.set(0x86e3a8)}
+    if(ghostOn&&s.status==='rolling'){ const g={...s}; const n=Math.round(mode.up/DT); for(let i=0;i<n&&g.status==='rolling';i++) step(g,cmdAt(g.t),DT,false); pose(ghost,g); ghost.visible=true } else ghost.visible=false
+    pose(rover,ds); depositTracks(ds)
+    // HUD
+    const left=s.eg?Math.max(0,s.windowEnd-s.t):mode.window; const sec=Math.ceil(left); $('timer').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); $('timer').classList.toggle('low',left<10)
+    $('odo').textContent=(ds.eg?ds.odo:0).toFixed(1)+' / 10 m'; $('odoBar').style.width=Math.min(100,(ds.eg?ds.odo:0)*10)+'%'
+    $('sci').textContent=targets.filter(t=>t.shownDone).length+' / '+targets.length; $('sinkBar').style.width=(ds.sink*100)+'%'
+    const bp=Math.max(0,100*(1-s.energy/BATTERY)); $('batt').textContent=Math.round(bp)+'%'; $('battBar').style.width=bp+'%'
+    let di=0; for(const c of cmds){ if(c.t>wall&&di<dots.length){const d=dots[di++];d.hidden=false;d.style.left=((1-(c.t-wall)/mode.up)*100)+'%';d.style.background=c.th>0?'#86e3a8':c.th<0?'#ffbf5e':'#8fd3ff'} } for(;di<dots.length;di++) dots[di].hidden=true
+    drawMap(ds)
+    let hint=''; if(!ds.eg) hint='Line up with the ramp. It is only 1.6 m wide. The clock starts when you are off the lander.'
+    else for(const t of targets) if(!t.shownDone&&Math.hypot(ds.x-t.x,ds.z-t.z)<2.2){hint='Stop inside the ring and hold still for 1 s: +'+mode.bonus+' s'}
+    if(ds.sink>0.35) hint='Sinking. Drive straight or back out'
+    $('hint').textContent=hint
+    if(s.status!=='rolling'&&td>=s.endT+0.9) finish()
+  } else { ds = s ? s : freshState(); if(!s){wheelPose(ds);pose(rover,ds)} idleT+=dt }
+  // camera
+  if(phase==='idle'){ const a=idleT*0.08; camPos.set(Math.sin(a)*10,4.2,2+Math.cos(a)*10); camLook.set(0,1,1.5); camera.position.copy(camPos); camera.lookAt(camLook) }
+  else if(phase==='play'){ const fx=Math.sin(ds.h),fz=Math.cos(ds.h)
+    const tall=camera.aspect<1?1.6:0, want=new THREE.Vector3(ds.x-fx*4.2,ds.y+2.3+tall,ds.z-fz*4.2), look=new THREE.Vector3(ds.x+fx*2.6,ds.y+0.4,ds.z+fz*2.6), k=1-Math.exp(-dt*3.2)
+    // On the lander: a fixed view from above with the ramp pointing up the screen. Off it: ease round behind the rover.
+    if(ds.eg) camBlend=Math.min(1,camBlend+dt/1.8)
+    const b=smooth(0,1,camBlend)
+    want.lerp(new THREE.Vector3(0,11+tall*3,-0.6),1-b); look.lerp(new THREE.Vector3(0,0.6,2.4),1-b)
+    camPos.lerp(want,k); camLook.lerp(look,k); camPos.y=Math.max(camPos.y,ground(camPos.x,camPos.z)+0.8); if(inRect(BODY,camPos.x,camPos.z,0.8)||inRect(DECK,camPos.x,camPos.z,0.3)) camPos.y=Math.max(camPos.y,DECK_Y+2.9); camera.position.copy(camPos); camera.lookAt(camLook) }
+  const fc = phase==='play'? rover.position : new THREE.Vector3(0,0,2)
+  sun.target.position.set(fc.x,0,fc.z); sun.position.copy(sun.target.position).addScaledVector(sunDir,120)
+  renderer.render(scene,camera)
+}
+requestAnimationFrame(frame)
+})()
+</script>
