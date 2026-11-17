@@ -2,6 +2,7 @@ import { XMarkIcon } from '@heroicons/react/20/solid'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { applyConsentToAttribution } from '@/lib/analytics/attribution'
+import { reportAnalyticsConsent } from '@/lib/analytics/ga4'
 import { cookieBannerDecision, type CookieBannerDecision } from '@/lib/geo/countryCode'
 
 type BannerStatus = 'pending' | 'granted' | 'denied' | 'prompt'
@@ -81,7 +82,16 @@ export default function CookieBanner() {
       const decision = await lookupDecision(() => cancelled)
       if (cancelled) return
       if (decision === 'grant') setStatus('granted')
-      else if (decision === 'prompt') setStatus('prompt')
+      else if (decision === 'prompt') {
+        // Hold one-shot analytics until the visitor chooses. The 10s moonbase
+        // timer often fires while this banner is still on screen.
+        reportAnalyticsConsent('prompt')
+        setStatus('prompt')
+      } else {
+        // Unknown country. Exempt-region visitors are already granted on the
+        // tag; everyone else stays on the denied default. Do not drop the hit.
+        reportAnalyticsConsent('passthrough')
+      }
     })()
 
     return () => {
@@ -90,6 +100,10 @@ export default function CookieBanner() {
   }, [])
 
   useEffect(() => {
+    if (status === 'prompt') {
+      reportAnalyticsConsent('prompt')
+      return
+    }
     if (status !== 'granted' && status !== 'denied') return
     const granted = status === 'granted'
     try {
@@ -97,8 +111,11 @@ export default function CookieBanner() {
     } catch {
       // Private mode can reject storage. The in-memory choice still applies.
     }
+    // Update the tag before releasing a held event, so the hit is not pushed
+    // ahead of the consent command.
     applyAnalyticsConsent(granted)
     applyConsentToAttribution(granted)
+    reportAnalyticsConsent(granted ? 'granted' : 'denied')
   }, [status])
 
   if (status !== 'prompt') return null

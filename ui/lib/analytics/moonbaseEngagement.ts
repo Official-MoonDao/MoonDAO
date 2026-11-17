@@ -28,6 +28,23 @@ export function isSceneInteractionTarget(target: unknown): boolean {
 }
 
 /**
+ * Some in-app browsers report visibilityState 'hidden' while the page is on
+ * screen. A focused document is showing. A background tab is hidden and not
+ * focused, so it still does not count.
+ */
+export function isDocumentActive(doc: {
+  visibilityState?: string
+  hasFocus?: () => boolean
+}): boolean {
+  if (doc.visibilityState === 'visible') return true
+  try {
+    return typeof doc.hasFocus === 'function' && doc.hasFocus()
+  } catch {
+    return false
+  }
+}
+
+/**
  * Fires once. Visible time counts only while the tab is in the foreground and
  * the route is /moonbase. Leaving the page or hiding the tab pauses the clock.
  * A trusted canvas interaction fires immediately.
@@ -116,6 +133,75 @@ export function createMoonbaseEngagement(options: {
     },
     dispose() {
       stopClock()
+    },
+  }
+}
+
+type RetainedEngagement = {
+  engagement: MoonbaseEngagement
+  refs: number
+  drop: unknown
+  clear: (id: unknown) => void
+}
+
+let retained: RetainedEngagement | null = null
+
+/** Test hook. Production clears the clock by releasing the last subscriber. */
+export function resetMoonbaseEngagementState() {
+  if (!retained) return
+  if (retained.drop != null) {
+    try {
+      retained.clear(retained.drop)
+    } catch {
+      // The scheduler may already have dropped the id.
+    }
+  }
+  retained.engagement.dispose()
+  retained = null
+}
+
+/**
+ * One clock per tab. Next's pages router builds a new useRouter() object on
+ * every render, and the /moonbase effect used to depend on it. Cleanup then
+ * ran on each shallow ?race= / ?year= replace and the 10s timer started over.
+ * Release defers dispose by one turn so a synchronous re-subscribe keeps the
+ * time already accumulated.
+ */
+export function retainMoonbaseEngagement(options: {
+  now: () => number
+  schedule: (ms: number, callback: () => void) => unknown
+  clear: (id: unknown) => void
+  hasFired: () => boolean
+  fire: () => void
+}): { engagement: MoonbaseEngagement; release: () => void } {
+  if (!retained) {
+    retained = {
+      engagement: createMoonbaseEngagement(options),
+      refs: 0,
+      drop: null,
+      clear: options.clear,
+    }
+  } else if (retained.drop != null) {
+    retained.clear(retained.drop)
+    retained.drop = null
+    retained.clear = options.clear
+  }
+  const current = retained
+  current.refs += 1
+  let released = false
+  return {
+    engagement: current.engagement,
+    release() {
+      if (released) return
+      released = true
+      current.refs -= 1
+      if (current.refs > 0 || retained !== current) return
+      current.drop = options.schedule(0, () => {
+        current.drop = null
+        if (retained !== current || current.refs > 0) return
+        current.engagement.dispose()
+        retained = null
+      })
     },
   }
 }

@@ -54,15 +54,43 @@ const MAX_PENDING = 30
 
 let attributionGetter: () => AttributionParams | null | undefined = () => ({})
 let moonbaseEngagedSent = false
+let moonbaseEngagedHeld = false
+let moonbaseEngagedLocation: string | undefined
+let consentHoldTimer: unknown = null
+// 'unknown' is the gap before CookieBanner's country lookup returns. A canvas
+// tap can qualify in that gap. 'prompt' means the banner is waiting on a
+// choice. Granted, denied, and passthrough (lookup failed) release the hit.
+let consentGate: 'unknown' | 'prompt' | 'granted' | 'denied' | 'passthrough' = 'unknown'
+
+// Long enough for the country lookup on a slow phone, short enough that a
+// missing banner still records exempt-region visitors.
+const CONSENT_HOLD_MS = 8_000
 
 export const ENTRY_PATH_STORAGE_KEY = 'md_entry_path'
 export const MOONBASE_ENGAGED_STORAGE_KEY = 'md_moonbase_engaged'
 const ENTRY_PATH_MAX = 100
 
+function clearConsentHoldTimer() {
+  if (consentHoldTimer == null) return
+  const timer = consentHoldTimer
+  consentHoldTimer = null
+  try {
+    if (typeof window !== 'undefined' && typeof window.clearTimeout === 'function') {
+      window.clearTimeout(timer as ReturnType<typeof window.setTimeout>)
+    }
+  } catch {
+    // The timer already ran, or this environment has no timer.
+  }
+}
+
 export function resetAnalyticsState() {
   pending.length = 0
   attributionGetter = () => ({})
   moonbaseEngagedSent = false
+  moonbaseEngagedHeld = false
+  moonbaseEngagedLocation = undefined
+  consentGate = 'unknown'
+  clearConsentHoldTimer()
 }
 
 /** Other branches register UTM / click-id params here. Must not throw into callers. */
@@ -99,11 +127,28 @@ export function gtagReady(): boolean {
   return typeof window !== 'undefined' && typeof window.gtag === 'function'
 }
 
+function isMoonbaseEngagedCall(args: unknown[]): boolean {
+  return args[0] === 'event' && args[1] === 'moonbase_engaged'
+}
+
+function enqueueGa4(args: unknown[]) {
+  pending.push(args)
+  // The session flag is written when the event is handed off, so an evicted
+  // moonbase_engaged is never retried. Drop older calls first.
+  while (pending.length > MAX_PENDING) {
+    const drop = pending.findIndex((item) => !isMoonbaseEngagedCall(item))
+    if (drop === -1) {
+      pending.shift()
+      return
+    }
+    pending.splice(drop, 1)
+  }
+}
+
 function callGtag(...args: unknown[]) {
   if (typeof window === 'undefined') return
   if (typeof window.gtag !== 'function') {
-    pending.push(args)
-    if (pending.length > MAX_PENDING) pending.shift()
+    enqueueGa4(args)
     return
   }
   window.gtag(...args)
@@ -502,9 +547,112 @@ function gaDebugParam(): Record<string, unknown> {
   return gaDebugEnabled() ? { debug_mode: true } : {}
 }
 
+function browserPageBits(): { href?: string; origin?: string; pathname?: string } {
+  try {
+    if (typeof window === 'undefined' || !window.location) return {}
+    const loc = window.location
+    return {
+      href: typeof loc.href === 'string' ? loc.href : undefined,
+      origin: typeof loc.origin === 'string' ? loc.origin : undefined,
+      pathname: typeof loc.pathname === 'string' ? loc.pathname : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Absolute URL whose path is /moonbase (query and hash stripped). GA4 derives
+ * the pagePath dimension from page_location. A full URL stuffed into a custom
+ * page_path, or a hit flushed after the route changed, would miss
+ * pagePath BEGINS_WITH /moonbase.
+ */
+export function moonbaseEngagedPageLocation(
+  loc:
+    | {
+        href?: string
+        origin?: string
+        pathname?: string
+      }
+    | null
+    | undefined
+): string | undefined {
+  if (!loc) return undefined
+  let pathname = loc.pathname || ''
+  let origin = loc.origin || ''
+  if (loc.href) {
+    try {
+      const url = new URL(loc.href)
+      pathname = url.pathname
+      origin = url.origin
+    } catch {
+      // Relative or unparseable. Use the pieces below when they are present.
+    }
+  }
+  const path = normalizePathname(pathname)
+  if (!path || !isMoonbasePath(path)) return undefined
+  if (!/^https?:\/\//i.test(origin)) return undefined
+  return `${origin}${path}`
+}
+
+function readStoredAnalyticsConsent(): 'granted' | 'denied' | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null
+    const stored = window.localStorage.getItem('cookie_consent')
+    if (stored === 'true') return 'granted'
+    if (stored === 'false') return 'denied'
+  } catch {
+    // Private mode can throw. Treat that as no stored choice.
+  }
+  return null
+}
+
+function armConsentHoldFallback() {
+  clearConsentHoldTimer()
+  if (typeof window === 'undefined' || typeof window.setTimeout !== 'function') return
+  consentHoldTimer = window.setTimeout(() => {
+    consentHoldTimer = null
+    if (!moonbaseEngagedHeld || consentGate === 'prompt') return
+    moonbaseEngagedHeld = false
+    deliverMoonbaseEngaged()
+  }, CONSENT_HOLD_MS)
+}
+
+/**
+ * CookieBanner reports the banner. Until that report, or a stored choice, the
+ * hit stays queued: a canvas tap often happens before the country lookup, and
+ * this event only sends once. 'prompt' keeps waiting for the choice.
+ * 'passthrough' is a failed lookup: send and let the regional default decide.
+ * An explicit denial is forwarded once and never upgraded to granted.
+ */
+export function reportAnalyticsConsent(signal: 'granted' | 'denied' | 'prompt' | 'passthrough') {
+  consentGate = signal
+  if (signal === 'prompt') {
+    clearConsentHoldTimer()
+    return
+  }
+  if (!moonbaseEngagedHeld) return
+  clearConsentHoldTimer()
+  moonbaseEngagedHeld = false
+  deliverMoonbaseEngaged()
+}
+
+function moonbaseConsentReady(): boolean {
+  if (readStoredAnalyticsConsent()) return true
+  return consentGate === 'granted' || consentGate === 'denied' || consentGate === 'passthrough'
+}
+
+function deliverMoonbaseEngaged() {
+  writeKey(browserSession(), MOONBASE_ENGAGED_STORAGE_KEY, '1')
+  const params: Record<string, unknown> = { ...gaDebugParam() }
+  if (moonbaseEngagedLocation) params.page_location = moonbaseEngagedLocation
+  sendEvent('moonbase_engaged', params, false)
+}
+
 /**
  * Once per tab, after 10 seconds visible on /moonbase or the first 3D
  * interaction. MoonbaseEngagement decides when. This only sends.
+ * page_location is captured here, while the route is still /moonbase.
  */
 export function trackMoonbaseEngaged() {
   if (typeof window === 'undefined' || moonbaseEngagedSent) return
@@ -514,8 +662,13 @@ export function trackMoonbaseEngaged() {
     return
   }
   moonbaseEngagedSent = true
-  writeKey(store, MOONBASE_ENGAGED_STORAGE_KEY, '1')
-  sendEvent('moonbase_engaged', gaDebugParam(), false)
+  moonbaseEngagedLocation = moonbaseEngagedPageLocation(browserPageBits())
+  if (!moonbaseConsentReady()) {
+    moonbaseEngagedHeld = true
+    if (consentGate === 'unknown') armConsentHoldFallback()
+    return
+  }
+  deliverMoonbaseEngaged()
 }
 
 export type TouchdownEventName =
