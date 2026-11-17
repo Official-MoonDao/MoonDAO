@@ -78,6 +78,9 @@ export default function Legend({
 }: LegendProps) {
   const [open, setOpen] = useState(true)
   const [orgsOpen, setOrgsOpen] = useState(false)
+  // Races we track but don't run are background reading, not the first thing
+  // a new visitor should parse. Folded like Organizations.
+  const [futureOpen, setFutureOpen] = useState(false)
   const hasFilter = selectedOrgIds.length > 0
 
   // On mobile the info card and this legend stack (rather than sit side by
@@ -105,6 +108,15 @@ export default function Legend({
   const ladderRaces = races.filter((r) => r.onLadder)
   const futureRaces = races.filter((r) => !r.onLadder)
   const tradableCount = ladderRaces.filter((r) => r.tradable).length
+  // Picking a future race (e.g. on the globe) unfolds the group once so its
+  // row shows highlighted, but Hide still wins afterwards. Adjusted during
+  // render when the selection changes, not forced on every render.
+  const [seenRace, setSeenRace] = useState(selectedRace)
+  if (seenRace !== selectedRace) {
+    setSeenRace(selectedRace)
+    if (futureRaces.some((r) => r.raceId === selectedRace)) setFutureOpen(true)
+  }
+  const showFuture = futureOpen
 
   const renderRace = (race: RaceEntry) => {
     const active = selectedRace === race.raceId
@@ -112,6 +124,7 @@ export default function Legend({
       <button
         key={race.raceId}
         onClick={() => onSelectRace(race.raceId)}
+        title={race.label}
         onMouseEnter={() => onHoverRace(race.raceId)}
         onMouseLeave={() => onHoverRace(null)}
         className={`flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left transition ${
@@ -137,7 +150,7 @@ export default function Legend({
               <span
                 className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
                 style={{ boxShadow: '0 0 6px rgb(52 211 153 / 0.9)' }}
-                title="Open market — you can bet on this now"
+                title="Predictions open"
               />
             )}
             <span
@@ -149,7 +162,10 @@ export default function Legend({
                   : 'text-white/45'
               }`}
             >
-              {race.label}
+              {/* Short name only ("Touchdown"): the full question is a
+                  sentence that always truncated here. It's on hover, and in
+                  the panel once the race is open. */}
+              {race.label.split(' — ')[0]}
             </span>
           </span>
           {race.leaderName && (
@@ -193,7 +209,7 @@ export default function Legend({
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-white">
           <AdjustmentsHorizontalIcon className="h-4 w-4 text-cyan-300" />
-          Capability races
+          Races
         </span>
         <span className="flex items-center gap-2 text-xs text-white/40">
           {tradableCount > 0 && !open && (
@@ -211,19 +227,25 @@ export default function Legend({
             <div className="space-y-1">{races.map(renderRace)}</div>
           ) : (
             <>
-              <div className="space-y-1">
-                <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-300/70">
-                  Racing now
-                </p>
-                {ladderRaces.map(renderRace)}
-              </div>
+              {/* No "Racing now" heading: the panel is already titled Races,
+                  and the future ones are folded away under their own label. */}
+              <div className="space-y-1">{ladderRaces.map(renderRace)}</div>
 
               {futureRaces.length > 0 && (
-                <div className="space-y-1">
-                  <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-white/30">
-                    Potential future races
-                  </p>
-                  {futureRaces.map(renderRace)}
+                <div className="space-y-1 border-t border-white/10 pt-3">
+                  <button
+                    onClick={() => setFutureOpen((o) => !o)}
+                    aria-expanded={showFuture}
+                    className="flex w-full items-center justify-between text-left"
+                  >
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                      Potential future races
+                    </span>
+                    <span className="text-[11px] text-white/30">
+                      {showFuture ? 'Hide' : `Show ${futureRaces.length}`}
+                    </span>
+                  </button>
+                  {showFuture && <div className="space-y-1 pt-1">{futureRaces.map(renderRace)}</div>}
                 </div>
               )}
             </>

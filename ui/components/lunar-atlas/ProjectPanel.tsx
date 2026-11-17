@@ -523,19 +523,19 @@ function goalPillStatus(goal: SharedGoal): string {
 export function MarketPill({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     none: {
-      label: 'No market',
+      label: 'No prize yet',
       cls: 'text-white/40 border-white/10 bg-white/5',
     },
     planned: {
-      label: 'Market planned',
+      label: 'Predictions soon',
       cls: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
     },
     live: {
-      label: 'Market live',
+      label: 'Predictions open',
       cls: 'text-emerald-200 border-emerald-400/30 bg-emerald-500/10',
     },
     resolved: {
-      label: 'Resolved',
+      label: 'Decided',
       cls: 'text-white/60 border-white/15 bg-white/5',
     },
   }

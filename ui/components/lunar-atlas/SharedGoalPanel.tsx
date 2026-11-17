@@ -10,6 +10,7 @@ import type { Chain } from 'thirdweb'
 import {
   OPEN_FIELD_PROJECT_ID,
   ROSTER_DISCLAIMER,
+  deprizePrefixedHref,
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   isCompetitiveRace,
@@ -133,6 +134,11 @@ export default function SharedGoalPanel({
   // Shift, which is won in a thermal-vacuum chamber. See EARTH_SIDE_VENUE.
   const venue = earthSideVenue(goal.id)
   const marketDeprizeId = bound ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, goal.id) : undefined
+  // Every race has a prize page: a bound one by market id, the rest by goal
+  // slug (GoalDePrizeDetail).
+  const prizeHref = chainSlug
+    ? deprizePrefixedHref(chainSlug, marketDeprizeId ?? goal.id)
+    : `/deprize/${marketDeprizeId ?? goal.id}`
   const binding =
     marketDeprizeId !== undefined && chainSlug
       ? getDePrizeRaceBinding(chainSlug, marketDeprizeId)
@@ -255,7 +261,7 @@ export default function SharedGoalPanel({
           <div className="flex flex-wrap items-center gap-2">
             <FlagIcon className="h-4 w-4 shrink-0 text-fuchsia-300" />
             <span className="text-xs font-medium uppercase tracking-wide text-fuchsia-200/80">
-              Capability race
+              Race
             </span>
             {bound && <MarketPill status={marketStatus} />}
             {!bound && !hasRace && competitors.length > 0 && (
@@ -267,7 +273,22 @@ export default function SharedGoalPanel({
               </span>
             )}
           </div>
-          <h2 className="mt-1 text-lg font-semibold leading-snug text-white">{goal.title}</h2>
+          {/* The title is the way to the full prize page. It used to sit at
+              the bottom of the competitor list, a long scroll away. */}
+          <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
+            <Link
+              href={prizeHref}
+              className="decoration-fuchsia-300/50 underline-offset-4 hover:underline"
+            >
+              {goal.title}
+            </Link>
+          </h2>
+          <Link
+            href={prizeHref}
+            className="mt-1 inline-flex text-xs font-semibold text-fuchsia-200 hover:text-fuchsia-100"
+          >
+            View prize page →
+          </Link>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
             {goal.targetWindow && (
               <span>
@@ -291,7 +312,6 @@ export default function SharedGoalPanel({
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-4">
-        {goal.id === TOUCHDOWN_RACE_GOAL_ID && <TouchdownTeaser variant="atlas" />}
         {/* Region anchor */}
         {goal.regionLabel && goal.id !== 'shared-next-landing' && (
           <div className="flex flex-wrap items-center gap-2">
@@ -323,6 +343,15 @@ export default function SharedGoalPanel({
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
               {hasRace ? `Competitors (${competitors.length})` : 'No committed developer'}
             </h3>
+            {/* Same line on every race: what the Predict buttons below do,
+                and who the prize is for (the winning team, not predictors). */}
+            {hasRace && bound && !resolved && (
+              <p className="mb-3 text-sm leading-snug text-white/70">
+                Who gets there first? Tap{' '}
+                <span className="font-semibold text-white">{DEPRIZE_PREDICT_CTA}</span> to make
+                your pick. It&apos;s free. The prize goes to the team that wins.
+              </p>
+            )}
             {!hasRace && (
               <p className="mb-2 text-xs leading-relaxed text-white/50">
                 Only one concept study is on record for this capability and no organization has
@@ -647,7 +676,7 @@ export default function SharedGoalPanel({
         {goal.criteria && goal.criteria.length > 0 && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
-              Capability criteria
+              How it&apos;s won
             </h3>
             <ol className="space-y-2.5">
               {goal.criteria.map((c, i) => (
@@ -696,6 +725,10 @@ export default function SharedGoalPanel({
             )}
           </div>
         )}
+
+        {/* The landing game is a side quest, not the first thing a race
+            panel should ask of someone who doesn't yet know what a race is. */}
+        {goal.id === TOUCHDOWN_RACE_GOAL_ID && <TouchdownTeaser variant="atlas" />}
 
         {!hasRace ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">

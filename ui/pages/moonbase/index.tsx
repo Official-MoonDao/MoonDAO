@@ -1,4 +1,4 @@
-import { CameraIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
+import { CameraIcon, GlobeAltIcon, PlayIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -33,7 +33,6 @@ import {
   projectStateAtYear,
   raceArrivalYear,
   sharedGoalById,
-  racesSharingDistrict,
   standIdsForRace,
   treeForProjectClick,
   marketShowsOdds,
@@ -44,6 +43,7 @@ import type { Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import Head from '@/components/layout/Head'
+import IntroStrip from '@/components/moonbase/IntroStrip'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import type { MarkerStyle } from '@/components/lunar-atlas/MarkerLayer'
 import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
@@ -390,26 +390,6 @@ export default function MoonBaseZeroIndex() {
         .sort((a, b) => Number(b.onLadder) - Number(a.onLadder) || b.count - a.count),
     [surfaceTrees, dataset, chainSlug]
   )
-
-  // The races the open district can switch between. Touchdown owns the lander
-  // zone, but Water Ice is won on hardware parked there too, so opening either
-  // offers both. Empty for a district only one race lives in.
-  const districtRaces = useMemo(() => {
-    if (!selectedRaceId || selectedProjectId) return []
-    const ids = racesSharingDistrict(
-      selectedRaceId,
-      surfaceTrees.map((t) => ({ raceId: t.raceId, memberIds: t.projects.map((p) => p.id) })),
-      (id) => layout.districts.has(id),
-      (id) => layout.plots.has(id),
-      CARRIED_BY,
-      SAME_VEHICLE
-    )
-    return ids.flatMap((id) => {
-      const race = races.find((r) => r.raceId === id)
-      // The short name: "Touchdown", not the whole question after the dash.
-      return race ? [{ raceId: id, label: race.label.split(' — ')[0] }] : []
-    })
-  }, [selectedRaceId, selectedProjectId, surfaceTrees, layout, races])
 
   // What the GLOBE is told is open, which is not always what the panel has
   // open. Opening a race dims every district except its own, and that reads as
@@ -839,29 +819,55 @@ export default function MoonBaseZeroIndex() {
           aria-hidden={cinematic}
           style={cinematic ? { visibility: 'hidden' } : undefined}
         >
+          <IntroStrip panelOpen={Boolean(selectedGoal || selectedTree || selectedProject)} />
           {/* The name card and the open detail panel stack on the left. The
               race legend stays on the right, so opening a race never covers
               it. On mobile they still stack, and the detail panel leaves this
               column to become the bottom sheet (see below). */}
           <div className="flex min-h-0 flex-1 flex-col justify-start gap-3 p-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-4 sm:p-6">
             <div className="flex w-full min-w-0 flex-col gap-3 sm:w-96 sm:max-w-[calc(100%-18rem)] sm:shrink-0">
-              <div className="pointer-events-auto w-full shrink-0 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
-                <div className="flex items-center gap-2">
-                  <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
-                  <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
+              {/* Once a panel is open the visitor has found their way in, so
+                  the intro gives its room back to the panel: name plus a
+                  small tour link. */}
+              {selectedGoal || selectedTree || selectedProject ? (
+                <div className="pointer-events-auto flex w-full shrink-0 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <GlobeAltIcon className="h-4 w-4 text-cyan-300" />
+                    <h1 className="text-sm font-semibold text-white">Moon Base Zero</h1>
+                  </div>
+                  <Link
+                    href="/moonbase/tour#power"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+                  >
+                    <PlayIcon className="h-3.5 w-3.5" />
+                    Take the tour
+                  </Link>
                 </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                  A true-to-scale model base on the Shackleton connecting ridge, where NASA&apos;s
-                  first Moon Base landing is aimed. Click a site to explore its capability race,
-                  competitors, and sources.
-                </p>
-                <Link
-                  href="/moonbase/tour"
-                  className="mt-2 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
-                >
-                  New here? Take the tour →
-                </Link>
-              </div>
+              ) : (
+              <div className="pointer-events-auto w-full shrink-0 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
+                    <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
+                  </div>
+                  {/* Visitors kept asking "is it a game or what?". Say what it is
+                      and what to do in two plain sentences, then make the tour
+                      the obvious first move instead of a footnote link. */}
+                  <p className="mt-1.5 text-sm leading-relaxed text-white/70">
+                    A 3D model of a future Moon base, built from the real hardware companies are
+                    racing to land. Each site is a race you can follow and predict.
+                  </p>
+                  <Link
+                    href="/moonbase/tour#power"
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-300 px-4 py-2.5 text-sm font-bold text-black shadow-[0_0_24px_rgba(103,232,249,0.35)] transition hover:bg-cyan-200"
+                  >
+                    <PlayIcon className="h-4 w-4" />
+                    Take the tour
+                  </Link>
+                  <p className="mt-2 text-center text-xs text-white/45">
+                    or pick one from the Races list to explore it
+                  </p>
+                </div>
+              )}
 
               {/* Detail panel sits under the name card on desktop and fills the
                   column down to the timeline. On mobile it is taken out of the
@@ -870,33 +876,6 @@ export default function MoonBaseZeroIndex() {
               {(selectedGoal || selectedTree || selectedProject) && !cinematic && (
                 <div className="pointer-events-none absolute inset-x-4 bottom-40 z-20 h-[55vh] sm:static sm:inset-auto sm:z-auto sm:h-auto sm:min-h-0 sm:flex-1 sm:overflow-hidden">
                   <div className="flex h-full min-h-0 flex-col gap-2">
-                    {districtRaces.length > 1 && (
-                      <div
-                        role="tablist"
-                        aria-label="Races in this district"
-                        className="pointer-events-auto flex shrink-0 gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-md"
-                      >
-                        {districtRaces.map((r) => {
-                          const active = r.raceId === selectedRaceId
-                          return (
-                            <button
-                              key={r.raceId}
-                              type="button"
-                              role="tab"
-                              aria-selected={active}
-                              onClick={() => handleSelectTree(r.raceId)}
-                              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                                active
-                                  ? 'bg-white/15 text-white'
-                                  : 'text-white/55 hover:bg-white/5 hover:text-white'
-                              }`}
-                            >
-                              {r.label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
                     <div className="min-h-0 flex-1">
                       {selectedGoal ? (
                         <SharedGoalPanel
