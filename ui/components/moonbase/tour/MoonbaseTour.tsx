@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
+import Router from 'next/router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEPRIZE_AVAILABILITY_LEGEND } from '@/lib/deprize/constants'
 import { TOUR_STOPS, type TourStopId } from '@/lib/moonbase-tour/stops'
 import {
@@ -17,6 +19,7 @@ import TourCard from './TourCard'
 import TourChapter from './TourChapter'
 import TourRail from './TourRail'
 import TourScene from './TourScene'
+import { scrollToStop, stopFromHash } from './scrollToStop'
 import useActiveStop from './useActiveStop'
 import useTourRenderMode from './useTourRenderMode'
 
@@ -34,6 +37,64 @@ export default function MoonbaseTour() {
 
   const mode = useTourRenderMode()
 
+  // Deep links: /moonbase/tour#power opens the tour on that stop. Undefined
+  // until the hash has been read; while a jump is in flight it holds the stop
+  // being jumped to, so the hash is not rewritten by the stops scrolled past.
+  const jumpTarget = useRef<TourStopId | null | undefined>(undefined)
+
+  useEffect(() => {
+    const target = stopFromHash(window.location.hash)
+    jumpTarget.current = target
+    const jumpNow = () => {
+      if (target && jumpTarget.current === target) scrollToStop(target, 'auto')
+    }
+    // Arriving by a client-side link, the router resets the scroll as the
+    // route change finishes, so jump again once it has.
+    const jump = target ? setTimeout(jumpNow, 50) : undefined
+    const giveUp = target ? setTimeout(() => (jumpTarget.current = null), 3000) : undefined
+
+    const onHashChange = () => {
+      const next = stopFromHash(window.location.hash)
+      if (next) scrollToStop(next)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    Router.events.on('routeChangeComplete', jumpNow)
+    return () => {
+      clearTimeout(jump)
+      clearTimeout(giveUp)
+      window.removeEventListener('hashchange', onHashChange)
+      Router.events.off('routeChangeComplete', jumpNow)
+    }
+  }, [])
+
+  // Keep the address bar on the stop in view, so a copied link opens there.
+  useEffect(() => {
+    if (jumpTarget.current === undefined) return
+    if (jumpTarget.current && activeId !== jumpTarget.current) return
+    jumpTarget.current = null
+    if (!activeId) return
+    const hash = activeId === 'arrival' ? '' : `#${activeId}`
+    if (window.location.hash === hash) return
+    const { pathname, search } = window.location
+    window.history.replaceState(window.history.state, '', `${pathname}${search}${hash}`)
+  }, [activeId])
+
+  // A nudge at the bottom of the screen until the visitor scrolls, on
+  // whichever stop they land: a deep link skips the first card and its prompt.
+  // Measured from where the page settles, so the deep-link jump itself does
+  // not count as scrolling.
+  const [showHint, setShowHint] = useState(true)
+  useEffect(() => {
+    let settledAt: number | null = null
+    const onScroll = () => {
+      if (jumpTarget.current !== null) return
+      if (settledAt === null) settledAt = window.scrollY
+      else if (Math.abs(window.scrollY - settledAt) > 40) setShowHint(false)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <Container>
       <WebsiteHead
@@ -43,6 +104,19 @@ export default function MoonbaseTour() {
       <div className="relative bg-[#010208]">
         <TourScene stop={stop} build={build} visible={activeId !== null} mode={mode} />
         <TourRail active={activeId} />
+        {/* On phones the first card already ends in the same prompt as a
+            button, right where this would sit. */}
+        <div
+          aria-hidden
+          className={`pointer-events-none fixed inset-x-0 bottom-2 z-20 flex justify-center transition-opacity duration-500 md:bottom-6 ${
+            activeId === 'arrival' ? 'max-md:hidden' : ''
+          } ${showHint && activeId !== null ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#22d3ee]/50 bg-[#010208]/70 px-4 py-2 font-RobotoMono text-[10px] uppercase tracking-[0.2em] text-white backdrop-blur-sm md:text-[11px]">
+            Scroll down to take the tour
+            <ChevronDownIcon className="h-4 w-4 animate-bounce text-[#22d3ee]" />
+          </span>
+        </div>
 
         <div className="relative z-10">
           <TourChapter id="arrival" heightSvh={150} fadeIn={false}>
@@ -67,10 +141,14 @@ export default function MoonbaseTour() {
               been chosen yet. First a walk down the base, then one of its races from first bet to
               payout.
             </TourCard>
-            <p className="mt-10 flex items-center gap-3 font-RobotoMono text-[11px] uppercase tracking-[0.24em] text-white/50">
-              <span className="block h-px w-8 bg-white/40" />
-              Scroll to start the tour
-            </p>
+            <button
+              type="button"
+              onClick={() => scrollToStop('power')}
+              className="mt-8 inline-flex items-center gap-3 rounded-full border border-[#22d3ee]/50 bg-[#22d3ee]/10 px-5 py-2.5 font-RobotoMono text-xs uppercase tracking-[0.2em] text-white transition hover:border-[#22d3ee] hover:bg-[#22d3ee]/20"
+            >
+              Scroll down to take the tour
+              <ChevronDownIcon className="h-4 w-4 animate-bounce text-[#22d3ee]" />
+            </button>
           </TourChapter>
 
           <TourChapter id="power">

@@ -215,6 +215,8 @@ export default function TimelineScrubber({
 
           <div className="mt-0.5 flex justify-between text-[10px] text-white/40">
             <span>{minYear}</span>
+            {/* The scrubber isn't self-explanatory; say what it does. */}
+            <span className="text-white/50">Drag to watch the base grow</span>
             <span>{maxYear}</span>
           </div>
         </div>
