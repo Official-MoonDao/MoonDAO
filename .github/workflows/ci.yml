@@ -537,6 +537,12 @@ jobs:
           SPLIT_INDEX: ${{ strategy.job-index }}
           CYPRESS_CHROME_OLD_HEADLESS: "1"
           CYPRESS_COMPONENT_BROWSER: ${{ steps.component-chrome.outputs.chrome-path }}
+          # Cypress compiles component specs with inline source maps in its
+          # config-manager process. That process dies at Node's default ~2GB
+          # heap (often while Chrome is also up), the dev server goes away,
+          # and the shard then reports "Loading chunk privy failed" and sits
+          # until the 25-minute stop. The runner has room above the default.
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4

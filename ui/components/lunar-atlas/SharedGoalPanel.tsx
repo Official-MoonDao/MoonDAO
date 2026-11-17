@@ -4,7 +4,6 @@
 // ProjectPanel or by clicking the goal's region marker.
 import { FlagIcon, GlobeAmericasIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import TouchdownTeaser, { TOUCHDOWN_RACE_GOAL_ID } from '@/components/touchdown/TouchdownTeaser'
 import type { MouseEvent } from 'react'
 import { useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
@@ -25,6 +24,7 @@ import {
 } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import { atlasForecastBook } from '@/lib/forecasts/atlasBook'
 import {
   PARTICIPATION_LABEL,
   earthSideVenue,
@@ -35,6 +35,7 @@ import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 import ForecastPredictModal from '@/components/deprize/ForecastPredictModal'
+import TouchdownTeaser, { TOUCHDOWN_RACE_GOAL_ID } from '@/components/touchdown/TouchdownTeaser'
 import { MarketPill } from './ProjectPanel'
 import { PARTICIPATION_BAR_CLASSES, PARTICIPATION_ROW_CLASSES } from './participation-styles'
 
@@ -174,11 +175,29 @@ export default function SharedGoalPanel({
     [numOutcomes, binding, competitors]
   )
 
+  // A race with no DePrize still takes free predictions, one outcome per
+  // competitor, under a reserved forecast id. No ETH market is implied.
+  // Labels follow the frozen slot list. Roster order is editorial.
+  const forecastBook = useMemo(
+    () => (!bound && hasRace ? atlasForecastBook(goal.id, goal.projectIds) : undefined),
+    [bound, hasRace, goal.id, goal.projectIds]
+  )
+  const bookLabels = useMemo(() => {
+    const ids = forecastBook ? forecastBook.outcomeIds : goal.projectIds
+    return ids.map(
+      (projectId, index) =>
+        competitors.find((c) => c.project.id === projectId)?.project.name ?? `Team #${index + 1}`
+    )
+  }, [forecastBook, goal.projectIds, competitors])
+  const forecastVoteId = bound ? marketDeprizeId : forecastBook?.voteId
+  const forecastOutcomeCount = bound ? numOutcomes : forecastBook ? forecastBook.numOutcomes : 0
+  const forecastLabels = bound ? outcomeLabels : bookLabels
+
   const outcomeAt = (index: number | undefined): Outcome | undefined =>
     index === undefined ? undefined : outcomes?.[index]
 
   const openPredict = (index: number | undefined, name: string) => {
-    if (index === undefined || payoutPending || numOutcomes <= index) return
+    if (index === undefined || (bound && payoutPending) || forecastOutcomeCount <= index) return
     setPredictArmed(true)
     setPredictIndex(index)
     setPredictName(name)
@@ -212,6 +231,8 @@ export default function SharedGoalPanel({
     const i = binding.outcomes.findIndex((o) => !o.field && o.projectId === projectId)
     return i >= 0 ? i : undefined
   }
+  const forecastIndexFor = (projectId: string): number | undefined =>
+    bound ? outcomeIndexFor(projectId) : forecastBook?.outcomeIndexOf(projectId)
 
   // Brand color is withheld only from competitors that are actually outcomes in
   // the market and have not claimed their listing. A competitor the atlas lists
@@ -351,8 +372,9 @@ export default function SharedGoalPanel({
                 const color = accentFor(project.id, organization)
                 const p = oddsFractionFor(project.id)
                 const outcomeIndex = outcomeIndexFor(project.id)
+                const forecastIndex = forecastIndexFor(project.id)
                 const canBack =
-                  hasRace && bound && marketDeprizeId !== undefined && outcomeIndex !== undefined
+                  hasRace && forecastVoteId !== undefined && forecastIndex !== undefined
                 const kind = participationFor(project.rosterStatus)
                 const outcome = outcomeAt(outcomeIndex)
                 const holding =
@@ -370,7 +392,9 @@ export default function SharedGoalPanel({
                 const isWinningSlot =
                   bound && resolved && outcomeIndex !== undefined && outcomeIndex === winningIndex
                 const predictDisabled =
-                  payoutPending || outcomeIndex === undefined || numOutcomes <= outcomeIndex
+                  (bound && payoutPending) ||
+                  forecastIndex === undefined ||
+                  forecastOutcomeCount <= forecastIndex
                 const heldValueEth = outcome?.balance
                 return (
                   <div
@@ -441,7 +465,7 @@ export default function SharedGoalPanel({
                       {canBack && !resolved && (
                         <button
                           type="button"
-                          onClick={() => openPredict(outcomeIndex, project.name)}
+                          onClick={() => openPredict(forecastIndex, project.name)}
                           disabled={predictDisabled}
                           aria-label={`${DEPRIZE_PREDICT_CTA} ${project.name}`}
                           className="shrink-0 rounded-md px-3 py-1 text-xs font-semibold text-white transition-all
@@ -680,8 +704,9 @@ export default function SharedGoalPanel({
           </p>
         ) : !bound ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
-            No market is open for this race yet. The names above are the programs on record — there
-            are no odds, and nothing here is a bet.
+            No ETH market is open for this race yet. The names above are the programs on record.
+            Predictions here are free and weighted by voting power. Nothing here is a bet, an
+            endorsement, or a guarantee of outcomes.
           </p>
         ) : (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
@@ -703,19 +728,18 @@ export default function SharedGoalPanel({
 
       {predictArmed &&
         hasRace &&
-        bound &&
         !resolved &&
         chain &&
         chainSlug &&
-        marketDeprizeId !== undefined && (
+        forecastVoteId !== undefined && (
           <ForecastPredictModal
             chain={chain}
             chainSlug={chainSlug}
-            deprizeId={marketDeprizeId}
-            numOutcomes={numOutcomes}
-            labels={outcomeLabels}
+            deprizeId={forecastVoteId}
+            numOutcomes={forecastOutcomeCount}
+            labels={forecastLabels}
             reported={resolved}
-            marketLoading={payoutPending}
+            marketLoading={bound && payoutPending}
             outcomeIndex={predictIndex}
             teamName={predictName}
             onClose={() => setPredictIndex(null)}
