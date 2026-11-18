@@ -18,6 +18,7 @@ import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competit
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
@@ -159,6 +160,7 @@ export default function ForecastPanel(props: {
       )
     : -1
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
+  const { readyToSign } = useDePrizeChainGuard(chain)
 
   const n = labels.length
   const [savedPick, setSavedPick] = useState<number | null>(null)
@@ -320,6 +322,12 @@ export default function ForecastPanel(props: {
     })
   }
 
+  /** Guest writes name the chain themselves. Only the active wallet can be on another network. */
+  async function onPrizeNetwork(from: { address: string }): Promise<boolean> {
+    if (from.address.toLowerCase() !== account?.address?.toLowerCase()) return true
+    return readyToSign()
+  }
+
   async function commitPick(
     index: number,
     options?: { silent?: boolean; from?: typeof writer }
@@ -330,6 +338,7 @@ export default function ForecastPanel(props: {
       setError('Predictions are not available on this network yet.')
       return false
     }
+    if (!(await onPrizeNetwork(from))) return false
     const started = {
       address: from.address.toLowerCase(),
       chainSlug,
@@ -406,6 +415,7 @@ export default function ForecastPanel(props: {
 
   async function clearPick() {
     if (!writer || !forecastsContract) return
+    if (!(await onPrizeNetwork(writer))) return
     const started = {
       address: writer.address.toLowerCase(),
       chainSlug,

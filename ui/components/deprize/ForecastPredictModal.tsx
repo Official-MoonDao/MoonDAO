@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { Chain } from 'thirdweb'
 import { useForecastPredict } from '@/lib/forecasts/useForecastPredict'
 import { GuestConsentLine, GuestSaveNotice } from '@/components/deprize/GuestForecastNotice'
@@ -5,7 +6,8 @@ import PredictModal from '@/components/deprize/PredictModal'
 
 /**
  * The DePrize predict window (free MOONEY forecast). Kept mounted for the
- * open prize so a saved pick and its undo survive closing the dialog.
+ * open prize so a saved pick and its undo survive closing the dialog, and so
+ * the rows that open it can mark the saved pick.
  */
 export default function ForecastPredictModal(props: {
   chain: Chain
@@ -18,6 +20,8 @@ export default function ForecastPredictModal(props: {
   outcomeIndex: number | null
   teamName: string
   onClose: () => void
+  /** The writer's saved outcome slot for this prize, or null. */
+  onSavedPick?: (pick: number | null) => void
 }) {
   const session = useForecastPredict({
     chain: props.chain,
@@ -28,6 +32,10 @@ export default function ForecastPredictModal(props: {
     reported: props.reported,
     marketLoading: props.marketLoading,
   })
+  const { onSavedPick } = props
+  useEffect(() => {
+    onSavedPick?.(session.savedPick)
+  }, [onSavedPick, session.savedPick])
 
   if (props.outcomeIndex == null) return null
   const index = props.outcomeIndex

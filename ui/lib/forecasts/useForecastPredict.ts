@@ -9,6 +9,7 @@ import { resolveLiveDePrizeId } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { useClientDePrizeRestricted } from '@/lib/deprize/useClientDePrizeRestricted'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
@@ -94,6 +95,7 @@ export function useForecastPredict(args: {
     chainSlug,
     deprizeId,
   }
+  const { readyToSign } = useDePrizeChainGuard(chain)
   const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(activeAccount?.address)
   const votingWeight = totalVMOONEY || 0
 
@@ -265,6 +267,12 @@ export function useForecastPredict(args: {
     })
   }
 
+  /** Guest writes name the chain themselves. Only the active wallet can be on another network. */
+  async function onPrizeNetwork(writer: { address: string }): Promise<boolean> {
+    if (writer.address.toLowerCase() !== activeAccount?.address?.toLowerCase()) return true
+    return readyToSign()
+  }
+
   async function commitPick(index: number, from?: typeof account): Promise<boolean> {
     let writer = from ?? account
     if (!writer) return false
@@ -272,6 +280,7 @@ export function useForecastPredict(args: {
       setError('Predictions are not available on this network yet.')
       return false
     }
+    if (!(await onPrizeNetwork(writer))) return false
     const started = {
       address: writer.address.toLowerCase(),
       chainSlug,
@@ -347,6 +356,7 @@ export function useForecastPredict(args: {
 
   async function clearPick() {
     if (!account || !forecastsContract) return
+    if (!(await onPrizeNetwork(account))) return
     const writer = account
     const started = {
       address: writer.address.toLowerCase(),

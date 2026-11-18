@@ -27,18 +27,21 @@ export function useDePrizeChainGuard(chain?: Chain) {
     process.env.NEXT_PUBLIC_TEST_ENV !== 'true' && isWrongNetwork(walletChainId, chain?.id)
   const chainLabel = (chain?.name ?? 'the network').replace(' One', '')
 
-  const switchToChain = useCallback(async () => {
+  /** Resolves true once the wallet reports `chain`. */
+  const switchToChain = useCallback(async (): Promise<boolean> => {
     const wallet = wallets?.[selectedWallet]
-    if (!wallet || typeof wallet.switchChain !== 'function' || !chain) return
+    if (!wallet || typeof wallet.switchChain !== 'function' || !chain) return false
     setSwitching(true)
     try {
       await wallet.switchChain(chain.id)
+      return true
     } catch (err: any) {
       if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
         const added = await addNetworkToWallet(chain as any)
         if (added) {
           try {
             await wallet.switchChain(chain.id)
+            return true
           } catch {
             /* user rejected */
           }
@@ -46,10 +49,32 @@ export function useDePrizeChainGuard(chain?: Chain) {
       } else if (err?.code !== 4001) {
         toast.error('Failed to switch network. Please try again.', { style: toastStyle })
       }
+      return false
     } finally {
       setSwitching(false)
     }
   }, [wallets, selectedWallet, chain])
+
+  /**
+   * For a write signed by the active wallet, which broadcasts on its own
+   * network. Switches when needed and resolves false so the caller stops: the
+   * active account is rebuilt after a switch, so the visitor taps again.
+   */
+  const readyToSign = useCallback(async (): Promise<boolean> => {
+    if (!wrongNetwork) return true
+    if (await switchToChain()) {
+      toast.success(`Wallet switched to ${chainLabel}. Tap again to continue.`, {
+        id: 'deprize-network',
+        style: toastStyle,
+      })
+    } else {
+      toast.error(`Switch your wallet to ${chainLabel} to continue.`, {
+        id: 'deprize-network',
+        style: toastStyle,
+      })
+    }
+    return false
+  }, [wrongNetwork, switchToChain, chainLabel])
 
   /** Guard for use inside an action handler; toasts and returns true if blocked. */
   const blockedByNetwork = useCallback(() => {
@@ -58,5 +83,5 @@ export function useDePrizeChainGuard(chain?: Chain) {
     return true
   }, [wrongNetwork, chainLabel])
 
-  return { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork }
+  return { wrongNetwork, chainLabel, switching, switchToChain, readyToSign, blockedByNetwork }
 }
