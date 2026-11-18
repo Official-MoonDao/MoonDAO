@@ -1,7 +1,7 @@
 # DePrize marketing checklist
 
 **Owner:** MoonDAO communications  
-**Last updated:** 2026-11-17
+**Last updated:** 2026-11-18
 
 Use this list for every public DePrize announcement, thread, video, landing
 page, or paid placement. It is an operations checklist, not legal advice.
@@ -12,13 +12,28 @@ DePrize predictions — including free picks and Citizen predictions weighted by
 voting power — are open to anyone worldwide. Only **adding ETH to a prediction**
 (buying Outcome Tokens in the ETH market) is restricted by jurisdiction.
 
-Where DePrize pages, metadata, legal documents, or ETH-betting copy state the
-availability rule, use this sentence:
+Where a DePrize page, its metadata, or a legal document states the availability
+rule, use this sentence:
 
 > Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 Do not describe DePrize as a whole as "not available to U.S. persons" — free
 predictions and voting-power forecasts are open globally.
+
+## Social posts
+
+A social post, thread, caption, reply, or video description does not need a
+disclaimer line to pass this list.
+
+This sentence is not required on every post, and it is not required on any post:
+
+> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+
+Do not add it. Do not place it after "Adding ETH:" and treat that placement as
+compliance. Do not paste the availability sentence onto a post that is not
+stating the availability rule. When a post does state who can add ETH, use the
+availability sentence above, not the U.S. persons sentence. A post that mentions
+DePrize, a forecast, or a prize can pass this list without either sentence.
 
 ## Paid targeting
 
