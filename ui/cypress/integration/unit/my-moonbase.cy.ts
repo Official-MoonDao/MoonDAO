@@ -34,6 +34,7 @@ import {
 } from '../../../lib/my-moonbase/grid'
 import {
   mergePicks,
+  overlayForecastRows,
   picksFromBets,
   picksFromForecastRows,
   raceBooks,
@@ -183,6 +184,33 @@ describe('my moonbase picks', () => {
       },
       { projectId: 'cmu-iris', goalIds: ['shared-first-tracks'], sources: ['forecast'] },
     ])
+  })
+
+  it('lets a just-saved prediction stand in for the race row the gateway has not caught up on', () => {
+    const books = raceBooks('arbitrum', goals)
+    const tracks = ATLAS_FORECAST_VOTE_IDS['shared-first-tracks']
+    const rows = [
+      { voteId: 1, vote: vote({ 4: 100 }, 7) },
+      { voteId: tracks, vote: vote({ 2: 100 }, 5) },
+    ]
+    // Changed Touchdown to slot 0, then removed First Tracks.
+    const shown = overlayForecastRows(
+      rows,
+      [
+        { voteId: 1, index: 6 },
+        { voteId: 1, index: 0 },
+        { voteId: tracks, index: null },
+      ],
+      books
+    )
+    expect(picksFromForecastRows(shown, books).map((pick) => pick.projectId)).to.deep.equal([
+      'astrobotic-griffin',
+    ])
+    expect(overlayForecastRows(rows, [], books)).to.deep.equal(rows)
+    // A slot the race does not have is dropped, not written as a pick.
+    expect(
+      picksFromForecastRows(overlayForecastRows([], [{ voteId: 1, index: 40 }], books), books)
+    ).to.deep.equal([])
   })
 })
 

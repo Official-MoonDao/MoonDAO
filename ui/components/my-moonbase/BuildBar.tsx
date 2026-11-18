@@ -7,7 +7,6 @@ import {
   CubeIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline'
-import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
 import { DECOR, DECOR_GROUPS } from '@/lib/my-moonbase/decor'
 import type { BuilderTool } from './assets'
@@ -63,8 +62,8 @@ export type SelectedSummary = {
   detail?: string
   /** The visitor no longer backs this asset, so only its empty plot is drawn. */
   locked: boolean
-  /** Where to predict it again. */
-  raceHref?: string
+  /** Opens the predict window for it. Unset when no race it runs in is open. */
+  onPredictAgain?: () => void
 }
 
 export default function BuildBar({
@@ -119,10 +118,14 @@ export default function BuildBar({
             {selected.locked ? (
               <p className="text-[11px] text-amber-200/90">
                 You no longer predict this one.{' '}
-                {selected.raceHref && (
-                  <Link href={selected.raceHref} className="font-semibold underline">
+                {selected.onPredictAgain && (
+                  <button
+                    type="button"
+                    onClick={selected.onPredictAgain}
+                    className="font-semibold underline"
+                  >
                     Predict it again
-                  </Link>
+                  </button>
                 )}
               </p>
             ) : (

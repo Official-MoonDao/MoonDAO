@@ -103,6 +103,30 @@ export function picksFromForecastRows(
   return picks
 }
 
+/**
+ * A prediction this page has just saved or removed. The gateway takes a while
+ * to see a new row, so until it does this stands in for the race's row.
+ * `index` is the outcome slot picked, or null when the prediction was removed.
+ */
+export type PickOverlay = { voteId: number; index: number | null }
+
+/** Saved rows with each overlaid race's row replaced by what was just written. */
+export function overlayForecastRows(
+  rows: readonly ForecastRow[],
+  overlays: readonly PickOverlay[],
+  books: readonly RaceBook[]
+): ForecastRow[] {
+  if (overlays.length === 0) return [...rows]
+  const latest = new Map(overlays.map((overlay) => [overlay.voteId, overlay.index]))
+  const out = rows.filter((row) => !latest.has(row.voteId))
+  for (const [voteId, index] of latest) {
+    const book = books.find((b) => b.voteId === voteId)
+    if (index === null || !book || index < 0 || index >= book.outcomeIds.length) continue
+    out.push({ voteId, vote: { v: 1, a: { [String(index)]: 100 }, vp: 0 } })
+  }
+  return out
+}
+
 /** Every competitor a wallet holds outcome tokens on, in a race bound to a DePrize. */
 export function picksFromBets(
   book: RaceBook | undefined,

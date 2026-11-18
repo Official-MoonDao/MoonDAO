@@ -31,10 +31,11 @@ import {
   type ItemKind,
   type PlacedItem,
 } from '@/lib/my-moonbase/grid'
-import { isPredictableRace } from '@/lib/my-moonbase/picks'
 import { useMoonbaseLayout } from '@/lib/my-moonbase/useMoonbaseLayout'
 import { useMoonbasePicks } from '@/lib/my-moonbase/useMoonbasePicks'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import ForecastPredictModal from '@/components/deprize/ForecastPredictModal'
 import BuildBar, { type SelectedSummary } from './BuildBar'
 import InventoryPanel, { type InventoryRace } from './InventoryPanel'
 import {
@@ -89,7 +90,16 @@ export default function MyMoonbase() {
     [catalog]
   )
 
-  const { status, picks, betsPending, refresh } = useMoonbasePicks(chain, dataset.sharedGoals)
+  const chainSlug = getChainSlug(chain)
+  const nameOf = useCallback((projectId: string) => catalog.get(projectId)?.project.name, [catalog])
+  const {
+    status,
+    picks,
+    betsPending,
+    races: predictRaces,
+    market,
+    refresh,
+  } = useMoonbasePicks(chain, dataset.sharedGoals, nameOf)
   const { layout, loaded, saveFailed, edit, undo, redo, canUndo, canRedo } =
     useMoonbaseLayout(spanFor)
 
@@ -132,17 +142,48 @@ export default function MyMoonbase() {
 
   const unlocked = useMemo(() => new Set(picks.map((pick) => pick.projectId)), [picks])
 
-  const races = useMemo<InventoryRace[]>(
-    () =>
-      dataset.sharedGoals.filter(isPredictableRace).map((goal) => ({
-        goal,
-        assets: picks
-          .filter((pick) => pick.goalIds.includes(goal.id))
-          .map((pick) => catalog.get(pick.projectId))
-          .filter((asset): asset is AssetInfo => Boolean(asset)),
-      })),
-    [dataset.sharedGoals, picks, catalog]
+  const races = useMemo<InventoryRace[]>(() => {
+    const goals = new Map(dataset.sharedGoals.map((goal) => [goal.id, goal]))
+    return predictRaces.flatMap((race) => {
+      const goal = goals.get(race.goalId)
+      if (!goal) return []
+      const field = race.outcomeIds.flatMap((projectId, index) => {
+        const asset = projectId ? catalog.get(projectId) : undefined
+        return asset ? [{ index, asset }] : []
+      })
+      const closedReason =
+        market?.goalId !== race.goalId
+          ? undefined
+          : market.resolved
+          ? 'This race has been decided, so predictions are closed.'
+          : market.payoutPending
+          ? 'Checking the prize market…'
+          : undefined
+      return [
+        {
+          goal,
+          assets: picks
+            .filter((pick) => pick.goalIds.includes(goal.id))
+            .map((pick) => catalog.get(pick.projectId))
+            .filter((asset): asset is AssetInfo => Boolean(asset)),
+          field,
+          closedReason,
+        },
+      ]
+    })
+  }, [dataset.sharedGoals, predictRaces, market, picks, catalog])
+
+  // The race whose predict window is mounted. It stays mounted after the
+  // window closes, so a saved pick and its undo survive, as on the race panel.
+  const [predictGoalId, setPredictGoalId] = useState<string | null>(null)
+  const [predictTarget, setPredictTarget] = useState<{ index: number; name: string } | null>(
+    null
   )
+  const predictRace = predictRaces.find((race) => race.goalId === predictGoalId)
+  const openPredict = (goalId: string, index: number, name: string) => {
+    setPredictGoalId(goalId)
+    setPredictTarget({ index, name })
+  }
 
   const placedRefs = useMemo(
     () => new Set(layout.items.filter((item) => item.kind === 'asset').map((item) => item.ref)),
@@ -322,7 +363,8 @@ export default function MyMoonbase() {
 
   const keyRef = useRef<(e: KeyboardEvent) => void>(() => {})
   keyRef.current = (e: KeyboardEvent) => {
-    if (isTyping(e.target)) return
+    // The predict window owns the keyboard while it is open.
+    if (isTyping(e.target) || predictTarget) return
     const mod = e.metaKey || e.ctrlKey
     const key = e.key.toLowerCase()
     if (mod && key === 'z') {
@@ -358,16 +400,27 @@ export default function MyMoonbase() {
       return { name: decorById(selectedItem.ref)?.label ?? 'Scenery', locked: false }
     }
     const info = catalog.get(selectedItem.ref)
-    const goalId = info?.project.sharedGoalIds.find((id) =>
-      dataset.sharedGoals.some((goal) => goal.id === id && isPredictableRace(goal))
-    )
+    const ref = selectedItem.ref
+    // The first open race this asset runs in, at its slot there.
+    let again: { goalId: string; index: number } | undefined
+    for (const race of races) {
+      const entry = race.field.find((f) => f.asset.project.id === ref)
+      if (entry && !race.closedReason) {
+        again = { goalId: race.goal.id, index: entry.index }
+        break
+      }
+    }
     return {
-      name: info?.project.name ?? selectedItem.ref,
+      name: info?.project.name ?? ref,
       detail: info?.orgName,
       locked: heldBackIds.has(selectedItem.id),
-      raceHref: goalId ? `/moonbase?race=${encodeURIComponent(goalId)}` : '/moonbase',
+      onPredictAgain: again
+        ? () => openPredict(again!.goalId, again!.index, info?.project.name ?? ref)
+        : undefined,
     }
-  }, [selectedItem, catalog, dataset.sharedGoals, heldBackIds])
+    // `openPredict` only sets state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem, catalog, races, heldBackIds])
 
   // A phone has no keyboard, no right button and no wheel, so it is not told
   // about any of them.
@@ -483,6 +536,7 @@ export default function MyMoonbase() {
                   onFind={handleFindAsset}
                   onSignIn={login}
                   onRetry={refresh}
+                  onPredict={openPredict}
                 />
               </div>
             )}
@@ -519,6 +573,21 @@ export default function MyMoonbase() {
           />
         </div>
       </div>
+
+      {predictRace && (
+        <ForecastPredictModal
+          chain={chain}
+          chainSlug={chainSlug}
+          deprizeId={predictRace.voteId}
+          numOutcomes={predictRace.outcomeIds.length}
+          labels={predictRace.labels}
+          reported={market?.goalId === predictRace.goalId && market.resolved}
+          marketLoading={market?.goalId === predictRace.goalId && market.payoutPending}
+          outcomeIndex={predictTarget?.index ?? null}
+          teamName={predictTarget?.name ?? ''}
+          onClose={() => setPredictTarget(null)}
+        />
+      )}
     </div>
   )
 }

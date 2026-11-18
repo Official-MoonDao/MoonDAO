@@ -9,13 +9,17 @@ import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
 import type { SharedGoal } from '@/lib/lunar-atlas/types'
 import { tablelandQueryEndpoint } from '@/lib/tableland/endpoint'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { subscribeRoster } from '@/lib/forecasts/rosterRefresh'
 import {
   mergePicks,
+  overlayForecastRows,
   picksFromBets,
   picksFromForecastRows,
   raceBooks,
   type ForecastRow,
   type MoonbasePick,
+  type PickOverlay,
+  type RaceBook,
 } from './picks'
 
 export type MoonbasePicksStatus =
@@ -37,7 +41,16 @@ export type MoonbasePicksState = {
    * missing from `picks` may yet turn out to be backed by a bet.
    */
   betsPending: boolean
+  /** Every race that can be predicted here, with what its predict window needs. */
+  races: PredictableRace[]
+  /** The DePrize-bound race's market, once read. Predicting it waits on a settled payout. */
+  market: { goalId: string; resolved: boolean; payoutPending: boolean } | null
   refresh: () => void
+}
+
+export type PredictableRace = RaceBook & {
+  /** Outcome names in slot order, the same ones the race panel saves under. */
+  labels: string[]
 }
 
 const REFOCUS_MIN_MS = 5_000
@@ -66,7 +79,11 @@ async function fetchForecastRows(
  * the race panels write with (the active account, or the guest wallet for a
  * signed-out visitor), plus any outcome they hold a bet on in a live DePrize.
  */
-export function useMoonbasePicks(chain: Chain, goals: readonly SharedGoal[]): MoonbasePicksState {
+export function useMoonbasePicks(
+  chain: Chain,
+  goals: readonly SharedGoal[],
+  nameOf: (projectId: string) => string | undefined
+): MoonbasePicksState {
   const chainSlug = getChainSlug(chain)
   const { ready, authenticated } = usePrivy()
   const { writer } = useForecastWriter()
@@ -75,6 +92,22 @@ export function useMoonbasePicks(chain: Chain, goals: readonly SharedGoal[]): Mo
   const table = FORECASTS_TABLE_NAMES[chainSlug] as string | undefined
 
   const books = useMemo(() => raceBooks(chainSlug, goals), [chainSlug, goals])
+  const nameRef = useRef(nameOf)
+  nameRef.current = nameOf
+  const races = useMemo<PredictableRace[]>(
+    () =>
+      books.map((book) => ({
+        ...book,
+        labels: book.outcomeIds.map((projectId, index) =>
+          projectId
+            ? nameRef.current(projectId) ?? `Team #${index + 1}`
+            : book.deprizeId !== undefined
+            ? 'Open Field'
+            : `Team #${index + 1}`
+        ),
+      })),
+    [books]
+  )
 
   // One live market at most. Bets come from the signed-in account; a guest
   // wallet cannot hold one.
@@ -86,10 +119,38 @@ export function useMoonbasePicks(chain: Chain, goals: readonly SharedGoal[]): Mo
   const [nonce, setNonce] = useState(0)
   const refresh = useCallback(() => setNonce((n) => n + 1), [])
 
+  // Predictions saved from this page, by the wallet that saved them.
+  const [overlays, setOverlays] = useState<(PickOverlay & { address: string })[]>([])
+
   useEffect(() => {
     setRows(null)
     setFailed(false)
   }, [address, chainSlug])
+
+  useEffect(() => setOverlays([]), [chainSlug])
+
+  // The predict window announces every save and removal. The gateway will not
+  // show the new row for a while, and the hardware should unlock now.
+  useEffect(
+    () =>
+      subscribeRoster((notice) => {
+        if (notice.chain !== chainSlug) return
+        const race = races.find((r) => r.voteId === notice.deprizeId)
+        if (!race) return
+        const index = notice.removed
+          ? null
+          : notice.pick === undefined
+          ? -1
+          : race.labels.indexOf(notice.pick)
+        if (index === -1) return
+        const from = notice.address.toLowerCase()
+        setOverlays((prev) => [
+          ...prev.filter((o) => !(o.voteId === race.voteId && o.address === from)),
+          { voteId: race.voteId, index, address: from },
+        ])
+      }),
+    [chainSlug, races]
+  )
 
   useEffect(() => {
     if (!address || !table) return
@@ -111,7 +172,7 @@ export function useMoonbasePicks(chain: Chain, goals: readonly SharedGoal[]): Mo
     }
   }, [address, table, chain.id, nonce])
 
-  // Predicting happens on another page or tab. Read again on the way back.
+  // A prediction made in another tab, or on Moon Base Zero. Read again on the way back.
   const lastFocus = useRef(0)
   useEffect(() => {
     const onFocus = () => {
@@ -130,13 +191,26 @@ export function useMoonbasePicks(chain: Chain, goals: readonly SharedGoal[]): Mo
     const handoffs: ForecastRow[] = readPendingHandoffs()
       .filter((row) => row.chainSlug === chainSlug)
       .map((row) => ({ voteId: row.deprizeId, vote: row.vote }))
+    const mine = overlays.filter((o) => o.address === address)
     return mergePicks([
-      ...picksFromForecastRows([...(rows ?? []), ...handoffs], books),
+      ...picksFromForecastRows(overlayForecastRows([...(rows ?? []), ...handoffs], mine, books), books),
       ...picksFromBets(betBook, account ? odds.outcomes : []),
     ])
     // `nonce` re-reads the handoff store, which is not React state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, books, betBook, account, odds.outcomes, chainSlug, nonce])
+  }, [rows, overlays, address, books, betBook, account, odds.outcomes, chainSlug, nonce])
+
+  const market = useMemo(
+    () =>
+      betBook
+        ? {
+            goalId: betBook.goalId,
+            resolved: odds.resolved,
+            payoutPending: odds.market.marketConfigured && !odds.market.payoutSettled,
+          }
+        : null,
+    [betBook, odds.resolved, odds.market.marketConfigured, odds.market.payoutSettled]
+  )
 
   let status: MoonbasePicksStatus
   if (!table) status = 'unsupported'
@@ -145,5 +219,12 @@ export function useMoonbasePicks(chain: Chain, goals: readonly SharedGoal[]): Mo
   else if (rows === null) status = failed ? 'error' : 'loading'
   else status = 'ready'
 
-  return { status, picks, betsPending: !!account && !!betBook && odds.loading, refresh }
+  return {
+    status,
+    picks,
+    betsPending: !!account && !!betBook && odds.loading,
+    races,
+    market,
+    refresh,
+  }
 }
