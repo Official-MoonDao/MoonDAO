@@ -30,6 +30,7 @@ import {
   solarArrayKey,
   SPINE_BEARING_DEG,
   at,
+  distToRoadM,
   onRoad,
   shuttleAt,
   shuttleLapM,
@@ -37,6 +38,7 @@ import {
   type ShuttleRun,
   type Slot,
 } from '@/lib/lunar-atlas/baseplan'
+import { JUNCTION_FILLET_M } from '@/lib/lunar-atlas/junctions'
 import {
   MOON_RADIUS_M,
   latLonToVector3,
@@ -585,6 +587,10 @@ const STREET_LIGHT_SPACING_M = 26
 // in baseplan.ts' Street.
 const LIT_ROAD_WIDTH = 1
 
+// How far a post has to stand from the centreline of every road but its own:
+// the road's half-width plus the apron a junction sweeps clear past it.
+const STREET_LIGHT_ROAD_CLEAR_M = ROAD_HALF_M + JUNCTION_FILLET_M
+
 // Staged cargo along the shoulders of every road — the manifested-cargo
 // counterpart to the boulder field, for stretches of road with nothing to
 // look at otherwise. Unlike the boulders (native rock, scattered anywhere on
@@ -847,8 +853,8 @@ function InterDistrictFiller({
     // verges and the spine gets a post every 20 m of its length rather than
     // every 40.
     const STEP_M = 2
-    for (const run of ROAD_RUNS) {
-      if (run.width < LIT_ROAD_WIDTH) continue
+    ROAD_RUNS.forEach((run, ri) => {
+      if (run.width < LIT_ROAD_WIDTH) return
       let placed = 0
       let lastAt: number | null = null
       for (let d = 0; d < run.lengthM; d += STEP_M) {
@@ -859,6 +865,11 @@ function InterDistrictFiller({
         // well back from it. A block's ground starts a setback off its streets,
         // just outside the post, so the avenues stay lit the length of town.
         if (withinDistrictGround(post.east, post.north, 0)) continue
+        // Its offset only clears its OWN road. Where another road meets or
+        // crosses this one — and at every branch's first meters, which start
+        // on the spine — the same offset puts the post on that road's pavement
+        // or on the apron swept out round the junction.
+        if (distToRoadM(post.east, post.north, ri) < STREET_LIGHT_ROAD_CLEAR_M) continue
         lastAt = d
         placed++
 
@@ -879,7 +890,7 @@ function InterDistrictFiller({
         const noseAlong = innerDir.sub(dv).normalize().toArray() as Vec3
         out.push({ dir: [dv.x, dv.y, dv.z] as Vec3, seat, noseAlong })
       }
-    }
+    })
     return out
   }, [radiusAt, built])
 

@@ -1,4 +1,4 @@
-import { XMarkIcon } from '@heroicons/react/20/solid'
+import { PlusIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
@@ -130,64 +130,55 @@ export default function PredictModal(props: {
     <Modal
       id="deprize-predict"
       setEnabled={(open) => !open && props.onClose()}
-      className="fixed inset-0 z-[9999] flex flex-col justify-center bg-[#00000080] bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent p-2 backdrop-blur-sm animate-fadeIn sm:p-4"
+      className="fixed inset-0 z-[9999] flex flex-col justify-center bg-black/60 p-3 backdrop-blur-sm animate-fadeIn sm:p-4"
       showCloseButton={false}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="deprize-predict-title"
-        className="mx-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-xl flex-col rounded-lg bg-dark-cool shadow-xl sm:max-h-[calc(100dvh-2rem)]"
+        className={`mx-auto flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-mid-cool-2 to-dark-cool shadow-2xl shadow-black/60 sm:max-h-[calc(100dvh-2rem)] ${
+          ethOffered ? 'max-w-md' : 'max-w-sm'
+        }`}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6">
-          <h2
-            id="deprize-predict-title"
-            className="text-xl font-semibold text-white"
-            data-testid="modal-title"
-          >
-            {isBet ? `Add ETH to ${props.teamName}` : `Predict ${props.teamName}`}
-          </h2>
+        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
+          <div className="min-w-0">
+            {!wantCombined && (
+              <p
+                className={`text-xs font-semibold uppercase tracking-wider ${
+                  isBet ? 'text-emerald-300' : 'text-indigo-300'
+                }`}
+              >
+                {isBet ? 'ETH market' : 'MOONEY forecast · Free'}
+              </p>
+            )}
+            <h2
+              id="deprize-predict-title"
+              className="mt-1 break-words text-lg font-semibold leading-snug text-white"
+              data-testid="modal-title"
+            >
+              {isBet ? `Add ETH to ${props.teamName}` : `Predict ${props.teamName}`}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={props.onClose}
-            className={`-mr-2 grid place-items-center text-gray-400 transition-colors hover:text-white ${TOUCH}`}
+            className={`-mr-2 -mt-1 grid shrink-0 place-items-center rounded-full p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white ${TOUCH}`}
             aria-label="Close modal"
             data-testid="modal-close"
           >
-            <XMarkIcon className="h-6 w-6" />
+            <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
-          <div className="flex flex-col gap-4">
-            {!wantCombined && (
-              <div className="flex items-center gap-3 text-sm">
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    isBet
-                      ? 'bg-emerald-400/15 text-emerald-300'
-                      : 'bg-indigo-400/15 text-indigo-200'
-                  }`}
-                >
-                  {isBet ? 'ETH market' : 'MOONEY forecast · free'}
-                </span>
-              </div>
-            )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-3 empty:hidden">
+          <div className="flex flex-col gap-4 empty:hidden">
             {(combineEth || isBet) && (
-              <p className="text-sm text-gray-300">
+              <p className="text-sm leading-relaxed text-gray-400">
                 {combineEth
                   ? 'Your pick is weighted by your voting power. Adding ETH is optional and backs this competitor in the market.'
                   : 'Real ETH. Each share pays 1 ETH if this team wins. This does not save a MOONEY prediction.'}
               </p>
-            )}
-
-            {!props.connected && !(props.signedOutPredict && !isBet) && (
-              <button
-                type="button"
-                onClick={props.onConnect}
-                className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 ${TOUCH}`}
-              >
-                {isBet ? 'Connect wallet to add ETH' : 'Connect wallet to predict'}
-              </button>
             )}
 
             {isBet &&
@@ -197,7 +188,7 @@ export default function PredictModal(props: {
                 <button
                   type="button"
                   disabled
-                  className="w-full cursor-not-allowed rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-500"
+                  className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-gray-500"
                 >
                   Add ETH
                 </button>
@@ -214,7 +205,7 @@ export default function PredictModal(props: {
             {!isBet && props.guestNotice}
 
             {props.connected && props.error && !isBet && (
-              <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2.5 text-xs text-red-200">
                 {props.error}
               </p>
             )}
@@ -227,30 +218,44 @@ export default function PredictModal(props: {
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 border-t border-white/10 px-4 py-3 empty:hidden sm:px-6">
+        <div
+          className={`flex shrink-0 flex-col gap-1.5 px-5 pb-5 empty:hidden ${
+            ethOffered ? 'border-t border-white/10 pt-4' : ''
+          }`}
+        >
           {!isBet && props.saved && props.offerShare ? <ForecastSharePrompt /> : null}
+          {!props.connected && !(props.signedOutPredict && !isBet) && (
+            <button
+              type="button"
+              onClick={props.onConnect}
+              className={`w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-gray-200 ${TOUCH}`}
+            >
+              {isBet ? 'Connect wallet to add ETH' : 'Connect wallet to predict'}
+            </button>
+          )}
+
           {ethOffered && props.connected && !combineEth && (
             <button
               type="button"
               onClick={() => betRunRef.current()}
               disabled={!activeBet || activeBet.disabled}
-              className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+              className={`w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-white ${TOUCH}`}
             >
               {activeBet?.label ?? 'Add ETH'}
             </button>
           )}
 
           {!isBet && !combineEth && props.connected && !props.citizenLoading && (
-            <div className="flex flex-col gap-2">
+            <>
               <button
                 type="button"
                 onClick={props.onPredict}
                 disabled={!props.predictEnabled || props.writing || props.saved}
                 aria-pressed={props.saved}
-                className={`w-full rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-40 ${TOUCH} ${
+                className={`w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 ${TOUCH} ${
                   ethOffered
                     ? 'border border-white/15 text-gray-200 hover:bg-white/10'
-                    : 'bg-white text-slate-900'
+                    : 'bg-white text-slate-900 hover:bg-gray-200 disabled:hover:bg-white'
                 }`}
               >
                 {predictLabel}
@@ -259,27 +264,30 @@ export default function PredictModal(props: {
                 <button
                   type="button"
                   onClick={props.onUndo}
-                  className={`w-full rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 ${TOUCH}`}
+                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-white/5 hover:text-white ${TOUCH}`}
                 >
                   Undo
                 </button>
               )}
-            </div>
+            </>
           )}
 
           {!isBet && !props.connected && props.signedOutPredict && (
-            <div className="flex flex-col gap-2">
+            <>
               <button
                 type="button"
                 onClick={props.onPredict}
                 disabled={!props.predictEnabled || props.writing}
-                className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+                className={`w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-white ${TOUCH}`}
                 data-testid="guest-predict"
               >
                 {props.writing ? 'Predicting…' : `Predict ${props.teamName}`}
               </button>
               {props.error && (
-                <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                <p
+                  role="alert"
+                  className="rounded-xl bg-red-500/10 px-3 py-2.5 text-xs text-red-200"
+                >
                   {props.error}
                 </p>
               )}
@@ -287,11 +295,11 @@ export default function PredictModal(props: {
               <button
                 type="button"
                 onClick={props.onConnect}
-                className="text-xs text-gray-400 underline hover:text-gray-200"
+                className={`w-full rounded-xl px-4 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-white/5 hover:text-white ${TOUCH}`}
               >
                 Sign in instead
               </button>
-            </div>
+            </>
           )}
 
           {!isBet && props.connected && !props.saved && props.consentNotice}
@@ -300,8 +308,9 @@ export default function PredictModal(props: {
             <button
               type="button"
               onClick={addEth}
-              className={`w-full rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 ${TOUCH}`}
+              className={`inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-white/5 hover:text-white ${TOUCH}`}
             >
+              <PlusIcon className="h-4 w-4" aria-hidden />
               Add ETH to your prediction
             </button>
           )}
@@ -322,7 +331,7 @@ export default function PredictModal(props: {
                 activeBet?.label.startsWith('Placing') ||
                 (!activeBet && (!props.predictEnabled || props.saved))
               }
-              className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+              className={`w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-white ${TOUCH}`}
             >
               {activeBet?.kind === 'fund'
                 ? activeBet.label

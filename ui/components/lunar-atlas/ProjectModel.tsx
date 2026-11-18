@@ -3341,7 +3341,7 @@ function JunctionBox({ accent = HAZARD }: { accent?: string }) {
 
 // A portable tripod work light — folding legs and a foot-mounted battery
 // pack, the temporary rig an active work site actually runs on. Kept
-// visually distinct from the depot's fixed, cranked-over yard masts
+// visually distinct from the depot's fixed, stayed-arm yard masts
 // (`DepotLightMast`): shorter, three-legged, and clearly meant to be struck
 // and moved rather than planted.
 function WorkLightTower({ on = true }: { on?: boolean }) {
@@ -4425,45 +4425,231 @@ export function DistrictFloodPool({ radiusM = 26 }: { radiusM?: number }) {
   return <LightPool radiusM={radiusM} stretch={1} intensity={0.55} />
 }
 
-// A yard light, boom cranked out over the aisle rather than run straight up
-// its own pole — the way an actual lot light leans its fixture in over what
-// it's lighting instead of down onto itself. Parameterized (rather than a
-// second component) so the same fixture serves both the depot's own
-// accent-colored yard lights and the neutral roadside `StreetLight` below —
-// a taller pole with a longer boom reaches out over a wider road than a
-// yard aisle needs.
+// ---------------------------------------------------------------------------
+// The settlement's light standard
+// ---------------------------------------------------------------------------
+//
+// A lamp post designed for where it stands, rather than a street lamp moved to
+// the Moon. Each part is the answer to something the site imposes:
+//   - It stands on a BALLAST BLOCK, not a foundation. There is no concrete
+//     here and nothing to bolt to, so the footing is a block of sintered
+//     regolith bedded into the ground, with the mast's canister seated in it.
+//   - The mast TELESCOPES. It arrives as a canister a rover can carry and is
+//     run up on site, which is why it steps down in three stages with a collar
+//     at each joint instead of tapering like a rolled pole.
+//   - The head is CABLE-STAYED off a king post. At a sixth of a g a long thin
+//     arm needs almost nothing to hold it out, and a stay does that for less
+//     mass than a stiffer arm would. The post's tip carries the marker light.
+//   - The head is a flat BLADE with a radiator on its back. A lamp in vacuum
+//     has no air to hand its heat to, so the top face is a white plate looking
+//     at the cold zenith (the house rule for every radiator on this base). The
+//     light leaves through a slab on the underside that stands a little proud
+//     of the housing all round, so from above — where this is mostly seen
+//     from — the fixture shows as a lit outline rather than as a dark lid.
+//   - No shade, no hood, no cone. Those keep rain off and glare out of a sky
+//     that scatters; here the only light anywhere is the light on the ground.
+//
+// Built as three merged geometries per size and shared by every post of that
+// size, because a road is lined with dozens of these and none of the parts
+// ever moves against another: the foot, the frame, and everything that glows.
+const LAMP_PLINTH = PAD_WALL // sintered regolith, same as a blast wall
+const LAMP_COAT = HULL // white thermal coat on everything that stands in the sun
+const LAMP_RADIATOR = '#f2f5f8'
+// How far the head is raised off level, toward what it lights. Positive about
+// +Z lifts the +X end, and +X is the side the road is on.
+const LAMP_TILT = 0.12
+// How far the lit slab stands out past its housing, per side.
+const LAMP_RIM = 0.03
+
+function paintedPart(geo: THREE.BufferGeometry, color: string): THREE.BufferGeometry {
+  const c = new THREE.Color(color)
+  const n = geo.attributes.position.count
+  const col = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) col.set([c.r, c.g, c.b], i * 3)
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
+  return geo
+}
+
+function mergedParts(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const merged = mergeGeometries(parts, false)
+  parts.forEach((g) => g.dispose())
+  return merged ?? new THREE.BufferGeometry()
+}
+
+// A round member from `a` to `b`, `rA` at the first end and `rB` at the second.
+function tubeBetween(
+  a: [number, number, number],
+  b: [number, number, number],
+  rA: number,
+  rB = rA,
+  seg = 10
+): THREE.BufferGeometry {
+  const from = new THREE.Vector3(...a)
+  const axis = new THREE.Vector3(...b).sub(from)
+  const length = axis.length()
+  const g = new THREE.CylinderGeometry(rB, rA, length, seg)
+  g.applyQuaternion(
+    new THREE.Quaternion().setFromUnitVectors(MODEL_UP, axis.clone().divideScalar(length))
+  )
+  g.translate(from.x + axis.x / 2, from.y + axis.y / 2, from.z + axis.z / 2)
+  return g
+}
+
+type LampGeometry = {
+  foot: THREE.BufferGeometry
+  frame: THREE.BufferGeometry
+  glow: THREE.BufferGeometry
+  // How far out from the mast the middle of the head sits.
+  headX: number
+}
+
+const lampGeometryCache = new Map<string, LampGeometry>()
+
+function getLampGeometry(height: number, boomLen: number): LampGeometry {
+  const key = `${height}:${boomLen}`
+  const cached = lampGeometryCache.get(key)
+  if (cached) return cached
+
+  // --- Foot ---------------------------------------------------------------
+  // The block runs 20 cm below grade, per the house rule: one resolved exactly
+  // at y = 0 stands clear of any hollow it lands over, and on a slope the
+  // downhill edge of an 84 cm block drops by most of a hand.
+  const plinthTop = 0.22
+  const canTop = 0.66
+  //
+  // Every list below runs OUTSIDE-IN and TOP-DOWN, and the order is doing work.
+  // The street furniture is drawn at the settlement's presence, which is short
+  // of opaque, and a merged mesh draws its parts in the order they were merged:
+  // a part drawn after the one in front of it is blended on top of it, and
+  // shows through. Drawn first, the nearer part has already written depth and
+  // the one behind it is simply discarded.
+  const foot = mergedParts([
+    // The shoulder the first stage slides out of.
+    paintedPart(new THREE.CylinderGeometry(0.1, 0.165, 0.08, 14).translate(0, canTop + 0.03, 0), METAL),
+    // Feed box on the side away from the road, where the buried cable comes up.
+    paintedPart(new THREE.BoxGeometry(0.1, 0.2, 0.16).translate(-0.18, 0.4, 0), METAL),
+    paintedPart(
+      new THREE.CylinderGeometry(0.15, 0.15, canTop - plinthTop + 0.02, 14).translate(
+        0,
+        (canTop + plinthTop - 0.02) / 2,
+        0
+      ),
+      DARK
+    ),
+    paintedPart(new THREE.CylinderGeometry(0.34, 0.474, 0.42, 6).translate(0, 0.01, 0), LAMP_PLINTH),
+  ])
+
+  // --- Mast ---------------------------------------------------------------
+  // `height` is where the head mounts; the king post carries on above it far
+  // enough to give the stays an angle worth having.
+  const top = height + 0.3 + boomLen * 0.4
+  const y0 = canTop
+  const y1 = y0 + (top - y0) * 0.44
+  const y2 = y0 + (top - y0) * 0.76
+  const R1 = 0.068
+  const R2 = 0.05
+  const R3 = 0.034
+  const mast = [
+    // The cap the marker light sits in, and the hub the arm leaves from.
+    paintedPart(tubeBetween([0, top - 0.02, 0], [0, top + 0.05, 0], 0.05, 0.034), DARK),
+    paintedPart(tubeBetween([0, height - 0.09, 0], [0, height + 0.09, 0], 0.062, 0.062, 12), DARK),
+    paintedPart(tubeBetween([0, y2, 0], [0, y2 + 0.1, 0], R2 + 0.02, R2 + 0.02, 12), DARK),
+    paintedPart(tubeBetween([0, y1, 0], [0, y1 + 0.1, 0], R1 + 0.02, R1 + 0.02, 12), DARK),
+    paintedPart(tubeBetween([0, y2, 0], [0, top, 0], R3), LAMP_COAT),
+    paintedPart(tubeBetween([0, y1, 0], [0, y2 + 0.05, 0], R2), LAMP_COAT),
+    paintedPart(tubeBetween([0, y0, 0], [0, y1 + 0.05, 0], R1), LAMP_COAT),
+  ]
+
+  // --- Arm and head -------------------------------------------------------
+  // Authored level along +X from the hub, then raised by LAMP_TILT as one
+  // piece — so "under the housing" stays under it whatever the tilt is.
+  const headL = boomLen * 0.42
+  const headW = 0.3
+  const armLen = boomLen - headL
+  const headMid = boomLen - headL / 2
+  const raise = new THREE.Matrix4().makeRotationZ(LAMP_TILT).setPosition(0, height, 0)
+  const raised = (g: THREE.BufferGeometry) => g.applyMatrix4(raise)
+  // Where a point on the level arm ends up, for the stays to be run to.
+  const onArm = (x: number, y: number): [number, number, number] => {
+    const v = new THREE.Vector3(x, y, 0).applyMatrix4(raise)
+    return [v.x, v.y, v.z]
+  }
+  const head = [
+    paintedPart(tubeBetween([0, top - 0.05, 0], onArm(boomLen - 0.1, 0.03), 0.012, 0.012, 6), METAL),
+    paintedPart(tubeBetween([0, top - 0.05, 0], onArm(armLen, 0.04), 0.012, 0.012, 6), METAL),
+    // Radiator, standing proud of the housing with a dark margin left round it.
+    paintedPart(
+      raised(new THREE.BoxGeometry(headL - 0.18, 0.014, headW - 0.14).translate(headMid, 0.029, 0)),
+      LAMP_RADIATOR
+    ),
+    // Housing. Its underside sinks 4 mm into the lit slab rather than meeting
+    // it, so the two never share a face.
+    paintedPart(
+      raised(
+        new THREE.BoxGeometry(headL - LAMP_RIM * 2, 0.04, headW - LAMP_RIM * 2).translate(
+          headMid,
+          0.004,
+          0
+        )
+      ),
+      DARK
+    ),
+    // Yoke joining the arm to the head.
+    paintedPart(raised(new THREE.BoxGeometry(0.14, 0.075, 0.11).translate(armLen, 0, 0)), DARK),
+    paintedPart(raised(tubeBetween([0.03, 0, 0], [armLen + 0.04, 0, 0], 0.03, 0.024)), LAMP_COAT),
+  ]
+
+  const glow = mergedParts([
+    raised(new THREE.BoxGeometry(headL, 0.036, headW).translate(headMid, -0.03, 0)),
+    new THREE.SphereGeometry(0.045, 12, 8).translate(0, top + 0.07, 0),
+  ])
+
+  const lamp: LampGeometry = {
+    foot,
+    frame: mergedParts([...head, ...mast]),
+    glow,
+    headX: headMid * Math.cos(LAMP_TILT),
+  }
+  lampGeometryCache.set(key, lamp)
+  return lamp
+}
+
+// The standard as a fixture. Parameterized (rather than a second component)
+// so one design serves both the depot's own accent-colored yard lights and the
+// neutral roadside `StreetLight` below — a taller mast with a longer arm
+// reaches out over a wider road than a yard aisle needs.
 function DepotLightMast({
   accent,
   height = 4.2,
   boomLen = 1.1,
   poolRadiusM = 0,
+  groundY = 0,
 }: {
   accent: string
+  // Of the head, above the ground the fixture stands on.
   height?: number
   boomLen?: number
   // Radius of the lit pool this fixture throws on the ground; 0 for none.
   poolRadiusM?: number
+  // Where that ground is in the fixture's own frame. 0 on a deck; below it for
+  // a post whose anchor is held off the terrain.
+  groundY?: number
 }) {
-  const h = height
-  const boomOut = boomLen * 0.5
-  const headOut = boomLen * 0.95
+  const lamp = useMemo(() => getLampGeometry(height, boomLen), [height, boomLen])
   return (
     <group>
-      <mesh position={[0, h / 2, 0]}>
-        <cylinderGeometry args={[0.09, 0.12, h, 10]} />
-        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
-      </mesh>
-      <group position={[0, h, 0]} rotation={[0, 0, -0.55]}>
-        <mesh position={[boomOut, 0, 0]}>
-          <cylinderGeometry args={[0.045, 0.045, boomLen, 8]} />
-          <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
+      {/* White base colour on both: the tones ride on the vertex colours, so
+          SurfaceAnchor's dust and wear passes still have material.color to
+          themselves. The foot is its own mesh because that dust is graded by a
+          mesh's height — as part of a six-meter mast it would stay clean. */}
+      <group position={[0, groundY, 0]}>
+        <mesh geometry={lamp.foot}>
+          <meshStandardMaterial color="#ffffff" vertexColors roughness={0.82} metalness={0.12} />
         </mesh>
-        <mesh position={[headOut, -0.05, 0]}>
-          <coneGeometry args={[0.16, 0.22, 12]} />
-          <meshStandardMaterial color={DARK} roughness={0.6} />
+        <mesh geometry={lamp.frame}>
+          <meshStandardMaterial color="#ffffff" vertexColors roughness={0.45} metalness={0.4} />
         </mesh>
-        <mesh position={[headOut, -0.19, 0]}>
-          <sphereGeometry args={[0.05, 10, 10]} />
+        <mesh geometry={lamp.glow}>
           <meshStandardMaterial
             color={accent}
             emissive={accent}
@@ -4472,12 +4658,12 @@ function DepotLightMast({
           />
         </mesh>
       </group>
-      {/* Under where the head actually hangs — the boom's reach in its own
-          frame, tilted down 0.55 rad — not under the pole. A pool centred on
-          the pole is the tell that the light was placed by a renderer. */}
+      {/* Under where the head actually is, and then out past it by what its
+          tilt throws — not under the mast. A pool centred on the mast is the
+          tell that the light was placed by a renderer. */}
       {poolRadiusM > 0 && (
         <LightPool
-          x={headOut * Math.cos(0.55) + 0.35}
+          x={lamp.headX + height * Math.tan(LAMP_TILT)}
           radiusM={poolRadiusM}
           stretch={1.35}
         />
@@ -4486,7 +4672,7 @@ function DepotLightMast({
   )
 }
 
-// A neutral roadside street light — the same leaning-boom fixture as the
+// A neutral roadside street light — the same stayed-arm standard as the
 // depot's own yard lights, taller and longer-armed to reach a full haul
 // road rather than a parking aisle, and lit a fixed cool white rather than
 // any org's accent: public lighting along the spine belongs to the
@@ -4501,8 +4687,24 @@ export function StreetLight() {
   // as a continuous lit ribbon rather than a dotted line. Sized up from 5.2 m,
   // where the lamps lit tidy circles 40 m apart and the road between them was
   // still black — which is not what a lit street looks like.
+  //
+  // The arm is 2.2 m because the post stands 1.4 m back from the pavement (see
+  // `lights` in MarkerLayer): anything shorter holds the head over the verge
+  // and lights the road from beside it.
+  //
+  // MarkerLayer seats every anchor SEAT_LIFT (0.5 m) clear of the terrain, which
+  // suits a pool of light and does not suit a post: planted at the anchor's own
+  // origin it stood half a meter up in the air. So the post goes down to the
+  // ground it was sampled on and the pool stays where it is, over the road's
+  // own lift.
   return (
-    <DepotLightMast accent="#eef2ff" height={5.4} boomLen={1.5} poolRadiusM={11} />
+    <DepotLightMast
+      accent="#eef2ff"
+      height={5.4}
+      boomLen={2.2}
+      poolRadiusM={11}
+      groundY={-0.5}
+    />
   )
 }
 
