@@ -38,8 +38,8 @@ export default function ForecastPredictModal(props: {
     if (!session.shareOffer) return null
     return (
       <div className="border-t border-white/10 p-4">
-        {/* Same name the open window shows. Roster labels call this slot Open Field. */}
-        <ForecastSharePrompt pick={props.teamName || 'this competitor'} raceId={props.raceId} />
+        {/* Name from the save, so opening another competitor does not rename the post. */}
+        <ForecastSharePrompt pick={session.sharePickName} raceId={props.raceId} />
       </div>
     )
   }
@@ -72,7 +72,7 @@ export default function ForecastPredictModal(props: {
       predictEnabled={session.predictEnabled}
       undoEnabled={session.undoEnabled && session.savedPick === index}
       onPredict={() => {
-        void session.predict(index)
+        void session.predict(index, props.teamName)
       }}
       onUndo={session.undo}
       onConnect={session.onConnect}

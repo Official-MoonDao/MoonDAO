@@ -7,6 +7,7 @@ import { resetAnalyticsState, trackForecastShared } from '@/lib/analytics/ga4'
 import {
   FORECAST_SHARE_ORIGIN,
   forecastShareText,
+  resolvedSharePick,
   FORECAST_SHARE_TEXT,
   X_POST_LIMIT,
   X_URL_WEIGHT,
@@ -139,6 +140,24 @@ describe('forecast share url and text', () => {
     )
     assert.equal(FORECAST_SHARE_TEXT.includes('DEPRIZE_ELIGIBILITY_BYPASS'), false)
     assert.equal(/0x[a-fA-F0-9]{40}/.test(FORECAST_SHARE_TEXT), false)
+  })
+
+  it('keeps a window name when a later write only has the roster label', () => {
+    assert.strictEqual(
+      resolvedSharePick('Other entrants', undefined, 'Open Field'),
+      'Other entrants'
+    )
+    assert.strictEqual(
+      resolvedSharePick(undefined, 'Other entrants', 'Open Field'),
+      'Other entrants'
+    )
+    assert.strictEqual(
+      resolvedSharePick('this competitor', 'Other entrants', 'Open Field'),
+      'Other entrants'
+    )
+    assert.strictEqual(resolvedSharePick(undefined, undefined, 'Firefly'), 'Firefly')
+    assert.strictEqual(resolvedSharePick(undefined, undefined, 'Open Field'), 'Open Field')
+    assert.strictEqual(resolvedSharePick(`Team #${WALLET}`, undefined, 'Firefly'), 'Firefly')
   })
 
   it('builds an X intent that carries the text and the x utm link', () => {
@@ -347,9 +366,17 @@ describe('forecast share is only the free-forecast success state', () => {
     assert.equal(panel.includes('if (ok) onModalClose()'), false)
     const predict = readUi('components/deprize/ForecastPredictModal.tsx')
     assert.equal(predict.includes('wasSignedIn'), false)
-    assert.ok(predict.includes("pick={props.teamName || 'this competitor'} raceId={props.raceId}"))
     assert.equal(predict.includes('labels[session.savedPick]'), false)
     assert.ok(predict.includes('offerShare={session.shareOffer && session.savedPick === index}'))
+    assert.ok(predict.includes('session.predict(index, props.teamName)'))
+    assert.ok(predict.includes('pick={session.sharePickName} raceId={props.raceId}'))
+    const hook = readUi('lib/forecasts/useForecastPredict.ts')
+    const commit = hook.slice(
+      hook.indexOf('async function commitPick'),
+      hook.indexOf('async function clearPick')
+    )
+    assert.ok(commit.includes('resolvedSharePick(displayName'))
+    assert.equal(predict.includes('props.labels[session.savedPick]'), false)
     const vote = readUi('lib/deprize/writeForecastVote.ts')
     assert.equal(vote.includes('trackForecastShared'), false)
     assert.equal(vote.includes('ForecastSharePrompt'), false)
