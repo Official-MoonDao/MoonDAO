@@ -27,18 +27,21 @@ export function useDePrizeChainGuard(chain?: Chain) {
     process.env.NEXT_PUBLIC_TEST_ENV !== 'true' && isWrongNetwork(walletChainId, chain?.id)
   const chainLabel = (chain?.name ?? 'the network').replace(' One', '')
 
-  const switchToChain = useCallback(async () => {
+  /** Resolves true once the wallet reports `chain`. */
+  const switchToChain = useCallback(async (): Promise<boolean> => {
     const wallet = wallets?.[selectedWallet]
-    if (!wallet || typeof wallet.switchChain !== 'function' || !chain) return
+    if (!wallet || typeof wallet.switchChain !== 'function' || !chain) return false
     setSwitching(true)
     try {
       await wallet.switchChain(chain.id)
+      return true
     } catch (err: any) {
       if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
         const added = await addNetworkToWallet(chain as any)
         if (added) {
           try {
             await wallet.switchChain(chain.id)
+            return true
           } catch {
             /* user rejected */
           }
@@ -46,6 +49,7 @@ export function useDePrizeChainGuard(chain?: Chain) {
       } else if (err?.code !== 4001) {
         toast.error('Failed to switch network. Please try again.', { style: toastStyle })
       }
+      return false
     } finally {
       setSwitching(false)
     }
