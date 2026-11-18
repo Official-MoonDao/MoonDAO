@@ -1553,10 +1553,15 @@ export const ROAD_RUNS: RoadRun[] = BASE_STREETS.map((street) => {
 //
 // Exact rather than approximate: every road here is straight and described by
 // its two endpoints, so the segment distance below IS the distance to the road.
-export function distToRoadM(east: number, north: number): number {
+//
+// `except` leaves one road out, by its index in BASE_STREETS (and so in
+// ROAD_RUNS), for filler that stands on purpose beside a road of its own and
+// only needs to keep off the rest.
+export function distToRoadM(east: number, north: number, except?: number): number {
   let best = Infinity
-  for (const street of BASE_STREETS) {
-    const pts = street.points
+  for (let s = 0; s < BASE_STREETS.length; s++) {
+    if (s === except) continue
+    const pts = BASE_STREETS[s].points
     for (let i = 0; i + 1 < pts.length; i++) {
       best = Math.min(best, segDistM(east, north, pts[i], pts[i + 1]))
     }
