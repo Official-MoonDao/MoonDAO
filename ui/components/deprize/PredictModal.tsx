@@ -38,6 +38,8 @@ export default function PredictModal(props: {
    * prompt does not sit in the paid flow.
    */
   offerShare?: boolean
+  /** Moon Base Zero race id for the share link and card. */
+  raceId?: string
   writing: boolean
   predictEnabled: boolean
   undoEnabled: boolean
@@ -224,7 +226,7 @@ export default function PredictModal(props: {
           }`}
         >
           {!isBet && props.saved && props.offerShare ? (
-            <ForecastSharePrompt pick={props.teamName} />
+            <ForecastSharePrompt pick={props.teamName} raceId={props.raceId} />
           ) : null}
           {!props.connected && !(props.signedOutPredict && !isBet) && (
             <button

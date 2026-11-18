@@ -534,7 +534,10 @@ export default function ForecastPanel(props: {
       <p className="mt-1 text-sm text-gray-400">{FORECAST_COPY.panelIntro}</p>
       {shareOffer && modalIndex == null ? (
         <div className="mt-3">
-          <ForecastSharePrompt pick={savedPick != null ? labels[savedPick] : undefined} />
+          <ForecastSharePrompt
+            pick={savedPick != null ? labels[savedPick] : undefined}
+            raceId={raceBinding?.sharedGoalId}
+          />
         </div>
       ) : null}
 
@@ -654,6 +657,7 @@ export default function ForecastPanel(props: {
           citizenNotice={renderCitizenNotice()}
           saved={savedPick === modalIndex}
           offerShare={shareOffer && savedPick === modalIndex}
+          raceId={raceBinding?.sharedGoalId}
           writing={writing}
           error={error}
           predictEnabled={!!predictAction?.enabled}

@@ -16,6 +16,7 @@ import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
   ROSTER_DISCLAIMER,
   deprizeChainLabel,
+  deprizeChainSlugFromPrefix,
   deprizePrefixedHref,
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
@@ -32,6 +33,8 @@ import {
   type DePrizePageProps,
 } from '@/lib/deprize/pageEligibility'
 import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
+import { forecastSharePickFromQuery } from '@/lib/forecasts/forecastShare'
+import ForecastShareMeta from '@/components/deprize/ForecastShareMeta'
 import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
 import TouchdownTeaser, { TOUCHDOWN_RACE_GOAL_ID } from '@/components/touchdown/TouchdownTeaser'
 import { orgColor } from '@/lib/lunar-atlas/display'
@@ -113,22 +116,54 @@ function outcomeDisplayName(
   return `Team #${index + 1}`
 }
 
-export default function DePrizeDetailPage({ restricted }: DePrizePageProps) {
+type DePrizeDetailProps = DePrizePageProps & {
+  /** Atlas race and competitor ids from a shared forecast link, already validated. */
+  shareRaceId: string | null
+  sharePickId: string | null
+}
+
+export default function DePrizeDetailPage({
+  restricted,
+  shareRaceId,
+  sharePickId,
+}: DePrizeDetailProps) {
+  const share = forecastSharePickFromQuery(shareRaceId, sharePickId ?? undefined)
   return (
     <DePrizeRestrictedProvider restricted={restricted}>
       <DePrizeDetailContent restricted={restricted} />
+      {share ? <ForecastShareMeta share={share} /> : null}
     </DePrizeRestrictedProvider>
   )
 }
 
-export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
+/** Moon Base Zero race a prize URL settles, from its slug or its chain-prefixed id. */
+function raceIdForPrizeUrl(resolvedUrl: string, id: string | undefined): string | null {
+  if (!id) return null
+  if (!/^\d+$/.test(id)) return sharedGoalById(SEED_ATLAS, id)?.id ?? null
+  const prefix = resolvedUrl.match(/^\/deprize\/([a-z]+)\/\d+/)?.[1]
+  const slug = deprizeChainSlugFromPrefix(prefix)
+  return slug ? (getDePrizeRaceBinding(slug, Number(id))?.sharedGoalId ?? null) : null
+}
+
+export const getServerSideProps: GetServerSideProps<DePrizeDetailProps> = async ({
   req,
   res,
   resolvedUrl,
+  params,
+  query,
 }) => {
   const destination = unprefixedDePrizeRedirect(resolvedUrl)
   if (destination) return { redirect: { destination, permanent: false } }
-  return resolveDePrizePageProps(req, res)
+  const id = typeof params?.id === 'string' ? params.id : undefined
+  const share = forecastSharePickFromQuery(raceIdForPrizeUrl(resolvedUrl, id), query.pick)
+  const { props } = resolveDePrizePageProps(req, res)
+  return {
+    props: {
+      ...props,
+      shareRaceId: share?.raceId ?? null,
+      sharePickId: share?.projectId ?? null,
+    },
+  }
 }
 
 function DePrizeDetailContent({ restricted }: DePrizePageProps) {

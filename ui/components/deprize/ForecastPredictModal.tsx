@@ -20,6 +20,8 @@ export default function ForecastPredictModal(props: {
   marketLoading: boolean
   outcomeIndex: number | null
   teamName: string
+  /** Moon Base Zero race id for the share link and card. */
+  raceId?: string
   onClose: () => void
 }) {
   const session = useForecastPredict({
@@ -37,7 +39,7 @@ export default function ForecastPredictModal(props: {
     return (
       <div className="border-t border-white/10 p-4">
         {/* Same name the open window shows. Roster labels call this slot Open Field. */}
-        <ForecastSharePrompt pick={props.teamName || 'this competitor'} />
+        <ForecastSharePrompt pick={props.teamName || 'this competitor'} raceId={props.raceId} />
       </div>
     )
   }
@@ -64,6 +66,7 @@ export default function ForecastPredictModal(props: {
       }
       saved={session.savedPick === index}
       offerShare={session.shareOffer && session.savedPick === index}
+      raceId={props.raceId}
       writing={session.writing}
       error={session.blockedReason ?? session.error}
       predictEnabled={session.predictEnabled}

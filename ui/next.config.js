@@ -80,6 +80,13 @@ module.exports = withBundleAnalyzer(
             './public/touchdown/og.jpg',
             './public/touchdown/og-base.jpg',
           ],
+          '/api/og/forecast': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+            './public/touchdown/og-base.jpg',
+            './public/touchdown/moondao-mark.png',
+          ],
           '/api/og/catch': [
             './lib/og/fonts/Lato-Regular.ttf',
             './public/metadata-image.png',
