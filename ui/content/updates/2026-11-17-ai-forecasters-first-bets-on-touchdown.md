@@ -1,6 +1,6 @@
 ---
-title: "Four AI models are now trading on the Touchdown DePrize"
-description: "Claude, GPT, Gemini and Grok each researched the next Moon landing on their own and placed real bets on Arbitrum. Here is every forecast and the reasoning behind it."
+title: "What four AI forecasters learned about the next Moon landing"
+description: "Claude, GPT, Gemini and Grok researched the Touchdown DePrize on their own and placed real bets on Arbitrum. They agreed on the calendar, split on which landers to trust, and traded in ways that tell us something about the market itself."
 date: 2026-11-17
 author: MoonDAO
 authorRole: Executive Branch
@@ -14,65 +14,136 @@ featured: false
 draft: false
 ---
 
-The Touchdown DePrize asks one question: **who makes the next Qualifying Landing on the Moon?** Seven outcomes are priced in a single market on Arbitrum: Astrobotic, Intuitive Machines, Firefly, Blue Origin, CNSA, ispace and SpaceX.
+The Touchdown DePrize asks one question: **who makes the next Qualifying Landing on the Moon?** Seven outcomes share one market on Arbitrum: Astrobotic, Intuitive Machines, Firefly, Blue Origin, CNSA, ispace and SpaceX.
 
-Today four AI models placed their first real bets on it. Each one holds its own wallet, researched the question from scratch, wrote down a probability for every outcome, and bought the outcomes it thinks the market underprices. This page publishes all four forecasts, every trade, and the full research notes behind them, so anyone can check the work.
+Today four AI models placed their first real bets on it. Claude, GPT, Gemini and Grok each hold a separate wallet. Each researched the question from scratch, wrote a sourced note, and committed to a probability for every outcome before it saw a single market price. A trading routine then bought whatever each model thought was underpriced.
 
-## How it works
+The four notes add up to nearly 8,000 words and about 70 distinct sources. This post pulls out what they agree on, where they part ways and why, and what happened when their views met the market. Every forecast, trade and full research note is in the appendix at the end.
 
-- **Four models, four wallets.** Claude, GPT, Gemini and Grok each trade from a separate wallet funded with about 0.014 ETH. The trading routine can only send transactions to the market contracts. It cannot transfer funds to any other address.
-- **Independent research.** Each model searched the web on its own and wrote a note with a dated source for every claim. None of them saw the market's prices, on-chain data, or another model's notes or forecast before committing to its numbers.
-- **Forecast first, trade second.** A model's probabilities are fixed before any price is read. A separate trading routine then compares them with the live market and buys only where the model's probability beats the price by a margin that clears the fees. Each trade moves a price by at most 2 points, each wallet makes at most six trades and spends at most 0.015 ETH a day, and trading pauses for a model that loses half its stake or while a landing attempt is under way.
-- **Same market as everyone else.** The bets go through the same DePrize mint as any other bet and pay the same 5% prize slice. These are MoonDAO house wallets, labeled as such, and each is screened against the same sanctions list as every bettor.
+## The short version
 
-## The result
+- **They agree on the calendar.** No landing attempt has started, none is likely before 2027, and Astrobotic flies first.
+- **They split on the landers.** The widest gap is Intuitive Machines: GPT gives it 11%, Gemini 27%. Astrobotic runs from 18.5% to 33%, CNSA from 16.5% to 29%.
+- **The split has one root.** Every model weighed the same trade-off between being early in the queue and having a track record. The probability each gave to the US commercial landers succeeding on their first tries drives almost everything else.
+- **The order they traded in mattered.** Each model traded on prices the previous model had already moved, so the last one in line found the market nearly where it wanted it and spent half as much as the others.
+- **The market now matches their consensus at the top, but not at the bottom.** The averaged forecasts rank Astrobotic, CNSA, Intuitive Machines and Blue Origin in that order, and so does the market. But SpaceX and ispace still trade at 8.5% each, while no model gives either more than 3%.
 
-22 buys, about 0.014 ETH in total including fees and gas. The market moved as the models bought:
+## What all four agree on
 
-| Outcome | Price before | Price after |
-| :-- | --: | --: |
-| Astrobotic | 20.8% | 22.0% |
-| CNSA | 13.2% | 21.2% |
-| Intuitive Machines | 13.2% | 18.4% |
-| Blue Origin | 13.2% | 12.9% |
-| Firefly | 13.2% | 8.5% |
-| ispace | 13.2% | 8.5% |
-| SpaceX | 13.2% | 8.5% |
+The research converged on the facts, even though nobody saw another model's work.
 
-Before the round the market was nearly flat, with Astrobotic slightly ahead after earlier bets. The models bought mostly CNSA, Intuitive Machines and Astrobotic, so those prices rose and the prices of the outcomes nobody bought fell with them.
+- **Every 2026 commercial landing has slipped into 2027.** All four cite NASA's November 7 Moon Base briefing: Griffin-1, IM-3 and Blue Moon Mark 1 moved into next year, and NASA expects four commercial lunar launches in 2027.
+- **The queue.** Astrobotic's Griffin-1 is first, no earlier than January 2027, with engine testing still under way. Intuitive Machines' IM-3 follows in March or April, according to its November 12 SEC filing. Blue Origin's Mark 1 is built but waits on New Glenn, which has not flown since its pad explosion. Chang'e-7 came off the pad in August and has no new official date. Firefly's second lander is late in 2027, with a 44-day trip to the far side.
+- **The long shots.** ispace's next lander is a 2028 vehicle that has only passed preliminary design review. SpaceX's uncrewed Starship landing depends on an orbital propellant transfer that has never flown. Together the models give these two between 1% and about 4%.
+- **Nobody off the roster.** India's Chandrayaan-4 has moved to 2028, and no other lander is on a public 2027 manifest. All four put the chance of an unlisted winner between 1% and 3.5%.
 
-## Where the models agree and where they split
+## Where they disagree
 
-All four agree on the calendar. No landing attempt has started, none is expected before 2027, and all of NASA's 2026 commercial flights have slipped into next year. Astrobotic's Griffin-1 is first in line for a launch no earlier than January 2027, Intuitive Machines' IM-3 follows in March or April, Blue Origin's Blue Moon Mark 1 waits on a rocket that has not flown since its pad explosion, and China's Chang'e-7 is off the pad until at least 2027. They also agree that ispace and SpaceX are late-2027-or-later long shots.
+Every model framed the question the same way: to win, a lander needs to fly early, land upright, and have everyone ahead of it fail or slip. They disagree on the middle step.
 
-They disagree on how much to trust each lander.
+| Outcome | Claude | GPT | Gemini | Grok | Spread |
+| :-- | --: | --: | --: | --: | --: |
+| Astrobotic | 33.0% | 32.0% | 18.5% | 23.6% | 14.5 pts |
+| Intuitive Machines | 26.0% | 11.0% | 27.0% | 22.4% | 16.0 pts |
+| CNSA | 16.5% | 19.0% | 28.6% | 29.0% | 12.5 pts |
+| Blue Origin | 17.5% | 22.0% | 11.3% | 10.2% | 11.8 pts |
+| Firefly | 5.0% | 10.0% | 10.5% | 7.8% | 5.5 pts |
+| SpaceX | 0.8% | 2.0% | 1.5% | 3.0% | 2.2 pts |
+| ispace | 0.2% | 0.5% | 0.4% | 1.2% | 1.0 pts |
 
-| Model | Top two picks |
-| :-- | :-- |
-| Claude | Astrobotic 33.0%, Intuitive Machines 26.0% |
-| GPT | Astrobotic 32.0%, Blue Origin 22.0% |
-| Gemini | CNSA 28.6%, Intuitive Machines 27.0% |
-| Grok | CNSA 29.0%, Astrobotic 23.6% |
+### Intuitive Machines: two tip-overs, read two ways
 
-- **Claude and GPT lean on the schedule.** Griffin and IM-3 launch first, so they get the most weight, discounted for the fact that neither company has yet landed upright.
-- **Gemini and Grok lean on track records.** Chang'e landers are 4 for 4, while the commercial landers are 1 for 7 upright and Intuitive Machines has tipped over twice. They put more weight on China catching up once the early US attempts fail or slip.
-- **GPT gives Blue Origin the most weight** (22%, against 10% to 18% from the others), on the strength of a finished lander that is waiting only for its rocket.
+This is the sharpest split. All four cite the same history: IM-1 and IM-2 both reached the surface and both fell over.
+
+- **GPT (11%)** treats that record as decisive. Its note says the two tip-overs "materially lower" the chance of meeting this market's upright, 24-hour standard. It is the only model that rated Intuitive Machines below the price it found.
+- **Gemini (27%)** treats it as a problem with a known fix. It is the only note that dug into the redesign: IM-3 adds a second, independent set of landing sensors, a Doppler lidar backed by two separate laser rangefinders, aimed at the navigation failures behind both tip-overs.
+- **Claude (26%)** lands close to Gemini for a different reason. IM-3 goes to Reiner Gamma, a near-side site near the equator that avoids the polar lighting that hurt IM-2, and Nova-C reaches the Moon in about a week, so an April launch means an April landing.
+- **Grok (22.4%)** sits in between. It sums up the lander as having "reached the surface twice and stayed upright zero times," but still gives it the second slot in the queue.
+
+### Astrobotic: first in line, or first to slip?
+
+- **Claude (33%) and GPT (32%)** give Astrobotic the most weight because it flies first. Both note that Griffin finished environmental testing at JPL, and that Voyager restated a January launch on November 12. Claude ran the numbers through a simulation, which gave Astrobotic about 31%, then kept its forecast slightly above that because Griffin is "clearly first."
+- **Gemini (18.5%)** reads the same NASA briefing and focuses on the other half of the sentence: engine testing is still under way. It adds that missing the early-2027 lighting season at the south pole could cost Griffin months.
+- **Grok (23.6%)** shows the most source skepticism of the round. Launch databases list Griffin on January 6, 2027. Grok checked the database's own status label, found the date marked as a placeholder, and refused to count it as evidence. Claude read the same entry's history (November, then December, then January) as a slip pattern. One source, two different readings.
+
+### CNSA: the best lander, but fourth in line
+
+Every model agrees that China's lander is the most reliable on the list. CNSA is 4 for 4 on lunar landings, and Claude puts Chang'e-7's chance of success, once it tries, at 85%. The disagreement is about everyone ahead of it.
+
+- **Claude (16.5%) and GPT (19%)** keep CNSA low because Chang'e-7 has no official date and needs about 90 days of orbital scouting before it can land. It wins mainly if Griffin, IM-3 and Mark 1 all fail or slip past mid-2027.
+- **Gemini (28.6%) and Grok (29%)** expect that to happen fairly often. Gemini's base rate is blunt: of seven private lunar landers so far, one landed upright. Three first-time landers in a row each have a real chance of failing, so the reliable lander waiting behind them picks up a lot of probability.
+
+This is the clearest way to read the whole round. **CNSA's probability roughly mirrors how much a model trusts American first flights.** The two models most optimistic about Astrobotic are the two most pessimistic about CNSA, and the reverse holds too.
+
+### Blue Origin and Firefly
+
+- **GPT is the Blue Origin bull at 22%.** It anchored on NASA's October schedule, which put the first Mark 1 landing in the first quarter of 2027. Claude pointed out that Mark 1 is not New Glenn's return-to-flight payload, so its realistic launch is April to June at the earliest. Grok discounted that same October chart because its New Glenn date had already slipped. Gemini was the only model to pick up news from that day: the investigation into the November 15 Vulcan failure, and checked whether it implicated Blue Origin's BE-4 engines. Early reports said it did not.
+- **Firefly is the only commercial company with a qualifying landing,** and every model says so. GPT and Gemini give it about 10% as a fallback if the earlier landers fail. Claude gives it 5%: the lander still lacked its engines in late October and faces a 44-day trip to a far-side site that depends on a relay.
+
+## How each model did its research
+
+Same prompt, same tools, four distinct styles.
+
+- **Claude was the modeller.** It was the only one to build an explicit simulation, covering launch slips, transit times, a per-attempt success rate for each lander, and second missions in 2028. It then adjusted the output by hand and explained each adjustment. It also flagged the two rules questions in the next section.
+- **GPT was the editor.** At about 780 words, its note is the shortest by far. It gives one or two claims per outcome, each tagged with a direction ("raises slightly", "materially lowers"), and no numerical model. It was also the most willing to stake out a lonely position, on both Intuitive Machines and Blue Origin.
+- **Gemini was the archivist.** It numbered every claim and attached several sources to most of them, mixing filings, agency releases, partner statements and trade press. It was the only model to bring in news published the same day, and the one that leaned hardest on base rates.
+- **Grok was the skeptic.** At about 3,100 words, its note is the longest. It spends that length questioning the evidence: placeholder dates, schedules that are already stale, and how much a restated plan really says about readiness.
+
+## How they bet
+
+The models chose only the probabilities. Bet sizing came from one shared, rule-based trading routine. It buys only when a model's probability beats the price by enough to cover the 5% prize slice, a 2% allowance for costs, and a 3-point margin. It moves any one outcome by at most 2 points per trade and 5 points per day, makes at most six trades per wallet per day, and can sell only shares it already holds. So the differences in betting below come from two things: what each model believed, and what the market looked like when its turn came.
+
+The models traded one after another: Claude, then GPT, then Gemini, then Grok. Each started from prices its predecessors had already moved.
+
+- **Claude found a nearly flat market** and saw two clear bargains: Intuitive Machines at 13.2% against its 26%, and Astrobotic at 20.8% against its 33%. It alternated between them until it hit the daily 5-point limit on both. Astrobotic went to 24.4% and Intuitive Machines to 17.3%.
+- **GPT found Intuitive Machines already above its view.** Claude had pushed it to about 17%, against GPT's 11%. GPT held no shares, so it could not sell. Instead it put three buys into Blue Origin, its favourite underpriced outcome, one into CNSA, and two more into Astrobotic, which took Astrobotic to its peak of 26.5%. GPT ran out of daily trades while CNSA still looked cheap to it.
+- **Gemini found Astrobotic at 26.5%, against its own 18.5%.** That was the most overpriced outcome on the board by its view, and the result of the two previous models' buying. It could not sell either, so it did the next best thing in this kind of market. It bought what it liked, CNSA (the round's largest edge: 12.3% against its 28.6%) and Intuitive Machines. In a single shared market, buying one outcome lowers the prices of all the others, so Gemini's buys pulled Astrobotic and Blue Origin back down.
+- **Grok arrived last and found most of the work done.** Astrobotic sat at 23.6%, exactly its forecast, so it didn't trade it. It bought CNSA up to its daily limit, then made one small Intuitive Machines buy that stopped as soon as its edge no longer covered fees and the margin. It made four trades instead of six and spent about 0.0021 ETH, about half of what each of the others spent.
+
+The result is a market that bent toward the group's view, one trader at a time. No one coordinated, and no one saw another model's forecast. Each model simply corrected what the previous ones had left. In total the models made 22 buys and spent about 0.014 ETH, including fees and gas.
+
+| Outcome | Price before | Price after | Average of the four forecasts |
+| :-- | --: | --: | --: |
+| Astrobotic | 20.8% | 22.0% | 26.8% |
+| CNSA | 13.2% | 21.2% | 23.3% |
+| Intuitive Machines | 13.2% | 18.4% | 21.6% |
+| Blue Origin | 13.2% | 12.9% | 15.3% |
+| Firefly | 13.2% | 8.5% | 8.3% |
+| SpaceX | 13.2% | 8.5% | 1.8% |
+| ispace | 13.2% | 8.5% | 0.6% |
+
+The averages leave out the 2.4% the models gave to a winner not on the roster, which the market does not price.
+
+## What we learned
+
+1. **Agreement on facts doesn't mean agreement on forecasts.** All four found the same schedule, the same filings and the same track records. Their numbers still differ by up to 16 points, almost entirely because they gave different odds to first-time landers succeeding.
+2. **The most useful disagreement is a single number.** If you believe the US commercial landers will mostly land on their first tries, Astrobotic and Intuitive Machines are cheap. If you don't, CNSA is cheap. Every model's portfolio follows from where it stands on that question.
+3. **Turn order shapes behaviour as much as belief does.** Claude and Grok mostly agreed that Intuitive Machines was underpriced, but Claude spent its full daily limit on it and Grok made one tiny buy, only because Grok came later. Next rounds should rotate the order.
+4. **A buy-only market can't correct its tail.** Selling something you don't hold isn't possible here, so the only way to say "SpaceX is overpriced" is to buy everything else. After 22 buys, the three long shots still hold 25.5% of the market between them, against a model consensus of about 11%. That gap is a real opportunity for any forecaster who agrees.
+5. **Sourcing habits matter.** The best single catch of the round was Grok checking what a database date actually meant. The most timely context came from Gemini picking up news published that day. Both are habits worth asking every model to follow.
 
 ## Questions the models raised about the rules
 
-Two things came up that the market's resolution may need to settle:
+Claude flagged two points that the market's resolution may need to settle:
 
-1. **Blue Moon Mark 1's planned surface mission is about 24 hours**, so a working upright landing should meet the 24-hours-or-full-planned-mission test, but someone should confirm that at resolution.
-2. **Who counts as CNSA.** Chang'e-7 now runs under China's merged lunar exploration programme, with the China Manned Space Agency issuing its notices. The models assumed "CNSA" covers it.
+1. **Blue Moon Mark 1's planned surface mission is about 24 hours,** so a working upright landing should pass the 24-hours-or-full-planned-mission test. Someone should confirm that at resolution.
+2. **Who counts as CNSA.** Chang'e-7 now runs under China's merged lunar exploration programme, with the China Manned Space Agency issuing its notices. Claude assumed "CNSA" covers it.
 
-## Read the research
+## How the experiment is set up
 
-Each section below has the model's probabilities, its trades with links to every transaction, and its full research note. The notes are published as the models wrote them, trimmed only of references to internal files.
+- **Four models, four wallets.** Claude, GPT, Gemini and Grok each trade from a separate wallet funded with about 0.014 ETH. The trading routine can only send transactions to the market contracts and cannot move funds anywhere else.
+- **Independent research.** Each model searched the web on its own and wrote a note with a dated source for every claim. None saw the market's prices, on-chain data, or another model's notes before committing to its numbers.
+- **Forecast first, trade second.** A model's probabilities are fixed before any price is read. Trading pauses for a model that loses half its stake, or while a landing attempt is under way.
+- **Same market as everyone else.** The bets go through the same DePrize mint as any other bet and pay the same 5% prize slice. These are MoonDAO house wallets, labelled as such, and each is screened against the same sanctions list as every bettor.
+
+## Appendix: every forecast, trade and note
+
+Each section below lists the model's probabilities, its trades with links to every transaction, and its full research note. The notes appear as the models wrote them, trimmed only of references to internal files.
 
 
-## Claude
+### Claude
 
-Model: Claude Opus 5.5. Wallet: [0xf7871111f2AdcA0318a6c8910336b86aF3CD947d](https://arbiscan.io/address/0xf7871111f2AdcA0318a6c8910336b86aF3CD947d). Spent about 0.0039 ETH including the 5% prize slice and gas, across 6 buys: Intuitive Machines x3, Astrobotic x3.
+Claude Opus 5.5. Wallet [0xf7871111f2AdcA0318a6c8910336b86aF3CD947d](https://arbiscan.io/address/0xf7871111f2AdcA0318a6c8910336b86aF3CD947d). Spent about 0.0039 ETH including the 5% prize slice and gas, across 6 buys: Intuitive Machines x3, Astrobotic x3.
 
 | Outcome | Claude's probability |
 | :-- | --: |
@@ -94,7 +165,8 @@ Model: Claude Opus 5.5. Wallet: [0xf7871111f2AdcA0318a6c8910336b86aF3CD947d](htt
 | Intuitive Machines | 0.00035 ETH | [view](https://arbiscan.io/tx/0xbf049964bba2918f68a956fd1bb08b6234ce70d79dd303fece8e82a3b06d14a1) |
 | Astrobotic | 0.00039 ETH | [view](https://arbiscan.io/tx/0x3dc0eb894e5649369cc2cc41b70ec6e68551ec703ba867dd29341a682e690ae2) |
 
-### Claude's research note
+<details>
+<summary>Read Claude's full research note</summary>
 
 Question: who makes the next Qualifying Landing on the Moon? A Qualifying Landing is upright and working, and it returns surface data for 24 hours, or for the full planned mission if that is shorter. A tip-over does not count. Roster: Astrobotic, Intuitive Machines, Firefly, Blue Origin, CNSA, ispace, SpaceX.
 
@@ -163,9 +235,11 @@ Most likely order of landing attempts: Griffin-1 (late January to March 2027, wi
 
 I re-ran a Monte Carlo over launch-slip distributions, transit times, per-attempt success odds and second missions in 2028. The odds were Griffin 0.40, IM-3 0.55, MK1 0.45, Chang'e-7 0.85, BGM2 0.65 and Starship 0.50. It gave Astrobotic about 0.31, Intuitive Machines 0.28, Blue Origin 0.18, CNSA 0.16, Firefly 0.06, SpaceX 0.01, ispace under 0.01, and non-roster about 0.001. My final forecast keeps Astrobotic a bit above the model, because it is clearly first and Voyager restated January on 2026-11-12. It moves Intuitive Machines up a little because the SEC filing restates March/April. It nudges CNSA down because there is still no official date, and it lowers non-roster because Chandrayaan-4 moved to 2028.
 
-## GPT
+</details>
 
-Model: GPT 5.6 Sol. Wallet: [0x5894C92973FC2C402cf96225bB3a7B12070E733E](https://arbiscan.io/address/0x5894C92973FC2C402cf96225bB3a7B12070E733E). Spent about 0.0042 ETH including the 5% prize slice and gas, across 6 buys: Blue Origin x3, Astrobotic x2, CNSA x1.
+### GPT
+
+GPT 5.6 Sol. Wallet [0x5894C92973FC2C402cf96225bB3a7B12070E733E](https://arbiscan.io/address/0x5894C92973FC2C402cf96225bB3a7B12070E733E). Spent about 0.0042 ETH including the 5% prize slice and gas, across 6 buys: Blue Origin x3, Astrobotic x2, CNSA x1.
 
 | Outcome | GPT's probability |
 | :-- | --: |
@@ -187,7 +261,8 @@ Model: GPT 5.6 Sol. Wallet: [0x5894C92973FC2C402cf96225bB3a7B12070E733E](https:/
 | Blue Origin | 0.00035 ETH | [view](https://arbiscan.io/tx/0x90be791c3a2b2ac3f7fb3ee7a32d4ff35b3ec89d670de89f5c02fa56390723ef) |
 | Astrobotic | 0.00079 ETH | [view](https://arbiscan.io/tx/0x286ab969516cbeaaa56984c4e51a19d193a025ec4abcadd2866c4ae20257072d) |
 
-### GPT's research note
+<details>
+<summary>Read GPT's full research note</summary>
 
 #### Claims and forecast effects
 
@@ -231,9 +306,11 @@ Model: GPT 5.6 Sol. Wallet: [0x5894C92973FC2C402cf96225bB3a7B12070E733E](https:/
 
 No rostered lunar landing attempt has started and remains unresolved as of 2026-11-17. The earliest public target found is Griffin-1 no earlier than January 2027; all other identified rostered attempts are later or lack a firm date.
 
-## Gemini
+</details>
 
-Model: Gemini 4 Carbon. Wallet: [0x6CEB5AEb2F2ACB6DA60bEc6fBa67b42f92223827](https://arbiscan.io/address/0x6CEB5AEb2F2ACB6DA60bEc6fBa67b42f92223827). Spent about 0.0038 ETH including the 5% prize slice and gas, across 6 buys: CNSA x3, Intuitive Machines x3.
+### Gemini
+
+Gemini 4 Carbon. Wallet [0x6CEB5AEb2F2ACB6DA60bEc6fBa67b42f92223827](https://arbiscan.io/address/0x6CEB5AEb2F2ACB6DA60bEc6fBa67b42f92223827). Spent about 0.0038 ETH including the 5% prize slice and gas, across 6 buys: CNSA x3, Intuitive Machines x3.
 
 | Outcome | Gemini's probability |
 | :-- | --: |
@@ -255,7 +332,8 @@ Model: Gemini 4 Carbon. Wallet: [0x6CEB5AEb2F2ACB6DA60bEc6fBa67b42f92223827](htt
 | Intuitive Machines | 0.00071 ETH | [view](https://arbiscan.io/tx/0xe43979741b7970c4a0c493f10e1210e04669450b288c0737aef420a9de1a39bc) |
 | Intuitive Machines | 0.00036 ETH | [view](https://arbiscan.io/tx/0xac4843392f9521f7076d22db8747754104ad68159e069ac9b9eeb5a4e8a69456) |
 
-### Gemini's research note
+<details>
+<summary>Read Gemini's full research note</summary>
 
 #### Active Landing Attempt Status
 
@@ -349,9 +427,11 @@ Model: Gemini 4 Carbon. Wallet: [0x6CEB5AEb2F2ACB6DA60bEc6fBa67b42f92223827](htt
   - **Supporting sources:** https://www.indiatoday.in/science/story/isro-mission-timeline-chandrayaan-4-nglv-venus-orbiter-bas-moon-landing-2040-bharatiya-antarikish-station-2888691-2026-03-29 (source date: 2026-03-29); https://www.globenewswire.com/news-release/2025/10/14/3166735/0/en/Impulse-Space-Unveils-Proposed-Mission-Architecture-to-Deliver-More-Mass-to-the-Lunar-Surface.html (source date: 2025-10-14)
   - **Outcomes affected:** p_no_rostered_winner
 
-## Grok
+</details>
 
-Model: Grok 4.7. Wallet: [0x749491dea6482Ec60C609ED3c0D6fcf3161aC41F](https://arbiscan.io/address/0x749491dea6482Ec60C609ED3c0D6fcf3161aC41F). Spent about 0.0021 ETH including the 5% prize slice and gas, across 4 buys: CNSA x3, Intuitive Machines x1.
+### Grok
+
+Grok 4.7. Wallet [0x749491dea6482Ec60C609ED3c0D6fcf3161aC41F](https://arbiscan.io/address/0x749491dea6482Ec60C609ED3c0D6fcf3161aC41F). Spent about 0.0021 ETH including the 5% prize slice and gas, across 4 buys: CNSA x3, Intuitive Machines x1.
 
 | Outcome | Grok's probability |
 | :-- | --: |
@@ -371,7 +451,8 @@ Model: Grok 4.7. Wallet: [0x749491dea6482Ec60C609ED3c0D6fcf3161aC41F](https://ar
 | CNSA | 0.00037 ETH | [view](https://arbiscan.io/tx/0xc02b3f1793c1e40e65c883b5b6b8682ab7a9c912de36d4e402ec13415eefd455) |
 | Intuitive Machines | 0.00016 ETH | [view](https://arbiscan.io/tx/0xe87a4e35da57a3b69945216f550319193270f894849f446086d91189f914a859) |
 
-### Grok's research note
+<details>
+<summary>Read Grok's full research note</summary>
 
 Fresh pass on 17 November 2026 UTC. A Qualifying Landing is an upright, working landing that returns surface data for 24 hours, or for the full planned mission if that mission is shorter. A tip-over is not one.
 
@@ -498,8 +579,10 @@ Conditional on an attempt, Chang'e-class landers are in a different class from t
 - p_no_rostered_winner: 0.028
 - ispace: 0.012
 
+</details>
+
 ## Caveats
 
-These are experiments with small amounts of ETH. Models can be confidently wrong, their notes are written under time pressure, and sources can be mistaken or out of date. Treat this as a record of what each model concluded and why, not as advice. The forecasts are fixed and will not be edited after the fact. Further rounds will be published as new posts.
+These are experiments with small amounts of ETH. Models can be confidently wrong, their notes are written under time pressure, and sources can be mistaken or out of date. Treat this as a record of what each model concluded and why, not as advice. The forecasts are fixed and will not be edited after the fact. Each new round will get its own post.
 
-You can follow each wallet on Arbiscan from its section above, and make your own prediction on the [DePrize page](/deprize). Free predictions and voting-power-weighted Citizen forecasts are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.
+You can follow each wallet on Arbiscan from its section of the appendix, and make your own prediction on the [DePrize page](/deprize). Free predictions and voting-power-weighted Citizen forecasts are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.
