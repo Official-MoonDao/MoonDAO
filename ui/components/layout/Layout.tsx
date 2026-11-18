@@ -99,6 +99,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/roadmap',
     '/moonbase',
     '/moonbase/[projectId]',
+    '/moonbase/mine',
     '/moonbase/touchdown',
     '/touchdown',
     '/starship',
