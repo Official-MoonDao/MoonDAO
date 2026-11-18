@@ -95,6 +95,8 @@ function loadCorpus(root: string = UPDATES_ROOT): Corpus {
       // serialize undefined.
       authorRole: frontmatter.authorRole || null,
       image: frontmatter.image || null,
+      imageAlt: frontmatter.imageAlt || null,
+      imageCaption: frontmatter.imageCaption || null,
       category: frontmatter.category as string,
       tags: frontmatter.tags,
       featured: frontmatter.featured,

@@ -9,6 +9,7 @@ import {
   weekStart,
 } from '../lib/activity-feed/format'
 import { buildActivityRssXml, feedItemsFromUpdates } from '../lib/activity-feed/rss'
+import { parseUpdateBlock, stripNonProse } from '../lib/updates/blocks'
 import formatUpdateDate from '../lib/updates/formatUpdateDate'
 import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
 import {
@@ -68,6 +69,8 @@ author: Pablo
 authorRole: Founder
 category: Press Release
 image: /assets/MoonDAO-OG.png
+imageAlt: The Moon
+imageCaption: "Illustration: MoonDAO"
 tags:
   - ideas
 featured: true
@@ -80,6 +83,8 @@ draft: false
     expectEqual(frontmatter.date, '2023-09-12', 'date')
     expectEqual(frontmatter.authorRole, 'Founder', 'role')
     expectEqual(frontmatter.category, 'Press Release', 'category')
+    expectEqual(frontmatter.imageAlt, 'The Moon', 'image alt')
+    expectEqual(frontmatter.imageCaption, 'Illustration: MoonDAO', 'image caption')
     expectEqual(frontmatter.featured, true, 'featured')
     expectEqual(frontmatter.draft, false, 'draft')
     expectEqual(frontmatter.tags.join(','), 'ideas', 'tags')
@@ -113,6 +118,88 @@ describe('reading time', () => {
   it('rounds word count at 220 wpm', () => {
     const words = Array.from({ length: 440 }, () => 'word').join(' ')
     expectEqual(readingMinutes(words), 2, '440 words')
+  })
+})
+
+describe('update data blocks', () => {
+  const dots = {
+    type: 'dots',
+    series: [{ name: 'A' }, { name: 'B' }],
+    rows: [{ label: 'X', values: [10, 20], marker: 15 }],
+  }
+
+  it('parses a valid chart, stats, heatmap and ledger', () => {
+    expectEqual(parseUpdateBlock('chart', JSON.stringify(dots))?.kind, 'chart', 'chart')
+    expectEqual(
+      parseUpdateBlock('stats', JSON.stringify({ items: [{ value: '4', label: 'models' }] }))?.kind,
+      'stats',
+      'stats'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'heatmap',
+        JSON.stringify({
+          columns: ['a', 'b'],
+          rows: [{ label: 'r', cells: [{ value: 1 }, { value: -2 }] }],
+        })
+      )?.kind,
+      'heatmap',
+      'heatmap'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'ledger',
+        JSON.stringify({ rows: [{ label: 'r', trades: [{ outcome: 'o', size: 0.001 }] }] })
+      )?.kind,
+      'ledger',
+      'ledger'
+    )
+  })
+
+  it('returns null for unknown languages, bad JSON and mismatched shapes', () => {
+    expectEqual(parseUpdateBlock('js', JSON.stringify(dots)), null, 'language')
+    expectEqual(parseUpdateBlock('chart', '{not json'), null, 'json')
+    expectEqual(parseUpdateBlock('chart', JSON.stringify({ ...dots, type: 'pie' })), null, 'type')
+    expectEqual(
+      parseUpdateBlock('chart', JSON.stringify({ ...dots, rows: [{ label: 'X', values: [1] }] })),
+      null,
+      'values per series'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'chart',
+        JSON.stringify({
+          type: 'line',
+          y: { min: 5, max: 1 },
+          x: { count: 2 },
+          series: [{ name: 'a', values: [1, 2] }],
+        })
+      ),
+      null,
+      'inverted range'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'heatmap',
+        JSON.stringify({ columns: ['a'], rows: [{ label: 'r', cells: [] }] })
+      ),
+      null,
+      'cells per column'
+    )
+  })
+
+  it('leaves data blocks and collapsed details out of the reading time', () => {
+    const prose = Array(440).fill('word').join(' ')
+    const chart =
+      '```chart\n' + JSON.stringify({ filler: Array(2000).fill('x') }, null, 1) + '\n```'
+    const details =
+      '<details>\n<summary>Notes</summary>\n\n' +
+      Array(2000).fill('note').join(' ') +
+      '\n\n</details>'
+    const body = [prose, chart, details].join('\n\n')
+    expectEqual(stripNonProse(body).includes('filler'), false, 'chart stripped')
+    expectEqual(readingMinutes(body), 2, 'reading minutes')
+    expectEqual(stripNonProse('```js\nconst a = 1\n```').includes('const a'), true, 'code kept')
   })
 })
 
@@ -215,6 +302,7 @@ body
     const [update] = listUpdates(dir)
     expectEqual(update.authorRole, null, 'authorRole')
     expectEqual(update.image, null, 'image')
+    expectEqual(update.imageCaption, null, 'imageCaption')
     expectEqual(JSON.stringify(update).includes('undefined'), false, 'serializable')
   })
 

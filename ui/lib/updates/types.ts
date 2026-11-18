@@ -11,6 +11,8 @@ export type UpdateFrontmatter = {
   author?: string
   authorRole?: string
   image?: string
+  imageAlt?: string
+  imageCaption?: string
   category?: UpdateCategory
   tags: string[]
   featured: boolean
@@ -26,6 +28,8 @@ export type UpdateMeta = {
   author: string
   authorRole?: string | null
   image?: string | null
+  imageAlt?: string | null
+  imageCaption?: string | null
   category: UpdateCategory
   tags: string[]
   featured: boolean

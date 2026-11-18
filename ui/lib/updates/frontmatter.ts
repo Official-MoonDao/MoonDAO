@@ -51,6 +51,8 @@ export function parseUpdateFrontmatter(raw: string): {
       date: optional(extras.date),
       authorRole: optional(extras.authorRole),
       image: optional(extras.image),
+      imageAlt: optional(extras.imageAlt),
+      imageCaption: optional(extras.imageCaption),
       category: optional(extras.category) || DEFAULT_CATEGORY,
       featured: asBoolean(extras.featured),
       draft: asBoolean(extras.draft),
