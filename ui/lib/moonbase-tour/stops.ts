@@ -80,44 +80,99 @@ const LANDING_ZONE: TourTarget = { kind: 'district', category: 'lander' }
 const STORY_LANDER: TourTarget = { kind: 'site', projectId: STORY_SITE, fallback: 'lander' }
 const WHOLE_BASE: TourTarget = { kind: 'home' }
 
+// Frames of the live tour, one per camera shot, for visitors who get stills
+// instead of the scene. Captured by scripts/moonbase-tour-stills.mjs; re-run
+// it when the base or the framing changes.
+const STILL = {
+  base: '/moonbase-tour/base.webp',
+  power: '/moonbase-tour/power.webp',
+  comms: '/moonbase-tour/comms.webp',
+  habitat: '/moonbase-tour/habitat.webp',
+  rover: '/moonbase-tour/rover.webp',
+  landing: '/moonbase-tour/landing.webp',
+  lander: '/moonbase-tour/lander.webp',
+  orbit: '/moonbase-tour/orbit.webp',
+}
+
 export const TOUR_STOPS: Record<TourStopId, TourStop> = {
-  arrival: { id: 'arrival', act: 'base', target: { kind: 'home' }, label: 'Moon Base Zero' },
+  arrival: {
+    id: 'arrival',
+    act: 'base',
+    target: { kind: 'home' },
+    label: 'Moon Base Zero',
+    still: STILL.base,
+  },
   power: {
     id: 'power',
     act: 'base',
     target: { kind: 'district', category: 'power' },
     label: 'Power fields',
+    still: STILL.power,
   },
   comms: {
     id: 'comms',
     act: 'base',
     target: { kind: 'district', category: 'comms_pnt' },
     label: 'Comms & navigation',
+    still: STILL.comms,
   },
   habitat: {
     id: 'habitat',
     act: 'base',
     target: { kind: 'district', category: 'habitat' },
     label: 'Habitat district',
+    still: STILL.habitat,
   },
   rover: {
     id: 'rover',
     act: 'base',
     target: { kind: 'district', category: 'rover' },
     label: 'Rover district',
+    still: STILL.rover,
   },
-  race: { id: 'race', act: 'race', target: LANDING_ZONE, label: 'Landing zone' },
-  market: { id: 'market', act: 'race', target: LANDING_ZONE, label: 'The market' },
-  predict: { id: 'predict', act: 'race', target: LANDING_ZONE, label: 'Predict' },
-  bet: { id: 'bet', act: 'race', target: STORY_LANDER, label: 'Bet' },
-  resolve: { id: 'resolve', act: 'race', target: STORY_LANDER, label: 'Resolution' },
-  prize: { id: 'prize', act: 'whole', target: WHOLE_BASE, label: 'Prize pool' },
-  ladder: { id: 'ladder', act: 'whole', target: WHOLE_BASE, label: 'Capability ladder' },
+  race: {
+    id: 'race',
+    act: 'race',
+    target: LANDING_ZONE,
+    label: 'Landing zone',
+    still: STILL.landing,
+  },
+  market: {
+    id: 'market',
+    act: 'race',
+    target: LANDING_ZONE,
+    label: 'The market',
+    still: STILL.landing,
+  },
+  predict: {
+    id: 'predict',
+    act: 'race',
+    target: LANDING_ZONE,
+    label: 'Predict',
+    still: STILL.landing,
+  },
+  bet: { id: 'bet', act: 'race', target: STORY_LANDER, label: 'Bet', still: STILL.lander },
+  resolve: {
+    id: 'resolve',
+    act: 'race',
+    target: STORY_LANDER,
+    label: 'Resolution',
+    still: STILL.lander,
+  },
+  prize: { id: 'prize', act: 'whole', target: WHOLE_BASE, label: 'Prize pool', still: STILL.base },
+  ladder: {
+    id: 'ladder',
+    act: 'whole',
+    target: WHOLE_BASE,
+    label: 'Capability ladder',
+    still: STILL.base,
+  },
   explore: {
     id: 'explore',
     act: 'whole',
     target: { kind: 'orbit', altitudeM: 4000 },
     label: 'Explore',
+    still: STILL.orbit,
   },
 }
 
