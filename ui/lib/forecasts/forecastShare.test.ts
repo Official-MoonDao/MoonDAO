@@ -200,6 +200,8 @@ describe('forecast share is only the free-forecast success state', () => {
     assert.equal(panel.includes('if (ok) onModalClose()'), false)
     const predict = readUi('components/deprize/ForecastPredictModal.tsx')
     assert.equal(predict.includes('wasSignedIn'), false)
+    assert.ok(predict.includes("pick={props.teamName || 'this competitor'}"))
+    assert.equal(predict.includes('labels[session.savedPick]'), false)
     assert.ok(predict.includes('offerShare={session.shareOffer && session.savedPick === index}'))
     const vote = readUi('lib/deprize/writeForecastVote.ts')
     assert.equal(vote.includes('trackForecastShared'), false)
