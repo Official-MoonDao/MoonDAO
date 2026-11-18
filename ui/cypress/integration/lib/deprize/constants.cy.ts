@@ -6,9 +6,9 @@ import {
 } from '@/lib/deprize/constants'
 
 describe('deprize availability legend', () => {
-  it('uses the shared non-U.S. availability sentence', () => {
+  it('states worldwide predictions and restricted ETH staking', () => {
     expect(DEPRIZE_AVAILABILITY_LEGEND).to.equal(
-      'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
+      'Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.'
     )
   })
 
@@ -23,7 +23,7 @@ describe('deprize availability legend', () => {
     const out = deprizeOgDescription('word '.repeat(60))
     expect(out.length).to.be.at.most(OG_DESCRIPTION_MAX)
     expect(out.endsWith(` ${DEPRIZE_AVAILABILITY_LEGEND}`)).to.equal(true)
-    expect(out).to.match(/^word( word)*… Not available/)
+    expect(out).to.match(/^word( word)*… Predictions are open worldwide\./)
   })
 
   it('labels the predict action Predict', () => {

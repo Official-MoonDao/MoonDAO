@@ -894,7 +894,7 @@ export default function BetModal({
           </li>
           <li>
             MoonDAO funds the market maker, receives the market fee, reports the result and sponsors
-            the prize. Not available to U.S. persons or in restricted jurisdictions.{' '}
+            the prize. Adding ETH to a prediction is unavailable in restricted jurisdictions.{' '}
             <a
               href={DEPRIZE_RISK_DISCLOSURES_URL}
               target="_blank"

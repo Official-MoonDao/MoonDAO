@@ -4,7 +4,7 @@
  */
 export const FORECAST_COPY = {
   panelIntro: 'Click a competitor to predict them as the winner.',
-  restrictedNote: "Betting isn't available in your region — you can still make a prediction.",
+  restrictedNote: "Adding ETH isn't available in your region — you can still make a prediction.",
   singlePick: 'Picking one competitor means the others are treated as not winning.',
   daoPending: (min: number, have: number) =>
     `The DAO number shows once ${min} Citizens have predicted (${have} so far).`,

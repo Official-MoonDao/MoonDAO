@@ -22,7 +22,7 @@ const REQUIRED = [
   '### Before open',
   'Eligibility Review Committee',
   'challenge window of at least 72',
-  'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.',
+  'Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.',
 ]
 
 // Built from parts so this file is not a docs-hygiene gate-1 hit. Those

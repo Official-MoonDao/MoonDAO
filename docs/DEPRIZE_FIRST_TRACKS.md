@@ -18,7 +18,7 @@
 Competitor listings are editorial and based solely on public sources. No listed
 organization has been contacted, has consented, or is affiliated with this prize.
 
-Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 ## Status
 

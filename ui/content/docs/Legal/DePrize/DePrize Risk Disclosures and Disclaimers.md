@@ -13,22 +13,22 @@ slug: /deprize-risk-disclosures-and-disclaimers
 
 **Risk Disclosures and Disclaimers**
 
-> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+> Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.0  
+Version 1.1  
 Effective Date: September 10, 2026  
-Last Updated: September 10, 2026
+Last Updated: November 17, 2026
 
-> **Review status.** Version 1.0 of this document was prepared on September 10, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public.
+> **Review status.** Version 1.1 distinguishes worldwide free predictions (and voting-power forecasts) from adding ETH to a prediction, which remains restricted by jurisdiction.
 
-This document is incorporated into the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") and the [DePrize Official Prize Rules](/docs/Legal/DePrize/DePrize-Official-Prize-Rules). It is written in plain language so that you can understand the main risks before you bet. It does not replace the Terms; if the two differ, the Terms control. Section references are to the Terms unless stated otherwise.
+This document is incorporated into the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") and the [DePrize Official Prize Rules](/docs/Legal/DePrize/DePrize-Official-Prize-Rules). **Free predictions (including Citizen predictions weighted by vMOONEY voting power) are open worldwide with no ETH at stake and no financial payout**, though every prediction is recorded publicly on-chain. Part A below is written in plain language so that you can understand the main risks **before you add ETH to a prediction (bet ETH in the Market)**. It does not replace the Terms; if the two differ, the Terms control. Section references are to the Terms unless stated otherwise.
 
 ---
 
-## Part A — Risk Disclosures for Bettors
+## Part A — Risk Disclosures for ETH Bettors
 
 **1. You can lose everything you put in.** An outcome token pays only if the outcome you backed is reported as the winner. If it is not, your tokens are worth **zero**. Prices reflect what other participants have paid — not a forecast, not MoonDAO's opinion, and not a guarantee. (Sections 4.4–4.5)
 
@@ -54,7 +54,7 @@ This document is incorporated into the [DePrize Terms and Conditions](/docs/Lega
 
 **12. Law and regulation can change or end the Service.** Prediction markets are regulated or prohibited in many countries and their status is changing quickly. Regulatory action could restrict or terminate the Service or your ability to use the Site to redeem (redemption directly against the contracts is permissionless). (Section 14)
 
-**13. You may be breaking the law where you live.** DePrize is **not offered to U.S. persons** or to anyone in a Restricted Jurisdiction (Terms, Schedule A). Elsewhere, it is your responsibility to determine whether participation is legal. MoonDAO is not registered with any financial or gaming regulator. (Section 3)
+**13. You may be breaking the law where you live if you bet ETH.** Free predictions are open worldwide, but **adding ETH to a prediction (ETH betting) is not offered in the United States or any other Restricted Jurisdiction, or to U.S. Persons** (Terms, Schedule A). Elsewhere, it is your responsibility to determine whether adding ETH is legal. MoonDAO is not registered with any financial or gaming regulator. (Section 3)
 
 **14. Your activity is public and permanent.** Your wallet address and every bet, cash-out, and redemption are recorded on a public blockchain forever and can be linked to you. (Section 12; DePrize Privacy Notice)
 
@@ -84,7 +84,7 @@ The following disclaimers apply to the Site, to all DePrize communications, and 
 
 **Not registered.** DePrize is not listed on any exchange registered with the U.S. Commodity Futures Trading Commission or any other regulator, and MoonDAO is not registered as a designated contract market, swap execution facility, broker, dealer, futures commission merchant, betting operator, or bookmaker in any jurisdiction. Outcome tokens have not been registered under the securities or derivatives laws of any jurisdiction.
 
-**Jurisdictional exclusion.** DePrize is not offered to U.S. persons or to persons located in Restricted Jurisdictions, including the European Union, the European Economic Area, and the United Kingdom, as set out in Schedule A to the Terms. Persons who access DePrize in breach of these restrictions do so at their own risk and in breach of the Terms.
+**Predictions vs. ETH betting.** Free predictions and voting-power-weighted Citizen forecasts on DePrize are open worldwide. Adding ETH to a prediction (buying or selling Outcome Tokens in the ETH Market) is not offered to U.S. Persons or to persons located in Restricted Jurisdictions, including the United States, the European Union, the European Economic Area, and the United Kingdom, as set out in Schedule A to the Terms. Persons who place ETH bets in breach of these restrictions do so at their own risk and in breach of the Terms.
 
 **No endorsement by competitors.** Competitors are listed at MoonDAO's editorial discretion. Listing does not mean the organization has entered, endorsed, or is affiliated with this prize. Bets are on outcomes, not on any affiliation. Names and marks belong to their owners and are used for identification only.
 
@@ -105,12 +105,12 @@ The following disclaimers apply to the Site, to all DePrize communications, and 
 Use one of the following, unabridged, wherever DePrize odds, prizes, or markets are mentioned outside the Site. Where character limits make this impossible, link to this page.
 
 **Standard (odds or market content).**
-> DePrize is a real-money prediction market operated by MoonDAO. You can lose everything you bet. Not available to U.S. persons or in restricted jurisdictions. MoonDAO is the market maker, oracle and prize sponsor. Not investment advice. Terms: moondao.com/docs/deprize-terms-and-conditions
+> DePrize predictions and voting-power forecasts are free and open worldwide. Adding ETH to a prediction puts your stake at risk and is unavailable in restricted jurisdictions. MoonDAO is the market maker, oracle and prize sponsor. Not investment advice. Terms: moondao.com/docs/deprize-terms-and-conditions
 
 **Prize content.**
 > Prize amounts are approximate, in ETH, fluctuate, and are paid only to an eligible winner in milestones. Listing a team does not mean it has entered or endorsed DePrize. Rules: moondao.com/docs/deprize-official-prize-rules
 
 **Minimum (character-limited).**
-> Real-money prediction market. You can lose your stake. Not for U.S. persons. Not advice. moondao.com/docs/deprize-risk-disclosures-and-disclaimers
+> Free predictions open worldwide. Adding ETH risks your stake and is unavailable in restricted jurisdictions. Not advice. moondao.com/docs/deprize-risk-disclosures-and-disclaimers
 
 Community members and influencers who receive compensation (including tokens) from MoonDAO must disclose that relationship clearly in any post about DePrize.
