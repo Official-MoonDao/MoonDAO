@@ -6,7 +6,6 @@ import path from 'path'
 import { resetAnalyticsState, trackForecastShared } from '@/lib/analytics/ga4'
 import {
   FORECAST_SHARE_AVAILABILITY,
-  FORECAST_SHARE_LEGEND,
   FORECAST_SHARE_ORIGIN,
   FORECAST_SHARE_TEXT,
   X_POST_LIMIT,
@@ -102,8 +101,14 @@ describe('forecast share url and text', () => {
     assert.equal(fallback.includes('@'), false)
   })
 
-  it('keeps the legend, the availability sentence, and the post inside 280', () => {
-    assert.ok(FORECAST_SHARE_TEXT.includes(FORECAST_SHARE_LEGEND))
+  it('uses the availability sentence, omits the U.S. persons line, and stays inside 280', () => {
+    assert.equal(
+      FORECAST_SHARE_TEXT.includes(
+        'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
+      ),
+      false
+    )
+    assert.equal(FORECAST_SHARE_TEXT.includes('Adding ETH:'), false)
     assert.ok(FORECAST_SHARE_TEXT.includes(FORECAST_SHARE_AVAILABILITY))
     assert.strictEqual(X_URL_WEIGHT, 23)
     assert.ok(forecastXPostLength() <= X_POST_LIMIT)

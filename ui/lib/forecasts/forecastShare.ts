@@ -9,14 +9,11 @@
 
 export const FORECAST_SHARE_ORIGIN = 'https://www.moondao.com'
 
-export const FORECAST_SHARE_LEGEND =
-  'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
-
 export const FORECAST_SHARE_AVAILABILITY =
   'Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.'
 
-/** Factual post. The legend is the adding-ETH restriction, not the free forecast. */
-export const FORECAST_SHARE_TEXT = `Free forecast on MoonDAO. ${FORECAST_SHARE_AVAILABILITY} Adding ETH: ${FORECAST_SHARE_LEGEND}`
+/** Factual post. No U.S. persons disclaimer. */
+export const FORECAST_SHARE_TEXT = `Free forecast on MoonDAO. ${FORECAST_SHARE_AVAILABILITY}`
 
 /** X counts every attached URL as 23 characters, plus the space before it. */
 export const X_URL_WEIGHT = 23
