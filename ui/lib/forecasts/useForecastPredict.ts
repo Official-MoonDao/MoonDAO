@@ -51,6 +51,8 @@ export type ForecastPredictController = {
   votingPowerLoading: boolean
   regionRestricted: boolean
   savedPick: number | null
+  /** A free forecast was saved in this visit, so the share prompt may show. */
+  shareOffer: boolean
   writing: boolean
   error: string | null
   blockedReason: string | null
