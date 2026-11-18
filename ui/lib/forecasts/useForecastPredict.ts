@@ -100,6 +100,8 @@ export function useForecastPredict(args: {
   const n = numOutcomes
   const [savedPick, setSavedPick] = useState<number | null>(null)
   const [shareOffer, setShareOffer] = useState(false)
+  /** Name shown in the predict window for this save, not the roster label. */
+  const [sharePickName, setSharePickName] = useState<string | null>(null)
   const [previousPick, setPreviousPick] = useState<number | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -118,6 +120,7 @@ export function useForecastPredict(args: {
     setRosterPrize(null)
     setSavedPick(null)
     setShareOffer(false)
+    setSharePickName(null)
   }
 
   const shownLeaderboard = useMemo(
@@ -172,6 +175,7 @@ export function useForecastPredict(args: {
     setSavedPick(null)
     setPreviousPick(null)
     setShareOffer(false)
+    setSharePickName(null)
     setError(null)
     setConsensus(null)
     setOverlays([])
@@ -268,7 +272,11 @@ export function useForecastPredict(args: {
     })
   }
 
-  async function commitPick(index: number, from?: typeof account): Promise<boolean> {
+  async function commitPick(
+    index: number,
+    from?: typeof account,
+    displayName?: string
+  ): Promise<boolean> {
     let writer = from ?? account
     if (!writer) return false
     if (!forecastsContract || !forecastsTableName) {
@@ -333,6 +341,8 @@ export function useForecastPredict(args: {
       setPreviousPick(savedPick)
       setSavedPick(index)
       setShareOffer(true)
+      const shown = (displayName ?? labels[index] ?? '').replace(/\s+/g, ' ').trim()
+      setSharePickName(shown || null)
       rememberRow(allocation, writer)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
@@ -378,6 +388,7 @@ export function useForecastPredict(args: {
       setSavedPick(null)
       setPreviousPick(null)
       setShareOffer(false)
+      setSharePickName(null)
       toast.success('Prediction removed', { style: toastStyle })
       await refetchFresh()
     } catch (err: any) {
@@ -389,7 +400,7 @@ export function useForecastPredict(args: {
     }
   }
 
-  async function predict(index: number): Promise<boolean> {
+  async function predict(index: number, displayName?: string): Promise<boolean> {
     const plan = tapPlan({
       index,
       savedPick,
@@ -405,10 +416,10 @@ export function useForecastPredict(args: {
         login()
         return false
       }
-      return commitPick(index, guest)
+      return commitPick(index, guest, displayName)
     }
     if (plan.action !== 'write') return false
-    return commitPick(plan.index)
+    return commitPick(plan.index, undefined, displayName)
   }
 
   // A guest who signed in to an existing account left their pick in
@@ -447,6 +458,7 @@ export function useForecastPredict(args: {
     regionRestricted,
     savedPick,
     shareOffer,
+    sharePickName,
     writing,
     error,
     blockedReason,
