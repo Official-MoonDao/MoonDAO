@@ -31,6 +31,7 @@ import {
   stripPiiFromUrl,
   stripPiiSearch,
   trackForecastSubmitted,
+  trackForecastShared,
   trackJoinCtaClick,
   trackMintError,
   trackMintSuccess,
@@ -930,9 +931,67 @@ describe('moonbase and forecast events', () => {
     assert.equal(app.includes('<MoonbaseEngagement />'), true)
   })
 
+  it('sends forecast_shared with method and the stored entry path', () => {
+    const calls = installGtag()
+    const storage = memoryStorage({ md_entry_path: '/moonbase' })
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    const wallet = `0x${'ab'.repeat(20)}`
+    win.sessionStorage = storage
+    win.location = {
+      hostname: 'moondao.com',
+      search: `?address=${wallet}&outcome=2&email=a@b.com`,
+      pathname: '/deprize/arb/1',
+    }
+    trackForecastShared('x')
+    trackForecastShared('copy')
+    assert.deepStrictEqual(calls, [
+      ['event', 'forecast_shared', { method: 'x', entry_path: '/moonbase' }],
+      ['event', 'forecast_shared', { method: 'copy', entry_path: '/moonbase' }],
+    ])
+    const encoded = JSON.stringify(calls)
+    assert.equal(encoded.includes(wallet), false)
+    assert.equal(encoded.includes('a@b.com'), false)
+    assert.equal(encoded.includes('outcome'), false)
+  })
+
+  it('uses the current pathname for forecast_shared when the tab has no stored entry', () => {
+    const calls = installGtag()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage()
+    win.location = { hostname: 'moondao.com', search: '?utm_source=ig', pathname: '/touchdown' }
+    trackForecastShared('copy')
+    assert.deepStrictEqual(calls[0][2], { method: 'copy', entry_path: '/touchdown' })
+  })
+
+  it('still hands forecast_shared to gtag when consent is denied or traffic is internal', () => {
+    const calls = installGtag()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage({ md_entry_path: '/deprize/arb/1' })
+    win.localStorage = memoryStorage({ cookie_consent: 'false' })
+    win.document = { cookie: 'internal=1' }
+    win.location = { hostname: 'moondao.com', search: '?internal=1', pathname: '/deprize/arb/1' }
+    trackForecastShared('x')
+    assert.deepStrictEqual(calls, [
+      ['event', 'forecast_shared', { method: 'x', entry_path: '/deprize/arb/1' }],
+    ])
+    const params = calls[0][2] as Record<string, unknown>
+    assert.equal(Object.prototype.hasOwnProperty.call(params, 'traffic_type'), false)
+    assert.equal(Object.prototype.hasOwnProperty.call(params, 'address'), false)
+  })
+
+  it('does not send forecast_shared for an unknown method', () => {
+    const calls = installGtag()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = memoryStorage()
+    win.location = { hostname: 'moondao.com', search: '', pathname: '/moonbase' }
+    trackForecastShared('email' as 'x')
+    assert.deepStrictEqual(calls, [])
+  })
+
   it('does not throw on the server', () => {
     delete (global as { window?: unknown }).window
     assert.doesNotThrow(() => trackMoonbaseEngaged())
     assert.doesNotThrow(() => trackForecastSubmitted())
+    assert.doesNotThrow(() => trackForecastShared('x'))
   })
 })

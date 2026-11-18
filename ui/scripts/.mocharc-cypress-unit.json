@@ -5,6 +5,7 @@
     "scripts/citizen-onboarding-image.test.ts",
     "scripts/attribution.test.ts",
     "lib/analytics/ga4.test.ts",
+    "lib/forecasts/forecastShare.test.ts",
     "lib/analytics/moonbaseEngagement.test.ts",
     "lib/analytics/ga4DataApi.test.ts",
     "lib/analytics/ga4Admin.test.ts",

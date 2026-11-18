@@ -99,6 +99,7 @@ export function useForecastPredict(args: {
 
   const n = numOutcomes
   const [savedPick, setSavedPick] = useState<number | null>(null)
+  const [shareOffer, setShareOffer] = useState(false)
   const [previousPick, setPreviousPick] = useState<number | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -116,6 +117,7 @@ export function useForecastPredict(args: {
   if (rosterPrize !== null && rosterPrize !== prizeKey) {
     setRosterPrize(null)
     setSavedPick(null)
+    setShareOffer(false)
   }
 
   const shownLeaderboard = useMemo(
@@ -169,6 +171,7 @@ export function useForecastPredict(args: {
   useEffect(() => {
     setSavedPick(null)
     setPreviousPick(null)
+    setShareOffer(false)
     setError(null)
     setConsensus(null)
     setOverlays([])
@@ -329,6 +332,7 @@ export function useForecastPredict(args: {
       if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
+      setShareOffer(true)
       rememberRow(allocation, writer)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
@@ -373,6 +377,7 @@ export function useForecastPredict(args: {
       if (!sameForecastSession(sessionRef.current, started)) return
       setSavedPick(null)
       setPreviousPick(null)
+      setShareOffer(false)
       toast.success('Prediction removed', { style: toastStyle })
       await refetchFresh()
     } catch (err: any) {
@@ -441,6 +446,7 @@ export function useForecastPredict(args: {
     votingPowerLoading: !!activeAccount && votingPowerLoading,
     regionRestricted,
     savedPick,
+    shareOffer,
     writing,
     error,
     blockedReason,
