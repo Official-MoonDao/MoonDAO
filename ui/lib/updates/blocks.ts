@@ -1,10 +1,18 @@
 /**
  * Data blocks an update can embed as fenced code: ```chart, ```stats,
- * ```heatmap and ```ledger, each holding one JSON object. The renderer falls
- * back to a plain code block when the JSON does not parse or fails these checks.
+ * ```heatmap, ```ledger, ```screens and ```cta, each holding one JSON object.
+ * The renderer falls back to a plain code block when the JSON does not parse or
+ * fails these checks.
  */
 
-export const UPDATE_BLOCK_LANGUAGES = ['chart', 'stats', 'heatmap', 'ledger'] as const
+export const UPDATE_BLOCK_LANGUAGES = [
+  'chart',
+  'stats',
+  'heatmap',
+  'ledger',
+  'screens',
+  'cta',
+] as const
 export type UpdateBlockLanguage = (typeof UPDATE_BLOCK_LANGUAGES)[number]
 
 type FigureText = {
@@ -89,11 +97,39 @@ export type LedgerSpec = FigureText & {
   }[]
 }
 
+/** Product screenshots in a browser frame, each linking to the live page. */
+export type ScreensSpec = FigureText & {
+  /** Side by side from md up. Stacked by default. */
+  columns?: 1 | 2
+  items: {
+    src: string
+    alt: string
+    /** Address shown in the frame's bar, e.g. moondao.com/deprize/arb/1. */
+    url?: string
+    href?: string
+    caption?: string
+  }[]
+}
+
+export type CtaAction = { label: string; href: string; primary?: boolean }
+
+export type CtaSpec = {
+  eyebrow?: string
+  title: string
+  body?: string
+  points?: string[]
+  actions: CtaAction[]
+  image?: { src: string; alt: string }
+  note?: string
+}
+
 export type UpdateBlock =
   | { kind: 'chart'; spec: ChartSpec }
   | { kind: 'stats'; spec: StatsSpec }
   | { kind: 'heatmap'; spec: HeatmapSpec }
   | { kind: 'ledger'; spec: LedgerSpec }
+  | { kind: 'screens'; spec: ScreensSpec }
+  | { kind: 'cta'; spec: CtaSpec }
 
 const isObj = (v: unknown): v is Record<string, any> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -191,6 +227,22 @@ export function parseUpdateBlock(lang: string, source: string): UpdateBlock | nu
             Array.isArray(r.trades) && r.trades.every((t: any) => isObj(t) && isNum(t.size))
         )
         ? { kind: 'ledger', spec: spec as LedgerSpec }
+        : null
+    case 'screens':
+      return Array.isArray(spec.items) &&
+        spec.items.length > 0 &&
+        spec.items.every((i: any) => isObj(i) && isStr(i.src) && isStr(i.alt))
+        ? { kind: 'screens', spec: spec as ScreensSpec }
+        : null
+    case 'cta':
+      return isStr(spec.title) &&
+        Array.isArray(spec.actions) &&
+        spec.actions.length > 0 &&
+        spec.actions.every((a: any) => isObj(a) && isStr(a.label) && isStr(a.href)) &&
+        (spec.image === undefined ||
+          (isObj(spec.image) && isStr(spec.image.src) && isStr(spec.image.alt))) &&
+        (spec.points === undefined || (Array.isArray(spec.points) && spec.points.every(isStr)))
+        ? { kind: 'cta', spec: spec as CtaSpec }
         : null
   }
 }

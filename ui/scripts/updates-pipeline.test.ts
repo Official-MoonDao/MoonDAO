@@ -156,6 +156,32 @@ describe('update data blocks', () => {
     )
   })
 
+  it('parses screens and cta blocks and rejects them without links or images', () => {
+    const shot = { src: '/a.jpg', alt: 'A page', url: 'moondao.com/a', href: '/a' }
+    expectEqual(
+      parseUpdateBlock('screens', JSON.stringify({ items: [shot] }))?.kind,
+      'screens',
+      'screens'
+    )
+    expectEqual(
+      parseUpdateBlock('screens', JSON.stringify({ items: [{ src: '/a.jpg' }] })),
+      null,
+      'screens without alt'
+    )
+    const cta = { title: 'Predict', actions: [{ label: 'Go', href: '/deprize', primary: true }] }
+    expectEqual(parseUpdateBlock('cta', JSON.stringify(cta))?.kind, 'cta', 'cta')
+    expectEqual(
+      parseUpdateBlock('cta', JSON.stringify({ ...cta, actions: [] })),
+      null,
+      'cta without actions'
+    )
+    expectEqual(
+      parseUpdateBlock('cta', JSON.stringify({ ...cta, image: { src: '/a.jpg' } })),
+      null,
+      'cta image without alt'
+    )
+  })
+
   it('returns null for unknown languages, bad JSON and mismatched shapes', () => {
     expectEqual(parseUpdateBlock('js', JSON.stringify(dots)), null, 'language')
     expectEqual(parseUpdateBlock('chart', '{not json'), null, 'json')

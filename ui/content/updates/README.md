@@ -56,5 +56,9 @@ Data figures are fenced code blocks holding one JSON object. Each renders server
 | ` ```chart ` with `"type": "stack"` | 100% stacked bars | `segments: [{ name, color? }]`, `rows: [{ label, values: number[] }]` |
 | ` ```heatmap ` | A diverging grid (green positive, red negative) | `columns: string[]`, `rows: [{ label, cells: [{ value, note?, mark? }] }]`, optional `shortColumns` for phones |
 | ` ```ledger ` | Blocks in order per row, sized by value, with empty slots up to `max` | `rows: [{ label, trades: [{ outcome, size, color? }] }]` |
+| ` ```screens ` | Product screenshots in a browser frame, each linking to the live page; stacked, or side by side with `"columns": 2` | `items: [{ src, alt, url?, href?, caption? }]` |
+| ` ```cta ` | A call-to-action card with buttons and an optional image; takes no `figure` text | `title`, `actions: [{ label, href, primary? }]`, optional `eyebrow`, `body`, `points: string[]`, `image: { src, alt }`, `note` |
+
+Capture screenshots from production at 2× scale, crop to what the reader needs, and save them as JPEG under `public/assets/updates/<post>/`. Date the screenshot in `source`, since live numbers change.
 
 `2026-11-17-ai-forecasters-first-bets-on-touchdown.md` uses every type.
