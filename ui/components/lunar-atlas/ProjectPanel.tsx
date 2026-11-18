@@ -12,6 +12,7 @@ import { DEPRIZE_PREDICT_CTA, positionRedeemValue, UNIT } from '@/lib/deprize/co
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import { atlasForecastBook } from '@/lib/forecasts/atlasBook'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import {
   LOCATION_PRECISION_LABEL,
@@ -142,14 +143,14 @@ export default function ProjectPanel({
       : undefined
   const isWinningSlot = bound && resolved && outcomeIndex >= 0 && outcomeIndex === winningIndex
 
-  const [predictArmed, setPredictArmed] = useState(false)
+  const [savedForecastPick, setSavedForecastPick] = useState<number | null>(null)
   const [predictOpen, setPredictOpen] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
   const raceKey = `${project.id}:${betGoal?.id ?? ''}`
   const [trackedRaceKey, setTrackedRaceKey] = useState(raceKey)
   if (trackedRaceKey !== raceKey || (resolved && (predictOpen || exitOpen))) {
     setTrackedRaceKey(raceKey)
-    setPredictArmed(false)
+    setSavedForecastPick(null)
     setPredictOpen(false)
     setExitOpen(false)
   }
@@ -185,7 +186,6 @@ export default function ProjectPanel({
     ) {
       return
     }
-    setPredictArmed(true)
     setPredictOpen(true)
   }
 
@@ -251,7 +251,9 @@ export default function ProjectPanel({
                 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
                 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {DEPRIZE_PREDICT_CTA}
+              {forecastIndex !== undefined && savedForecastPick === forecastIndex
+                ? FORECAST_COPY.predicted
+                : DEPRIZE_PREDICT_CTA}
             </button>
           )}
           {resolved && redeemValueEth !== undefined && (
@@ -462,8 +464,7 @@ export default function ProjectPanel({
         </p>
       </div>
 
-      {predictArmed &&
-        canBack &&
+      {canBack &&
         !resolved &&
         chain &&
         chainSlug &&
@@ -479,6 +480,7 @@ export default function ProjectPanel({
             outcomeIndex={predictOpen ? forecastIndex ?? null : null}
             teamName={project.name}
             onClose={() => setPredictOpen(false)}
+            onSavedPick={setSavedForecastPick}
           />
         )}
 

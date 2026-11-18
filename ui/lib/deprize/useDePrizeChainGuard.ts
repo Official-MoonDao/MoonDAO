@@ -55,6 +55,27 @@ export function useDePrizeChainGuard(chain?: Chain) {
     }
   }, [wallets, selectedWallet, chain])
 
+  /**
+   * For a write signed by the active wallet, which broadcasts on its own
+   * network. Switches when needed and resolves false so the caller stops: the
+   * active account is rebuilt after a switch, so the visitor taps again.
+   */
+  const readyToSign = useCallback(async (): Promise<boolean> => {
+    if (!wrongNetwork) return true
+    if (await switchToChain()) {
+      toast.success(`Wallet switched to ${chainLabel}. Tap again to continue.`, {
+        id: 'deprize-network',
+        style: toastStyle,
+      })
+    } else {
+      toast.error(`Switch your wallet to ${chainLabel} to continue.`, {
+        id: 'deprize-network',
+        style: toastStyle,
+      })
+    }
+    return false
+  }, [wrongNetwork, switchToChain, chainLabel])
+
   /** Guard for use inside an action handler; toasts and returns true if blocked. */
   const blockedByNetwork = useCallback(() => {
     if (!wrongNetwork) return false
@@ -62,5 +83,5 @@ export function useDePrizeChainGuard(chain?: Chain) {
     return true
   }, [wrongNetwork, chainLabel])
 
-  return { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork }
+  return { wrongNetwork, chainLabel, switching, switchToChain, readyToSign, blockedByNetwork }
 }

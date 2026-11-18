@@ -160,7 +160,7 @@ export default function ForecastPanel(props: {
       )
     : -1
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
-  const { wrongNetwork, chainLabel, switchToChain } = useDePrizeChainGuard(chain)
+  const { readyToSign } = useDePrizeChainGuard(chain)
 
   const n = labels.length
   const [savedPick, setSavedPick] = useState<number | null>(null)
@@ -322,23 +322,10 @@ export default function ForecastPanel(props: {
     })
   }
 
-  /**
-   * The site's active wallet signs on whatever network it is on, so a write
-   * from mainnet never reaches the prize chain. Guest writes name the chain
-   * themselves. The active account is rebuilt after a switch, so the visitor
-   * taps again instead of sending through the old signer.
-   */
+  /** Guest writes name the chain themselves. Only the active wallet can be on another network. */
   async function onPrizeNetwork(from: { address: string }): Promise<boolean> {
-    if (!wrongNetwork || from.address.toLowerCase() !== account?.address?.toLowerCase()) {
-      return true
-    }
-    setError(null)
-    if (await switchToChain()) {
-      toast.success(`Wallet switched to ${chainLabel}. Tap again to save.`, { style: toastStyle })
-    } else {
-      setError(`Switch your wallet to ${chainLabel} to predict on this prize.`)
-    }
-    return false
+    if (from.address.toLowerCase() !== account?.address?.toLowerCase()) return true
+    return readyToSign()
   }
 
   async function commitPick(

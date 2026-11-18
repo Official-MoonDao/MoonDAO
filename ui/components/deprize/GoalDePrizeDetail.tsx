@@ -1,4 +1,5 @@
 import { useLogin } from '@privy-io/react-auth'
+import { FORECASTS_TABLE_NAMES } from 'const/config'
 import { useDemoMarketsEnabled } from 'const/flags'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
@@ -9,6 +10,8 @@ import { deprizeOgDescription, OUTCOME_COLORS } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import { atlasForecastBook } from '@/lib/forecasts/atlasBook'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
 import {
   goalIndexCategory,
@@ -18,9 +21,11 @@ import {
 } from '@/lib/lunar-atlas/display'
 import type { SharedGoal } from '@/lib/lunar-atlas/types'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import DemoBetModal from '@/components/deprize/DemoBetModal'
+import ForecastPredictModal from '@/components/deprize/ForecastPredictModal'
 import Container from '@/components/layout/Container'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -64,7 +69,26 @@ export default function GoalDePrizeDetail({
 
   const projectIds = useMemo(() => competitors.map((c) => c.project.id), [competitors])
   const hasRace = isCompetitiveRace(competitors.length)
-  const demoMarket = useDemoMarketsEnabled() && hasRace
+  // A race with a reserved forecast id takes free MOONEY predictions, the same
+  // book Moon Base Zero writes to. Only races without one fall back to the demo.
+  const forecastBook = useMemo(
+    () => (hasRace ? atlasForecastBook(goal.id, goal.projectIds) : undefined),
+    [hasRace, goal.id, goal.projectIds]
+  )
+  const forecastSlug = FORECASTS_TABLE_NAMES[chainSlug] ? chainSlug : 'arbitrum'
+  const forecastChain = v4SlugToV5Chain(forecastSlug)
+  const canPredict = !!forecastBook && !!forecastChain
+  const forecastLabels = useMemo(
+    () =>
+      (forecastBook?.outcomeIds ?? []).map(
+        (projectId, index) =>
+          competitors.find((c) => c.project.id === projectId)?.project.name ?? `Team #${index + 1}`
+      ),
+    [forecastBook, competitors]
+  )
+  const [predictProjectId, setPredictProjectId] = useState<string | null>(null)
+  const [savedForecastPick, setSavedForecastPick] = useState<number | null>(null)
+  const demoMarket = useDemoMarketsEnabled() && hasRace && !canPredict
   const market = useMockMarket(goal.id, projectIds, goal.market?.impliedOdds, userAddress)
 
   const category = goalIndexCategory(goal) ?? 'other'
@@ -194,6 +218,8 @@ export default function GoalDePrizeDetail({
               <p className="text-gray-500 text-xs mt-3">
                 {demoMarket
                   ? 'Switch to Sepolia to view the live on-chain market for this race. '
+                  : canPredict
+                  ? 'The ETH market for this race opens soon. Predict the winner for free now. '
                   : hasRace
                   ? 'The market for this race opens soon. '
                   : 'No funded developer has entered this capability yet, so there is no market. '}
@@ -266,7 +292,7 @@ export default function GoalDePrizeDetail({
                 <h3 className="title-text-colors text-lg font-heading font-semibold">
                   Competitors
                 </h3>
-                {demoMarket && (
+                {(demoMarket || canPredict) && (
                   <p className="text-sm text-gray-400 mt-1">
                     Click a competitor to predict them as the winner.
                   </p>
@@ -286,6 +312,35 @@ export default function GoalDePrizeDetail({
                   pos && pos.qty > 0
                     ? Math.round(pos.qty * ((market.odds[o.projectId] ?? 0) / 100) * 1e6) / 1e6
                     : undefined
+                if (canPredict) {
+                  const slot = forecastBook?.outcomeIndexOf(o.projectId)
+                  const saved = slot !== undefined && savedForecastPick === slot
+                  return (
+                    <DePrizeTeamCard
+                      key={o.projectId}
+                      outcome={o.outcome}
+                      teamId={0n}
+                      teamContract={undefined}
+                      color={orgColor(org)}
+                      loading={false}
+                      resolved={false}
+                      isRefundVector={false}
+                      isWinningSlot={false}
+                      mode="predict"
+                      selectable={slot !== undefined}
+                      highlighted={saved}
+                      badge={saved ? FORECAST_COPY.predicted : undefined}
+                      bettingOpen={false}
+                      tradingHalted={false}
+                      busy={false}
+                      userConnected={!!userAddress}
+                      onBet={() => setPredictProjectId(o.projectId)}
+                      hrefOverride={`/moonbase/${o.projectId}`}
+                      nameOverride={o.name}
+                      unclaimed
+                    />
+                  )
+                }
                 return (
                   <DePrizeTeamCard
                     key={o.projectId}
@@ -350,6 +405,24 @@ export default function GoalDePrizeDetail({
         </div>
         <NoticeFooter />
       </Container>
+
+      {canPredict && forecastBook && forecastChain && (
+        <ForecastPredictModal
+          chain={forecastChain}
+          chainSlug={forecastSlug}
+          deprizeId={forecastBook.voteId}
+          numOutcomes={forecastBook.numOutcomes}
+          labels={forecastLabels}
+          reported={false}
+          marketLoading={false}
+          outcomeIndex={
+            predictProjectId ? forecastBook.outcomeIndexOf(predictProjectId) ?? null : null
+          }
+          teamName={competitors.find((c) => c.project.id === predictProjectId)?.project.name ?? ''}
+          onClose={() => setPredictProjectId(null)}
+          onSavedPick={setSavedForecastPick}
+        />
+      )}
 
       {betRow && demoMarket && (
         <DemoBetModal
