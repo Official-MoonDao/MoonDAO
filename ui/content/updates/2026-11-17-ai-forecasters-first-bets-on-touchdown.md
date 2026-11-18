@@ -16,7 +16,7 @@ featured: false
 draft: false
 ---
 
-The Touchdown DePrize asks one question: **who makes the next Qualifying Landing on the Moon?** Seven outcomes share one market on Arbitrum: Astrobotic, Intuitive Machines, Firefly, Blue Origin, CNSA, ispace and SpaceX.
+The [Touchdown DePrize](/deprize/arb/1) asks one question: **who makes the next Qualifying Landing on the Moon?** Seven outcomes share one market on Arbitrum: Astrobotic, Intuitive Machines, Firefly, Blue Origin, CNSA, ispace and SpaceX. You can see every competitor's lander, with its live odds, in [Moon Base Zero](/moonbase?race=shared-next-landing), MoonDAO's 3D model of a future lunar base.
 
 Today four AI models placed their first real bets on it. Claude, GPT, Gemini and Grok each hold a separate wallet. Each researched the question from scratch, wrote a sourced note, and committed to a probability for every outcome before it saw a single market price. A trading routine then bought whatever each model thought was underpriced.
 
@@ -42,6 +42,18 @@ The four notes add up to nearly 8,000 words and about 70 distinct sources. This 
 - **The market now matches their consensus at the top, but not at the bottom.** The averaged forecasts rank Astrobotic, CNSA, Intuitive Machines and Blue Origin in that order, and so does the market. But SpaceX and ispace still trade at 8.5% each, while no model gives either more than 3%.
 
 </aside>
+
+```screens
+{
+ "figure": "The race",
+ "title": "Touchdown in Moon Base Zero",
+ "subtitle": "Each competitor's lander stands on the pad with its current chance and rank. Pick one from the panel to predict it as the winner.",
+ "items": [
+  {"src": "/assets/updates/ai-forecasters/moonbase-touchdown.jpg", "alt": "Moon Base Zero showing the Touchdown race: a 3D lunar landing field with each competitor's lander labelled with its rank and chance, beside a panel listing the competitors with Predict buttons", "url": "moondao.com/moonbase", "href": "/moonbase?race=shared-next-landing"}
+ ],
+ "source": "Screenshot of moondao.com, 17 November 2026, after the models' first round."
+}
+```
 
 ## What all four agree on
 
@@ -170,6 +182,20 @@ Same prompt, same tools, four distinct styles.
 
 The models chose only the probabilities. Bet sizing came from one shared, rule-based trading routine. It buys only when a model's probability beats the price by enough to cover the 5% prize slice, a 2% allowance for costs, and a 3-point margin. It moves any one outcome by at most 2 points per trade and 5 points per day, makes at most six trades per wallet per day, and can sell only shares it already holds. So the differences in betting below come from two things: what each model believed, and what the market looked like when its turn came.
 
+The bets went through the same [Touchdown market](/deprize/arb/1) anyone can use, so every trade below moved the prices and the prize pool you see on that page.
+
+```screens
+{
+ "figure": "The market",
+ "title": "The Touchdown prize page after the first round",
+ "subtitle": "The chart shows each competitor's chance over time. The panel on the right is where a prediction or a bet starts, above the prize pool and its patrons.",
+ "items": [
+  {"src": "/assets/updates/ai-forecasters/touchdown-market.jpg", "alt": "The Touchdown DePrize page: a chart of each competitor's chance since 30 October, a table of competitors with ETH bet, voting power, predictions and chance, and a side panel with outcome buttons, a Predict button and the prize pool", "url": "moondao.com/deprize/arb/1", "href": "/deprize/arb/1"}
+ ],
+ "source": "Screenshot of moondao.com, 17 November 2026. Prices move with every bet, so the live page will differ."
+}
+```
+
 The models traded one after another: Claude, then GPT, then Gemini, then Grok. Each started from prices its predecessors had already moved.
 
 ```heatmap
@@ -289,6 +315,30 @@ Claude flagged two points that the market's resolution may need to settle:
 - **Independent research.** Each model searched the web on its own and wrote a note with a dated source for every claim. None saw the market's prices, on-chain data, or another model's notes before committing to its numbers.
 - **Forecast first, trade second.** A model's probabilities are fixed before any price is read. Trading pauses for a model that loses half its stake, or while a landing attempt is under way.
 - **Same market as everyone else.** The bets go through the same DePrize mint as any other bet and pay the same 5% prize slice. These are MoonDAO house wallets, labelled as such, and each is screened against the same sanctions list as every bettor.
+
+## Make your own call
+
+The models are one set of forecasters. The market is open to everyone, and the gaps they left are still there. If you think the long shots are overpriced, that CNSA is underrated, or that the models are too hard on first-time landers, you can say so on the same market they used.
+
+```cta
+{
+ "eyebrow": "Touchdown DePrize · live on Arbitrum",
+ "title": "Think the models got it wrong? Make your own prediction.",
+ "body": "Pick who you think makes the next landing on the Moon. Predicting is free, and Citizens' predictions are weighted by voting power and combine into the DAO forecast.",
+ "points": [
+  "Tap a competitor to predict them as the winner. It costs nothing.",
+  "Accurate predictions climb the leaderboard when the race ends.",
+  "Back your pick with ETH where eligible. About 5% of every bet grows the prize for the winning team."
+ ],
+ "actions": [
+  {"label": "Predict on Touchdown", "href": "/deprize/arb/1#deprize-forecast", "primary": true},
+  {"label": "Explore Moon Base Zero", "href": "/moonbase?race=shared-next-landing"},
+  {"label": "How DePrize works", "href": "/deprize/how-it-works"}
+ ],
+ "image": {"src": "/assets/updates/ai-forecasters/predict-modal.jpg", "alt": "The Predict dialog on the Touchdown page, offering a free MOONEY forecast for Chang'e-7 or the option to add ETH to the prediction"},
+ "note": "Not financial advice. Adding ETH to a prediction is available in eligible jurisdictions."
+}
+```
 
 ## Appendix: every forecast, trade and note
 
@@ -739,4 +789,4 @@ Conditional on an attempt, Chang'e-class landers are in a different class from t
 
 These are experiments with small amounts of ETH. Models can be confidently wrong, their notes are written under time pressure, and sources can be mistaken or out of date. Treat this as a record of what each model concluded and why, not as advice. The forecasts are fixed and will not be edited after the fact. Each new round will get its own post.
 
-You can follow each wallet on Arbiscan from its section of the appendix, and make your own prediction on the [DePrize page](/deprize). Free predictions and voting-power-weighted Citizen forecasts are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.
+You can follow each wallet on Arbiscan from its section of the appendix, watch the race in [Moon Base Zero](/moonbase?race=shared-next-landing), and make your own prediction on the [Touchdown page](/deprize/arb/1#deprize-forecast). Free predictions and voting-power-weighted Citizen forecasts are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.
