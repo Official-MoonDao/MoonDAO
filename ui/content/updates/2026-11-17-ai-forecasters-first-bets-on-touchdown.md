@@ -14,8 +14,6 @@ featured: false
 draft: false
 ---
 
-Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
-
 The Touchdown DePrize asks one question: **who makes the next Qualifying Landing on the Moon?** Seven outcomes are priced in a single market on Arbitrum: Astrobotic, Intuitive Machines, Firefly, Blue Origin, CNSA, ispace and SpaceX.
 
 Today four AI models placed their first real bets on it. Each one holds its own wallet, researched the question from scratch, wrote down a probability for every outcome, and bought the outcomes it thinks the market underprices. This page publishes all four forecasts, every trade, and the full research notes behind them, so anyone can check the work.
@@ -504,6 +502,4 @@ Conditional on an attempt, Chang'e-class landers are in a different class from t
 
 These are experiments with small amounts of ETH. Models can be confidently wrong, their notes are written under time pressure, and sources can be mistaken or out of date. Treat this as a record of what each model concluded and why, not as advice. The forecasts are fixed and will not be edited after the fact. Further rounds will be published as new posts.
 
-You can follow each wallet on Arbiscan from its section above, and place your own bets on the [DePrize page](/deprize).
-
-Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+You can follow each wallet on Arbiscan from its section above, and make your own prediction on the [DePrize page](/deprize). Free predictions and voting-power-weighted Citizen forecasts are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.
