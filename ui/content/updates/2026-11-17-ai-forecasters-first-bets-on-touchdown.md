@@ -5,7 +5,9 @@ date: 2026-11-17
 author: MoonDAO
 authorRole: Executive Branch
 category: Mission Report
-image: /assets/MoonDAO-OG.png
+image: /assets/updates/ai-forecasters/hero.jpg
+imageAlt: Four coloured trajectories, one per AI model, converging on the lunar south pole
+imageCaption: "Four models, four trajectories, one question: who lands next?"
 tags:
   - deprize
   - touchdown
@@ -20,13 +22,26 @@ Today four AI models placed their first real bets on it. Claude, GPT, Gemini and
 
 The four notes add up to nearly 8,000 words and about 70 distinct sources. This post pulls out what they agree on, where they part ways and why, and what happened when their views met the market. Every forecast, trade and full research note is in the appendix at the end.
 
-## The short version
+```stats
+{
+ "items": [
+  {"value": "4", "label": "frontier models, each with its own wallet"},
+  {"value": "22", "label": "buys on Arbitrum in the first round"},
+  {"value": "0.014 ETH", "label": "spent in total, including fees and gas"},
+  {"value": "~8,000", "label": "words of sourced research, 70 distinct sources"}
+ ]
+}
+```
+
+<aside data-title="Key takeaways">
 
 - **They agree on the calendar.** No landing attempt has started, none is likely before 2027, and Astrobotic flies first.
 - **They split on the landers.** The widest gap is Intuitive Machines: GPT gives it 11%, Gemini 27%. Astrobotic runs from 18.5% to 33%, CNSA from 16.5% to 29%.
 - **The split has one root.** Every model weighed the same trade-off between being early in the queue and having a track record. The probability each gave to the US commercial landers succeeding on their first tries drives almost everything else.
 - **The order they traded in mattered.** Each model traded on prices the previous model had already moved, so the last one in line found the market nearly where it wanted it and spent half as much as the others.
 - **The market now matches their consensus at the top, but not at the bottom.** The averaged forecasts rank Astrobotic, CNSA, Intuitive Machines and Blue Origin in that order, and so does the market. But SpaceX and ispace still trade at 8.5% each, while no model gives either more than 3%.
+
+</aside>
 
 ## What all four agree on
 
@@ -41,15 +56,33 @@ The research converged on the facts, even though nobody saw another model's work
 
 Every model framed the question the same way: to win, a lander needs to fly early, land upright, and have everyone ahead of it fail or slip. They disagree on the middle step.
 
-| Outcome | Claude | GPT | Gemini | Grok | Spread |
-| :-- | --: | --: | --: | --: | --: |
-| Astrobotic | 33.0% | 32.0% | 18.5% | 23.6% | 14.5 pts |
-| Intuitive Machines | 26.0% | 11.0% | 27.0% | 22.4% | 16.0 pts |
-| CNSA | 16.5% | 19.0% | 28.6% | 29.0% | 12.5 pts |
-| Blue Origin | 17.5% | 22.0% | 11.3% | 10.2% | 11.8 pts |
-| Firefly | 5.0% | 10.0% | 10.5% | 7.8% | 5.5 pts |
-| SpaceX | 0.8% | 2.0% | 1.5% | 3.0% | 2.2 pts |
-| ispace | 0.2% | 0.5% | 0.4% | 1.2% | 1.0 pts |
+```chart
+{
+ "type": "dots",
+ "figure": "Figure 1",
+ "title": "Same evidence, different conclusions",
+ "subtitle": "Each model's probability that an organization makes the next Qualifying Landing. The grey bar spans the range; the white tick is the market price after the round.",
+ "unit": "%",
+ "max": 35,
+ "series": [
+  {"name": "Claude", "color": "#ff7a59"},
+  {"name": "GPT", "color": "#34d399"},
+  {"name": "Gemini", "color": "#60a5fa"},
+  {"name": "Grok", "color": "#a78bfa"}
+ ],
+ "marker": {"name": "Market price after the round"},
+ "rows": [
+  {"label": "Astrobotic", "values": [33.0, 32.0, 18.5, 23.6], "marker": 22.0},
+  {"label": "CNSA", "values": [16.5, 19.0, 28.6, 29.0], "marker": 21.2},
+  {"label": "Intuitive Machines", "values": [26.0, 11.0, 27.0, 22.4], "marker": 18.4},
+  {"label": "Blue Origin", "values": [17.5, 22.0, 11.3, 10.2], "marker": 12.9},
+  {"label": "Firefly", "values": [5.0, 10.0, 10.5, 7.8], "marker": 8.5},
+  {"label": "SpaceX", "values": [0.8, 2.0, 1.5, 3.0], "marker": 8.5},
+  {"label": "ispace", "values": [0.2, 0.5, 0.4, 1.2], "marker": 8.5}
+ ],
+ "source": "Forecasts committed before any market price was read. Market prices from the Touchdown contract on Arbitrum."
+}
+```
 
 ### Intuitive Machines: two tip-overs, read two ways
 
@@ -73,7 +106,31 @@ Every model agrees that China's lander is the most reliable on the list. CNSA is
 - **Claude (16.5%) and GPT (19%)** keep CNSA low because Chang'e-7 has no official date and needs about 90 days of orbital scouting before it can land. It wins mainly if Griffin, IM-3 and Mark 1 all fail or slip past mid-2027.
 - **Gemini (28.6%) and Grok (29%)** expect that to happen fairly often. Gemini's base rate is blunt: of seven private lunar landers so far, one landed upright. Three first-time landers in a row each have a real chance of failing, so the reliable lander waiting behind them picks up a lot of probability.
 
-This is the clearest way to read the whole round. **CNSA's probability roughly mirrors how much a model trusts American first flights.** The two models most optimistic about Astrobotic are the two most pessimistic about CNSA, and the reverse holds too.
+This is the clearest way to read the whole round.
+
+> CNSA's probability roughly mirrors how much a model trusts American first flights.
+
+Add up what each model gives the three US landers that fly before Chang'e-7, none of which has landed upright before, and the CNSA forecast falls as that total rises. Claude, the most trusting, gives those three landers 76.5% and CNSA 16.5%. Gemini and Grok give them about 56% and CNSA about 29%.
+
+```chart
+{
+ "type": "scatter",
+ "figure": "Figure 2",
+ "title": "Trust in American first flights decides the CNSA number",
+ "subtitle": "Horizontal: combined probability for the three US landers that fly before China's lander (Astrobotic, Intuitive Machines, Blue Origin), none of which has landed upright before. Vertical: probability for CNSA.",
+ "unit": "%",
+ "x": {"label": "Astrobotic + Intuitive Machines + Blue Origin", "min": 50, "max": 80},
+ "y": {"label": "CNSA", "min": 10, "max": 35},
+ "points": [
+  {"label": "Claude", "x": 76.5, "y": 16.5, "color": "#ff7a59", "anchor": "left"},
+  {"label": "GPT", "x": 65.0, "y": 19.0, "color": "#34d399", "anchor": "right"},
+  {"label": "Gemini", "x": 56.8, "y": 28.6, "color": "#60a5fa", "anchor": "right"},
+  {"label": "Grok", "x": 56.2, "y": 29.0, "color": "#a78bfa", "anchor": "left"}
+ ],
+ "trend": true,
+ "source": "Each model's committed forecast."
+}
+```
 
 ### Blue Origin and Firefly
 
@@ -83,6 +140,26 @@ This is the clearest way to read the whole round. **CNSA's probability roughly m
 ## How each model did its research
 
 Same prompt, same tools, four distinct styles.
+
+```chart
+{
+ "type": "bars",
+ "figure": "Figure 3",
+ "title": "Four research styles",
+ "subtitle": "Length of each model's research note and the number of distinct sources it cites.",
+ "panels": [
+  {"name": "Words in the note", "values": [1815, 780, 2249, 3112]},
+  {"name": "Distinct sources cited", "values": [30, 12, 33, 24]}
+ ],
+ "rows": [
+  {"label": "Claude", "color": "#ff7a59"},
+  {"label": "GPT", "color": "#34d399"},
+  {"label": "Gemini", "color": "#60a5fa"},
+  {"label": "Grok", "color": "#a78bfa"}
+ ],
+ "source": "Counted from the published notes."
+}
+```
 
 - **Claude was the modeller.** It was the only one to build an explicit simulation, covering launch slips, transit times, a per-attempt success rate for each lander, and second missions in 2028. It then adjusted the output by hand and explained each adjustment. It also flagged the two rules questions in the next section.
 - **GPT was the editor.** At about 780 words, its note is the shortest by far. It gives one or two claims per outcome, each tagged with a direction ("raises slightly", "materially lowers"), and no numerical model. It was also the most willing to stake out a lonely position, on both Intuitive Machines and Blue Origin.
@@ -95,22 +172,99 @@ The models chose only the probabilities. Bet sizing came from one shared, rule-b
 
 The models traded one after another: Claude, then GPT, then Gemini, then Grok. Each started from prices its predecessors had already moved.
 
+```heatmap
+{
+ "figure": "Figure 4",
+ "title": "What each model saw when its turn came",
+ "subtitle": "Forecast minus the market price at the start of each model's turn, in percentage points. Green means the model thought the outcome was cheap; red means expensive. A dot marks outcomes it bought.",
+ "columns": ["Astrobotic", "CNSA", "Intuitive Machines", "Blue Origin", "Firefly", "SpaceX", "ispace"],
+ "shortColumns": ["Astro", "CNSA", "IM", "Blue", "Firefly", "SpaceX", "ispace"],
+ "rows": [
+  {"label": "Claude", "sub": "Turn 1", "color": "#ff7a59", "cells": [{"value": 12.2, "note": "33.0 vs 20.8", "mark": true}, {"value": 3.3, "note": "16.5 vs 13.2", "mark": false}, {"value": 12.8, "note": "26.0 vs 13.2", "mark": true}, {"value": 4.3, "note": "17.5 vs 13.2", "mark": false}, {"value": -8.2, "note": "5.0 vs 13.2", "mark": false}, {"value": -12.4, "note": "0.8 vs 13.2", "mark": false}, {"value": -13.0, "note": "0.2 vs 13.2", "mark": false}]},
+  {"label": "GPT", "sub": "Turn 2", "color": "#34d399", "cells": [{"value": 7.5, "note": "32.0 vs 24.5", "mark": true}, {"value": 7.3, "note": "19.0 vs 11.7", "mark": true}, {"value": -6.2, "note": "11.0 vs 17.2", "mark": false}, {"value": 10.3, "note": "22.0 vs 11.7", "mark": true}, {"value": -1.7, "note": "10.0 vs 11.7", "mark": false}, {"value": -9.7, "note": "2.0 vs 11.7", "mark": false}, {"value": -11.2, "note": "0.5 vs 11.7", "mark": false}]},
+  {"label": "Gemini", "sub": "Turn 3", "color": "#60a5fa", "cells": [{"value": -8.0, "note": "18.5 vs 26.5", "mark": false}, {"value": 16.3, "note": "28.6 vs 12.3", "mark": true}, {"value": 12.0, "note": "27.0 vs 15.0", "mark": true}, {"value": -4.2, "note": "11.3 vs 15.5", "mark": false}, {"value": 0.3, "note": "10.5 vs 10.2", "mark": false}, {"value": -8.7, "note": "1.5 vs 10.2", "mark": false}, {"value": -9.8, "note": "0.4 vs 10.2", "mark": false}]},
+  {"label": "Grok", "sub": "Turn 4", "color": "#a78bfa", "cells": [{"value": 0.0, "note": "23.6 vs 23.6", "mark": false}, {"value": 12.7, "note": "29.0 vs 16.3", "mark": true}, {"value": 3.3, "note": "22.4 vs 19.1", "mark": true}, {"value": -3.6, "note": "10.2 vs 13.8", "mark": false}, {"value": -1.3, "note": "7.8 vs 9.1", "mark": false}, {"value": -6.1, "note": "3.0 vs 9.1", "mark": false}, {"value": -7.9, "note": "1.2 vs 9.1", "mark": false}]}
+ ],
+ "unit": "pts",
+ "source": "A buy needs the forecast to beat the price by about 7% of the price (prize slice and costs) plus 3 points. Models can sell only shares they hold, and held none."
+}
+```
+
 - **Claude found a nearly flat market** and saw two clear bargains: Intuitive Machines at 13.2% against its 26%, and Astrobotic at 20.8% against its 33%. It alternated between them until it hit the daily 5-point limit on both. Astrobotic went to 24.4% and Intuitive Machines to 17.3%.
 - **GPT found Intuitive Machines already above its view.** Claude had pushed it to about 17%, against GPT's 11%. GPT held no shares, so it could not sell. Instead it put three buys into Blue Origin, its favourite underpriced outcome, one into CNSA, and two more into Astrobotic, which took Astrobotic to its peak of 26.5%. GPT ran out of daily trades while CNSA still looked cheap to it.
 - **Gemini found Astrobotic at 26.5%, against its own 18.5%.** That was the most overpriced outcome on the board by its view, and the result of the two previous models' buying. It could not sell either, so it did the next best thing in this kind of market. It bought what it liked, CNSA (the round's largest edge: 12.3% against its 28.6%) and Intuitive Machines. In a single shared market, buying one outcome lowers the prices of all the others, so Gemini's buys pulled Astrobotic and Blue Origin back down.
 - **Grok arrived last and found most of the work done.** Astrobotic sat at 23.6%, exactly its forecast, so it didn't trade it. It bought CNSA up to its daily limit, then made one small Intuitive Machines buy that stopped as soon as its edge no longer covered fees and the margin. It made four trades instead of six and spent about 0.0021 ETH, about half of what each of the others spent.
 
+```chart
+{
+ "type": "line",
+ "figure": "Figure 5",
+ "title": "The market, trade by trade",
+ "subtitle": "Price of each outcome after every one of the 22 buys. Shaded bands show whose turn it was.",
+ "unit": "%",
+ "y": {"min": 5, "max": 30},
+ "x": {"label": "Trade number", "count": 23},
+ "bands": [
+  {"label": "Claude", "from": 0, "to": 6, "color": "#ff7a59"},
+  {"label": "GPT", "from": 6, "to": 12, "color": "#34d399"},
+  {"label": "Gemini", "from": 12, "to": 18, "color": "#60a5fa"},
+  {"label": "Grok", "from": 18, "to": 22, "color": "#a78bfa"}
+ ],
+ "series": [
+  {"name": "Astrobotic", "color": "#fbbf24", "values": [20.8, 20.3, 22.3, 21.8, 23.8, 23.5, 24.5, 23.9, 23.4, 22.8, 24.8, 24.5, 26.5, 25.9, 25.3, 24.7, 24.4, 23.9, 23.6, 23.0, 22.4, 22.2, 22.0]},
+  {"name": "CNSA", "color": "#f472b6", "values": [13.2, 12.9, 12.6, 12.3, 12.0, 11.8, 11.7, 11.4, 11.1, 13.1, 12.8, 12.7, 12.3, 14.3, 16.3, 15.9, 16.9, 16.5, 16.3, 18.3, 20.3, 21.3, 21.2]},
+  {"name": "Intuitive Machines", "color": "#22d3ee", "values": [13.2, 15.2, 14.8, 16.8, 16.4, 17.4, 17.2, 16.8, 16.4, 16.0, 15.6, 15.4, 15.0, 14.7, 14.3, 16.3, 16.1, 18.1, 19.1, 18.7, 18.2, 18.0, 18.4]},
+  {"name": "Blue Origin", "color": "#818cf8", "values": [13.2, 12.9, 12.6, 12.3, 12.0, 11.8, 11.7, 13.7, 15.7, 15.3, 14.9, 15.9, 15.5, 15.1, 14.8, 14.4, 14.3, 13.9, 13.8, 13.4, 13.1, 12.9, 12.9]},
+  {"name": "Each long shot", "color": "#94a3b8", "dashed": true, "values": [13.2, 12.9, 12.6, 12.3, 12.0, 11.8, 11.7, 11.4, 11.1, 10.9, 10.6, 10.5, 10.2, 10.0, 9.7, 9.5, 9.4, 9.2, 9.1, 8.8, 8.6, 8.5, 8.5]}
+ ],
+ "source": "Reconstructed from each recorded trade; matches every on-chain price to within 0.05 points."
+}
+```
+
+```ledger
+{
+ "figure": "Figure 6",
+ "title": "Every trade, in order",
+ "subtitle": "One block per buy, sized by cost and coloured by outcome. Six trades a day is the limit.",
+ "rows": [
+  {"label": "Claude", "color": "#ff7a59", "trades": [{"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.00068}, {"outcome": "Astrobotic", "color": "#fbbf24", "size": 0.00075}, {"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.0007}, {"outcome": "Astrobotic", "color": "#fbbf24", "size": 0.00076}, {"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.00035}, {"outcome": "Astrobotic", "color": "#fbbf24", "size": 0.00039}]},
+  {"label": "GPT", "color": "#34d399", "trades": [{"outcome": "Blue Origin", "color": "#818cf8", "size": 0.00067}, {"outcome": "Blue Origin", "color": "#818cf8", "size": 0.00069}, {"outcome": "CNSA", "color": "#f472b6", "size": 0.00067}, {"outcome": "Astrobotic", "color": "#fbbf24", "size": 0.00077}, {"outcome": "Blue Origin", "color": "#818cf8", "size": 0.00035}, {"outcome": "Astrobotic", "color": "#fbbf24", "size": 0.00079}]},
+  {"label": "Gemini", "color": "#60a5fa", "trades": [{"outcome": "CNSA", "color": "#f472b6", "size": 0.00068}, {"outcome": "CNSA", "color": "#f472b6", "size": 0.00069}, {"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.00069}, {"outcome": "CNSA", "color": "#f472b6", "size": 0.00035}, {"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.00071}, {"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.00036}]},
+  {"label": "Grok", "color": "#a78bfa", "trades": [{"outcome": "CNSA", "color": "#f472b6", "size": 0.00071}, {"outcome": "CNSA", "color": "#f472b6", "size": 0.00073}, {"outcome": "CNSA", "color": "#f472b6", "size": 0.00037}, {"outcome": "Intuitive Machines", "color": "#22d3ee", "size": 0.00016}]}
+ ],
+ "max": 6,
+ "unit": "ETH",
+ "source": "Cost excludes the 5% prize slice and gas."
+}
+```
+
 The result is a market that bent toward the group's view, one trader at a time. No one coordinated, and no one saw another model's forecast. Each model simply corrected what the previous ones had left. In total the models made 22 buys and spent about 0.014 ETH, including fees and gas.
 
-| Outcome | Price before | Price after | Average of the four forecasts |
-| :-- | --: | --: | --: |
-| Astrobotic | 20.8% | 22.0% | 26.8% |
-| CNSA | 13.2% | 21.2% | 23.3% |
-| Intuitive Machines | 13.2% | 18.4% | 21.6% |
-| Blue Origin | 13.2% | 12.9% | 15.3% |
-| Firefly | 13.2% | 8.5% | 8.3% |
-| SpaceX | 13.2% | 8.5% | 1.8% |
-| ispace | 13.2% | 8.5% | 0.6% |
+```chart
+{
+ "type": "stack",
+ "figure": "Figure 7",
+ "title": "Where the market ended up, against the models' consensus",
+ "subtitle": "Share of probability on each outcome. The three long shots still hold a quarter of the market, against about 11% in the models' average.",
+ "unit": "%",
+ "segments": [
+  {"name": "Astrobotic", "color": "#fbbf24"},
+  {"name": "CNSA", "color": "#f472b6"},
+  {"name": "Intuitive Machines", "color": "#22d3ee"},
+  {"name": "Blue Origin", "color": "#818cf8"},
+  {"name": "Firefly", "color": "#94a3b8"},
+  {"name": "SpaceX", "color": "#64748b"},
+  {"name": "ispace", "color": "#475569"},
+  {"name": "Not on the roster", "color": "#1e293b"}
+ ],
+ "rows": [
+  {"label": "Market before", "values": [20.8, 13.2, 13.2, 13.2, 13.2, 13.2, 13.2, 0]},
+  {"label": "Market after", "values": [22.0, 21.2, 18.4, 12.9, 8.5, 8.5, 8.5, 0]},
+  {"label": "Average of the four models", "values": [26.8, 23.3, 21.6, 15.2, 8.3, 1.8, 0.6, 2.4]}
+ ],
+ "source": "Market prices from the contract. The market does not price a winner outside the roster."
+}
+```
 
 The averages leave out the 2.4% the models gave to a winner not on the roster, which the market does not price.
 
