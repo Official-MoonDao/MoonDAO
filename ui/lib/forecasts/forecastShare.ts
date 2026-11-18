@@ -3,21 +3,43 @@
  *
  * The URL is the public page the visitor forecast on, always on
  * www.moondao.com. Query, hash, wallet addresses, and the pick itself stay
- * off the link. The post says free forecasts are open worldwide and that
- * adding ETH is the restricted action.
+ * off the link. The post names the forecast they are sharing.
  */
 
 export const FORECAST_SHARE_ORIGIN = 'https://www.moondao.com'
 
-export const FORECAST_SHARE_AVAILABILITY =
-  'Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.'
-
-/** Factual post. No U.S. persons disclaimer. */
-export const FORECAST_SHARE_TEXT = `Free forecast on MoonDAO. ${FORECAST_SHARE_AVAILABILITY}`
+/** Used when the saved competitor has no public name yet. */
+export const FORECAST_SHARE_TEXT = 'My forecast on MoonDAO.'
 
 /** X counts every attached URL as 23 characters, plus the space before it. */
 export const X_URL_WEIGHT = 23
 export const X_POST_LIMIT = 280
+
+const GENERIC_PICK = /^(this competitor|team #\d+)$/i
+
+function sharePickName(pick?: string | null): string | null {
+  if (pick == null) return null
+  const name = String(pick).replace(/\s+/g, ' ').trim()
+  if (!name || GENERIC_PICK.test(name)) return null
+  if (/0x[a-fA-F0-9]{40}/i.test(name) || name.includes('@')) return null
+  return name
+}
+
+/** Prefilled post. Names the pick when we have one. No availability or jurisdiction line. */
+export function forecastShareText(pick?: string | null): string {
+  const name = sharePickName(pick)
+  if (!name) return FORECAST_SHARE_TEXT
+  const prefix = 'My forecast: '
+  const suffix = '.'
+  const budget = X_POST_LIMIT - 1 - X_URL_WEIGHT - prefix.length - suffix.length
+  let shown = name
+  if (shown.length > budget) {
+    const cut = shown.slice(0, Math.max(1, budget - 1))
+    const space = cut.lastIndexOf(' ')
+    shown = `${(space > 8 ? cut.slice(0, space) : cut).replace(/[\s,;:.]+$/, '')}…`
+  }
+  return `${prefix}${shown}${suffix}`
+}
 
 export type ForecastShareMethod = 'x' | 'copy'
 
@@ -99,9 +121,9 @@ export function forecastXPostLength(text: string = FORECAST_SHARE_TEXT): number 
   return text.length + separator + X_URL_WEIGHT
 }
 
-export function forecastXIntentUrl(input: string | null | undefined): string {
+export function forecastXIntentUrl(input: string | null | undefined, pick?: string | null): string {
   const url = forecastShareUrl(input, 'x')
   return `https://x.com/intent/post?text=${encodeURIComponent(
-    FORECAST_SHARE_TEXT
+    forecastShareText(pick)
   )}&url=${encodeURIComponent(url)}`
 }

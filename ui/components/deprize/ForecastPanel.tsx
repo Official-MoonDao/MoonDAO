@@ -534,7 +534,7 @@ export default function ForecastPanel(props: {
       <p className="mt-1 text-sm text-gray-400">{FORECAST_COPY.panelIntro}</p>
       {shareOffer && modalIndex == null ? (
         <div className="mt-3">
-          <ForecastSharePrompt />
+          <ForecastSharePrompt pick={savedPick != null ? labels[savedPick] : undefined} />
         </div>
       ) : null}
 

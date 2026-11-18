@@ -223,7 +223,9 @@ export default function PredictModal(props: {
             ethOffered ? 'border-t border-white/10 pt-4' : ''
           }`}
         >
-          {!isBet && props.saved && props.offerShare ? <ForecastSharePrompt /> : null}
+          {!isBet && props.saved && props.offerShare ? (
+            <ForecastSharePrompt pick={props.teamName} />
+          ) : null}
           {!props.connected && !(props.signedOutPredict && !isBet) && (
             <button
               type="button"

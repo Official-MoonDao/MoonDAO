@@ -5,8 +5,8 @@ import fs from 'fs'
 import path from 'path'
 import { resetAnalyticsState, trackForecastShared } from '@/lib/analytics/ga4'
 import {
-  FORECAST_SHARE_AVAILABILITY,
   FORECAST_SHARE_ORIGIN,
+  forecastShareText,
   FORECAST_SHARE_TEXT,
   X_POST_LIMIT,
   X_URL_WEIGHT,
@@ -101,15 +101,25 @@ describe('forecast share url and text', () => {
     assert.equal(fallback.includes('@'), false)
   })
 
-  it('uses the availability sentence, omits the U.S. persons line, and stays inside 280', () => {
-    assert.equal(
-      FORECAST_SHARE_TEXT.includes(
-        'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
-      ),
-      false
-    )
-    assert.equal(FORECAST_SHARE_TEXT.includes('Adding ETH:'), false)
-    assert.ok(FORECAST_SHARE_TEXT.includes(FORECAST_SHARE_AVAILABILITY))
+  it('names the forecast and leaves out availability and jurisdiction lines', () => {
+    const banned =
+      /worldwide|restricted|jurisdiction|U\.S\. persons|Adding ETH|unavailable|not available/i
+    for (const text of [
+      FORECAST_SHARE_TEXT,
+      forecastShareText('Firefly'),
+      forecastShareText('this competitor'),
+    ]) {
+      assert.equal(banned.test(text), false)
+      assert.ok(forecastXPostLength(text) <= X_POST_LIMIT)
+    }
+    assert.strictEqual(FORECAST_SHARE_TEXT, 'My forecast on MoonDAO.')
+    assert.strictEqual(forecastShareText('Firefly'), 'My forecast: Firefly.')
+    assert.strictEqual(forecastShareText('  Blue Origin  '), 'My forecast: Blue Origin.')
+    assert.strictEqual(forecastShareText('this competitor'), FORECAST_SHARE_TEXT)
+    assert.strictEqual(forecastShareText(`Team #${WALLET}`), FORECAST_SHARE_TEXT)
+    const longName = 'Northrop '.repeat(40).trim()
+    assert.ok(forecastShareText(longName).startsWith('My forecast: '))
+    assert.ok(forecastXPostLength(forecastShareText(longName)) <= X_POST_LIMIT)
     assert.strictEqual(X_URL_WEIGHT, 23)
     assert.ok(forecastXPostLength() <= X_POST_LIMIT)
     assert.ok(FORECAST_SHARE_TEXT.length + 1 + X_URL_WEIGHT <= X_POST_LIMIT)
@@ -127,6 +137,8 @@ describe('forecast share url and text', () => {
     assert.equal(intent.includes('/intent/tweet'), false)
     const parsed = new URL(intent)
     assert.strictEqual(parsed.searchParams.get('text'), FORECAST_SHARE_TEXT)
+    const named = new URL(forecastXIntentUrl('/deprize/arb/1', 'Firefly'))
+    assert.strictEqual(named.searchParams.get('text'), 'My forecast: Firefly.')
     const shared = parsed.searchParams.get('url') || ''
     assert.strictEqual(shared, forecastShareUrl('/deprize/arb/1', 'x'))
     assert.equal(intent.includes(WALLET), false)
@@ -175,9 +187,11 @@ describe('forecast_shared event', () => {
 describe('forecast share is only the free-forecast success state', () => {
   it('renders the prompt after a saved free forecast and not on the bet window', () => {
     const modal = readUi('components/deprize/PredictModal.tsx')
-    assert.ok(
-      modal.includes('{!isBet && props.saved && props.offerShare ? <ForecastSharePrompt /> : null}')
-    )
+    assert.ok(modal.includes('!isBet && props.saved && props.offerShare'))
+    assert.ok(modal.includes('<ForecastSharePrompt pick={props.teamName} />'))
+    const prompt = readUi('components/deprize/ForecastSharePrompt.tsx')
+    assert.equal(prompt.includes('Predictions are open worldwide'), false)
+    assert.equal(prompt.includes('restricted jurisdictions'), false)
     assert.equal(readUi('components/deprize/BetModal.tsx').includes('ForecastSharePrompt'), false)
     const panel = readUi('components/deprize/ForecastPanel.tsx')
     const silentAt = panel.indexOf('if (!options?.silent)')
@@ -197,7 +211,6 @@ describe('forecast share is only the free-forecast success state', () => {
     assert.ok(body.includes("sendEvent('forecast_shared'"))
     assert.equal(body.includes('cookie_consent'), false)
     assert.equal(body.includes('traffic_type'), false)
-    const prompt = readUi('components/deprize/ForecastSharePrompt.tsx')
     assert.equal(prompt.includes('window.open'), false)
     assert.equal(prompt.includes('api.twitter.com'), false)
     assert.ok(prompt.includes('intent="post"'))

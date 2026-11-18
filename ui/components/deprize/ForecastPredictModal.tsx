@@ -36,7 +36,9 @@ export default function ForecastPredictModal(props: {
     if (!session.shareOffer) return null
     return (
       <div className="border-t border-white/10 p-4">
-        <ForecastSharePrompt />
+        <ForecastSharePrompt
+          pick={session.savedPick != null ? props.labels[session.savedPick] : undefined}
+        />
       </div>
     )
   }
