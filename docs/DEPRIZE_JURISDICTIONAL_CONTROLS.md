@@ -2,17 +2,18 @@
 
 **Owner:** MoonDAO engineering (DePrize)  
 **Review:** quarterly, or whenever Schedule A / Terms change  
-**Last updated:** 2026-09-16
+**Last updated:** 2026-11-17
 
-This document lists the controls that restrict new DePrize participation. It is
-an operations record, not legal advice.
+This document lists the controls that restrict adding ETH to a DePrize
+prediction (ETH betting). Free predictions and voting-power-weighted Citizen
+forecasts are open worldwide. It is an operations record, not legal advice.
 
 ## Availability legend
 
-> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+> Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
-Use this exact sentence on DePrize pages, page metadata, legal documents, and
-announcements. The source of truth in code is `DEPRIZE_AVAILABILITY_LEGEND` in
+Use this exact sentence on DePrize pages, page metadata, and legal documents.
+The source of truth in code is `DEPRIZE_AVAILABILITY_LEGEND` in
 `ui/lib/deprize/constants.ts`.
 
 ## Controls and file owners

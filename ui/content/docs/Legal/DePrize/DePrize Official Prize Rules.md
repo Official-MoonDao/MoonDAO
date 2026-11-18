@@ -13,24 +13,24 @@ slug: /deprize-official-prize-rules
 
 **Official Prize Rules**
 
-> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+> Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.2  
+Version 1.3  
 Effective Date: September 10, 2026  
-Last Updated: September 17, 2026
+Last Updated: November 17, 2026
 
-> **Review status.** Version 1.2 records the payload-purse destination in Sections 6.3 and 9.7. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies.
+> **Review status.** Version 1.3 updates the availability notice to reflect that free predictions and voting-power forecasts are open worldwide while adding ETH to a prediction is restricted by jurisdiction; Version 1.2 recorded the payload-purse destination in Sections 6.3 and 9.7. The version number and dates shown above identify the text that applies.
 
-> **Who these Rules are for.** These Rules govern the **competition side** of DePrize: how a team becomes eligible to receive a DePrize prize, how the winner is determined, and how the prize is paid. If you are a **bettor**, the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") govern your participation; the market's resolution is described there and summarized in Section 5 below. **NO PURCHASE, PAYMENT, OR BET IS NECESSARY TO COMPETE FOR OR WIN A DEPRIZE PRIZE.** Placing a bet does not make you a competitor and does not improve any competitor's chance of winning.
+> **Who these Rules are for.** These Rules govern the **competition side** of DePrize: how a team becomes eligible to receive a DePrize prize, how the winner is determined, and how the prize is paid. If you are **making a prediction or placing an ETH bet**, the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") govern your participation; the market's resolution is described there and summarized in Section 5 below. **NO PURCHASE, PAYMENT, OR BET IS NECESSARY TO PREDICT OR TO COMPETE FOR OR WIN A DEPRIZE PRIZE.** Making a prediction or placing a bet does not make you a competitor and does not improve any competitor's chance of winning.
 
 ---
 
 ## 1. Introduction and Acceptance
 
-**1.1 The program.** DePrize is a prize program organized by **MoonDAO DAO LLC**, a Republic of the Marshall Islands decentralized autonomous organization limited liability company doing business as MoonDAO ("**MoonDAO**"). For each DePrize, MoonDAO publishes a capability to be achieved (for example, a specific class of spaceflight or lunar-surface milestone), lists organizations credibly pursuing it, operates a prediction market on which listed organization will achieve it first, and offers a prize (the "**Prize**") funded from a pool described in Section 6 to the organization that achieves it and satisfies these Rules.
+**1.1 The program.** DePrize is a prize program organized by **MoonDAO DAO LLC**, a Republic of the Marshall Islands decentralized autonomous organization limited liability company doing business as MoonDAO ("**MoonDAO**"). For each DePrize, MoonDAO publishes a capability to be achieved (for example, a specific class of spaceflight or lunar-surface milestone), lists organizations credibly pursuing it, hosts free predictions (including Citizen predictions weighted by voting power) open worldwide alongside an ETH prediction market (in eligible jurisdictions) on which listed organization will achieve it first, and offers a prize (the "**Prize**") funded from a pool described in Section 6 to the organization that achieves it and satisfies these Rules.
 
 **1.2 Acceptance.** These Rules, together with the DePrize-specific rules published on each DePrize's page (the "**DePrize Rules**"), the Prize Acceptance Agreement described in Section 9.3, and the [MoonDAO Website Terms and Conditions](/docs/Legal/Website-Terms-and-Conditions) (the "**Agreement**"), form the entire terms on which a Prize is offered. **By claiming a listing, submitting evidence, submitting a Prize claim, or accepting any portion of a Prize, you (the "Entrant") accept these Rules on your own behalf and on behalf of the organization you represent, and you represent that you are authorized to do so.** No organization is bound by these Rules merely by being listed (Section 3).
 
@@ -90,7 +90,7 @@ A Winner is a Prize-Eligible Winner only if, at the time of each Prize payment, 
 
 **4.1 Legal existence and authority.** The Winner is a legal entity (or, if the DePrize Rules permit individuals, a natural person of at least eighteen (18) years of age) in good standing under the laws of its jurisdiction, acting through a duly authorized representative.
 
-**4.2 Jurisdiction.** The Winner is not organized under the laws of, headquartered in, or controlled from a jurisdiction to which MoonDAO is prohibited from making payments under Applicable Law, including comprehensively sanctioned jurisdictions. The Restricted Jurisdictions schedule in the Terms governs bettors; it does **not** by itself disqualify a Competitor, except for the sanctioned jurisdictions in categories B and C of that schedule. **A U.S. Person may be a Winner and receive a Prize**, subject to Section 10.
+**4.2 Jurisdiction.** The Winner is not organized under the laws of, headquartered in, or controlled from a jurisdiction to which MoonDAO is prohibited from making payments under Applicable Law, including comprehensively sanctioned jurisdictions. The Restricted Jurisdictions schedule in the Terms governs ETH bettors; it does **not** restrict free predictions and does **not** by itself disqualify a Competitor, except for the sanctioned jurisdictions in categories B and C of that schedule. **A U.S. Person may be a Winner and receive a Prize**, subject to Section 10.
 
 **4.3 Sanctions and screening.** Neither the Winner nor any of its directors, officers, or beneficial owners of 25% or more is a person (a) listed on, or owned 50% or more by persons listed on, the U.S. Specially Designated Nationals and Blocked Persons List or any other applicable sanctions list; (b) on the U.S. Commerce Department Entity List or Military End-User List where payment would be restricted; or (c) otherwise the target of sanctions or restrictions that would make payment unlawful for MoonDAO or its service providers.
 

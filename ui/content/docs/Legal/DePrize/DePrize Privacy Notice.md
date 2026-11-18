@@ -13,24 +13,24 @@ slug: /deprize-privacy-notice
 
 **Privacy Notice**
 
-> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+> Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.1  
+Version 1.2  
 Effective Date: September 10, 2026  
-Last Updated: September 11, 2026
+Last Updated: November 17, 2026
 
-> **Review status.** Version 1.1 of this Notice was prepared on September 11, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch.
+> **Review status.** Version 1.2 updates this Notice for worldwide free predictions (including guest-wallet and voting-power-weighted Citizen predictions), while keeping the jurisdiction rules on adding ETH to a prediction.
 
-> **Summary.** Everything you do on a blockchain is public and permanent. When you use DePrize we also process your IP address and approximate location (to enforce jurisdiction rules), your login details if you sign in through our authentication provider, analytics data (with your consent where required), and — if you are a competitor claiming a prize — identity, ownership, and tax information. We do not sell personal data. DePrize is not offered in the European Union, the European Economic Area, or the United Kingdom.
+> **Summary.** Everything you write to a blockchain (including free predictions and ETH bets) is public and permanent. Free predictions and voting-power forecasts are open worldwide; adding ETH to a prediction is restricted by jurisdiction. When you use DePrize we process your IP address and approximate location (to determine whether adding ETH is available and to rate-limit sponsored prediction gas), your login or guest-wallet details through our authentication provider, analytics data (with your consent where required), and — if you are a competitor claiming a prize — identity, ownership, and tax information. We do not sell personal data.
 
 ---
 
 ## 1. Scope and Relationship to the Website Privacy Policy
 
-This DePrize Privacy Notice (this "**Notice**") describes how **MoonDAO DAO LLC** ("**MoonDAO**," "**we**," "**us**") collects, uses, discloses, and retains personal data in connection with DePrize (the "**Service**"), including the DePrize pages on moondao.com, the DePrize smart contracts, the prize competition, and related communications. It supplements the [MoonDAO Website Privacy Policy](/docs/Legal/Website-Privacy-Policy) (the "**Privacy Policy**"). Where this Notice is more specific than, or differs from, the Privacy Policy with respect to the Service, this Notice controls. Defined terms not defined here have the meanings in the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") or the [DePrize Official Prize Rules](/docs/Legal/DePrize/DePrize-Official-Prize-Rules) (the "**Prize Rules**").
+This DePrize Privacy Notice (this "**Notice**") describes how **MoonDAO DAO LLC** ("**MoonDAO**," "**we**," "**us**") collects, uses, discloses, and retains personal data in connection with DePrize (the "**Service**"), including the DePrize pages on moondao.com, free predictions and voting-power forecasts, the DePrize smart contracts, the prize competition, and related communications. It supplements the [MoonDAO Website Privacy Policy](/docs/Legal/Website-Privacy-Policy) (the "**Privacy Policy**"). Where this Notice is more specific than, or differs from, the Privacy Policy with respect to the Service, this Notice controls. Defined terms not defined here have the meanings in the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") or the [DePrize Official Prize Rules](/docs/Legal/DePrize/DePrize-Official-Prize-Rules) (the "**Prize Rules**").
 
 MoonDAO DAO LLC is the controller of personal data described in this Notice. Contact details are in Section 12.
 
@@ -39,13 +39,13 @@ MoonDAO DAO LLC is the controller of personal data described in this Notice. Con
 ## 2. Personal Data We Collect
 
 **2.1 Data you provide.**
-- **Authentication data.** If you sign in through our authentication provider (Privy), the identifier you use — a wallet address, email address, phone number, or a Google, X/Twitter, Discord, or GitHub account identifier — and any embedded wallet address created for you.
-- **Acceptance and eligibility records.** Your confirmation that you accept the Terms (including the version accepted); your separate attestations that you are not a U.S. resident and are not located in the United States, that you are not acting for a U.S.-organized or U.S.-headquartered entity, and that you are not an Insider and are not betting on behalf of anyone else; and the eligibility decision associated with that acceptance.
+- **Authentication and guest-wallet data.** If you sign in through our authentication provider (Privy), the identifier you use — a wallet address, email address, phone number, or a Google, X/Twitter, Discord, or GitHub account identifier — and any embedded wallet address created for you. If you submit a free prediction while signed out, a Privy guest account and embedded wallet address are created so your prediction can be written on-chain and kept if you later sign in.
+- **ETH-bet acceptance and eligibility records.** When you add ETH to a prediction (place an ETH bet), your confirmation that you accept the Terms (including the version accepted); your separate attestations that you are not a U.S. resident and are not located in the United States, that you are not acting for a U.S.-organized or U.S.-headquartered entity, and that you are not an Insider and are not betting on behalf of anyone else; and the eligibility decision associated with that acceptance. Free predictions do not require or collect residency attestations.
 - **Communications.** Messages you send us (support, self-exclusion requests, misconduct reports, listing corrections), and any information they contain.
 - **Prize claim data (competitors only).** If you claim a listing or a Prize under the Prize Rules: the legal name, registration details, and address of your organization; the names, roles, dates of birth, government identification, and contact details of authorized representatives and of beneficial owners of 25% or more; sanctions-screening results; IRS Forms W-9 or W-8 and taxpayer identification numbers; payout wallet addresses; and the contents of evidence submissions.
 
 **2.2 Data we collect automatically.**
-- **Blockchain data.** Your wallet address and every transaction it makes with the DePrize contracts — bets, cash-outs, redemptions, the amounts, the outcomes backed, and timestamps. This data is written to a public blockchain (currently Arbitrum One) by you, not by us, and is readable by anyone.
+- **Blockchain data.** Your wallet address and every transaction it makes with the DePrize contracts or forecast tables — free predictions (and any recorded Citizen vMOONEY voting power), ETH bets, cash-outs, redemptions, the amounts, the outcomes picked or backed, and timestamps. This data is written to a public blockchain (currently Arbitrum One) by your wallet, not by us, and is readable by anyone.
 - **Network and location data.** Your IP address (stored only as a truncated cryptographic hash, never in the clear), the country and region derived from it (using request headers supplied by our hosting and CDN providers and, where needed, a third-party IP-geolocation service), a wallet-to-country association used to enforce eligibility, connection-type signals (for example whether a request appears to come from a VPN, proxy, Tor exit, hosting network, or location-preserving relay), device and browser type (user agent), operating system, language, referring URL, and the pages and actions you take on the Site.
 - **Analytics and cookies.** With your consent where required, we use Google Analytics (via Google Tag with consent mode) and Vercel Analytics to understand how the Site is used. These tools use cookies, local storage, and similar technologies and collect pseudonymous identifiers, page views, events, and approximate location. A `cookie_consent` value is stored in your browser to remember your choice. An access-control cookie is set when you enter a password-gated area of the Site.
 - **Wallet-screening data.** Results of screening your wallet address against sanctions and risk lists, where we perform such screening.
@@ -60,8 +60,8 @@ We do not collect precise geolocation, biometric data (other than any identity-d
 
 | Purpose | Data used |
 |---|---|
-| Operate the Service: display markets, quotes, positions, and prize information; process your interactions with the Site | Blockchain data, authentication data, network data |
-| **Enforce eligibility**: exclude U.S. Persons, Restricted Jurisdictions, sanctioned persons, VPN/proxy use, and Insiders; apply limits | Network and location data, acceptance records, wallet-screening data, authentication data |
+| Operate the Service: display markets, forecasts, quotes, positions, and prize information; record predictions (including sponsored gas where applicable); process your interactions with the Site | Blockchain data, authentication data, network data |
+| **Enforce ETH betting eligibility**: exclude U.S. Persons, Restricted Jurisdictions, sanctioned persons, VPN/proxy use, and Insiders from adding ETH to predictions; apply limits and forecast gas rate limits | Network and location data, acceptance records, wallet-screening data, authentication data |
 | **Comply with law**: sanctions screening, record-keeping, responding to lawful requests, tax reporting and withholding on prizes | Prize claim data, wallet-screening data, blockchain data, acceptance records |
 | **Market integrity**: detect manipulation, insider trading, and prohibited conduct; investigate reports | Blockchain data, network data, authentication data, communications |
 | **Administer the prize**: verify competitors, determine and pay the Winner, publish results | Prize claim data, blockchain data |
@@ -107,7 +107,7 @@ Third parties you interact with independently — your wallet provider, the bloc
 
 ## 7. International Transfers
 
-MoonDAO DAO LLC is organized in the Republic of the Marshall Islands, operates through contributors in multiple countries, and uses service providers located primarily in the United States. Your personal data may be transferred to and processed in countries whose data-protection laws differ from those of your country. By using the Service you acknowledge these transfers. We do not offer the Service in the EU, EEA, or UK.
+MoonDAO DAO LLC is organized in the Republic of the Marshall Islands, operates through contributors in multiple countries, and uses service providers located primarily in the United States. Your personal data may be transferred to and processed in countries whose data-protection laws differ from those of your country. By using the Service you acknowledge these transfers. Adding ETH to a prediction (ETH betting) is not offered in the United States, the EU, the EEA, the UK, or other Restricted Jurisdictions; browsing and free predictions are available worldwide.
 
 ---
 
@@ -143,9 +143,9 @@ Depending on where you live, you may have rights to access, correct, delete, or 
 
 **Self-exclusion.** You may ask us to exclude your wallet from the Site (Terms, Section 11.5).
 
-**U.S. state residents.** Although the Service is not offered to U.S. Persons, U.S. visitors to the Site may exercise the rights above. We do not sell personal data or share it for cross-context behavioral advertising, and we do not use or disclose sensitive personal information other than for the purposes permitted by applicable state law.
+**U.S. state residents.** Free predictions are open to U.S. residents, while adding ETH to a prediction is not. U.S. residents may exercise the rights above. We do not sell personal data or share it for cross-context behavioral advertising, and we do not use or disclose sensitive personal information other than for the purposes permitted by applicable state law.
 
-**EU, EEA, and UK.** The Service is not offered to persons in these jurisdictions, and we do not knowingly process their personal data. If you believe we hold your data in error, contact us and we will delete it where we are able to.
+**EU, EEA, and UK.** Adding ETH to a prediction is not offered in the EU, EEA, or UK, while browsing and free predictions are available. Where the GDPR or UK GDPR applies to your use of the Site or free predictions, we process personal data to perform the service you request under the Terms (recording your prediction), for our legitimate interests in operating the Site, preventing abuse of sponsored prediction gas, and enforcing ETH betting restrictions, and with your consent for optional analytics cookies. You also have the right to lodge a complaint with your local data-protection supervisory authority.
 
 ---
 

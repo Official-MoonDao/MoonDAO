@@ -166,19 +166,20 @@ export default function DePrizeHowItWorks() {
                 <div className="rounded-2xl border border-blue-400/25 bg-blue-500/[0.06] p-5">
                   <p className="text-lg font-bold text-white">Predict</p>
                   <ul className="mt-3 flex list-disc flex-col gap-1.5 pl-5 text-sm text-gray-300">
-                    <li>Free, open to everyone</li>
-                    <li>Citizens&apos; picks shape the DAO forecast</li>
+                    <li>Free, open to everyone worldwide</li>
+                    <li>Citizens&apos; picks are weighted by voting power in the DAO forecast</li>
                     <li>Scored on the leaderboard</li>
                     <li>No money at stake</li>
                   </ul>
                 </div>
                 <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/[0.06] p-5">
-                  <p className="text-lg font-bold text-white">Bet</p>
+                  <p className="text-lg font-bold text-white">Add ETH</p>
                   <ul className="mt-3 flex list-disc flex-col gap-1.5 pl-5 text-sm text-gray-300">
                     <li>Uses ETH, priced at the current chance</li>
                     <li>Winning shares pay 1 ETH each</li>
                     <li>About 5% of every bet grows the prize</li>
                     <li>Cash out any time the market is open</li>
+                    <li>Available in eligible jurisdictions</li>
                   </ul>
                 </div>
               </div>

@@ -199,7 +199,7 @@ export default function PredictModal(props: {
                 <p className="text-sm text-amber-200">
                   {props.bettingAvailable
                     ? 'The bet form is loading.'
-                    : 'Betting is not available for you right now.'}
+                    : 'Adding ETH is not available for you right now.'}
                 </p>
               ))}
 

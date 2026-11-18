@@ -2,7 +2,7 @@
 tags: docs/legal
 id: deprize-terms-and-conditions
 title: DePrize Terms and Conditions
-description: Terms and conditions governing participation in DePrize prediction markets operated by MoonDAO
+description: Terms and conditions governing DePrize predictions, voting-power forecasts, and ETH prediction markets operated by MoonDAO
 keywords: [DePrize, MoonDAO, prediction market, terms and conditions, outcome tokens]
 sidebar_label: DePrize Terms and Conditions
 sidebar_position: 1
@@ -14,30 +14,30 @@ aliases: [Legal/DePrize-Terms-and-Conditions]
 
 **Terms and Conditions**
 
-> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+> Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.3  
+Version 1.4  
 Effective Date: September 10, 2026  
-Last Updated: October 22, 2026
+Last Updated: November 17, 2026
 
-> **Review status.** Version 1.3 removes Syria from the comprehensively sanctioned jurisdictions in Schedule A. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
+> **Review status.** Version 1.4 clarifies that free Predictions (including Citizen predictions weighted by voting power) are open worldwide, while adding ETH to a prediction (buying or selling Outcome Tokens in the Market) remains restricted under Section 3 and Schedule A. The version number and dates shown above identify the text that applies to you.
 
-> **Read this first.** DePrize is a real-money prediction market. Outcome tokens can become worthless. MoonDAO is the market maker, the fee recipient, the oracle that reports results, and the sponsor of the prize. **DePrize is not available to U.S. persons or to anyone located in a Restricted Jurisdiction (Schedule A).** Resolution is final and cannot be reversed. If a DePrize is cancelled or ends with no winner, every outcome token redeems for an equal share (1/N) of the market's collateral — **not** for what you paid. The 5% prize contribution taken from every bet is not refundable through the market.
+> **Read this first.** DePrize offers two ways to participate: **free Predictions** (including Citizen predictions weighted by vMOONEY voting power), which are open worldwide with no money at stake, and an **ETH Market** where eligible participants can add ETH to a prediction by buying Outcome Tokens. **Adding ETH to a prediction (buying or selling Outcome Tokens) is not available in the United States or any other Restricted Jurisdiction (Schedule A), or to U.S. Persons.** Outcome Tokens can become worthless. MoonDAO is the market maker, the fee recipient, the oracle that reports results, and the sponsor of the prize. Resolution is final and cannot be reversed. If a DePrize is cancelled or ends with no winner, every Outcome Token redeems for an equal share (1/N) of the Market's Collateral — **not** for what you paid. The 5% prize contribution taken from every ETH bet is not refundable through the Market.
 
 ---
 
 ## 1. Introduction and Acceptance
 
-**1.1 What these Terms cover.** These DePrize Terms and Conditions (these "**Terms**") govern your access to and use of DePrize (the "**Service**"), a prediction-market and prize-competition feature operated by **MoonDAO DAO LLC**, a Republic of the Marshall Islands decentralized autonomous organization limited liability company doing business as MoonDAO ("**MoonDAO**," "**we**," "**our**," or "**us**"). The Service includes the DePrize pages on moondao.com and related MoonDAO web properties (the "**Site**"), the DePrize smart contracts described in Section 4, and the tools MoonDAO provides for interacting with them.
+**1.1 What these Terms cover.** These DePrize Terms and Conditions (these "**Terms**") govern your access to and use of DePrize (the "**Service**"), a forecasting, prediction-market, and prize-competition feature operated by **MoonDAO DAO LLC**, a Republic of the Marshall Islands decentralized autonomous organization limited liability company doing business as MoonDAO ("**MoonDAO**," "**we**," "**our**," or "**us**"). The Service includes the DePrize pages on moondao.com and related MoonDAO web properties (the "**Site**"), the free Prediction and voting-power forecast system and leaderboard, the DePrize smart contracts described in Section 4, and the tools MoonDAO provides for interacting with them.
 
-**1.2 Relationship to MoonDAO's other legal documents.** These Terms are a supplemental agreement that is incorporated into, and forms part of, the [MoonDAO Website Terms and Conditions](/docs/Legal/Website-Terms-and-Conditions) (the "**Agreement**"). The [MoonDAO Website Privacy Policy](/docs/Legal/Website-Privacy-Policy), the [DePrize Privacy Notice](/docs/Legal/DePrize/DePrize-Privacy-Notice), and the [DePrize Risk Disclosures and Disclaimers](/docs/Legal/DePrize/DePrize-Risk-Disclosures-and-Disclaimers) are also incorporated by reference. Capitalized terms not defined in these Terms have the meanings given in the Agreement (including "**Applicable Law**," "**Covered Parties**," and "**MoonDAO™ Offerings**"). The [DePrize Official Prize Rules](/docs/Legal/DePrize/DePrize-Official-Prize-Rules) (the "**Prize Rules**") govern the competitors' side of each DePrize and the award of any prize; they are referenced here for context and bind competitors and prize claimants, not bettors as such.
+**1.2 Relationship to MoonDAO's other legal documents.** These Terms are a supplemental agreement that is incorporated into, and forms part of, the [MoonDAO Website Terms and Conditions](/docs/Legal/Website-Terms-and-Conditions) (the "**Agreement**"). The [MoonDAO Website Privacy Policy](/docs/Legal/Website-Privacy-Policy), the [DePrize Privacy Notice](/docs/Legal/DePrize/DePrize-Privacy-Notice), and the [DePrize Risk Disclosures and Disclaimers](/docs/Legal/DePrize/DePrize-Risk-Disclosures-and-Disclaimers) are also incorporated by reference. Capitalized terms not defined in these Terms have the meanings given in the Agreement (including "**Applicable Law**," "**Covered Parties**," and "**MoonDAO™ Offerings**"). The [DePrize Official Prize Rules](/docs/Legal/DePrize/DePrize-Official-Prize-Rules) (the "**Prize Rules**") govern the competitors' side of each DePrize and the award of any prize; they are referenced here for context and bind competitors and prize claimants, not bettors or predictors as such.
 
 **1.3 Precedence.** If these Terms conflict with the Agreement, these Terms control solely with respect to the DePrize-specific subject matter they address. If these Terms conflict with the published rules of a specific DePrize (its "**DePrize Rules**," described in Section 7.1), the DePrize Rules control as to the matters they specifically address (the roster, the Resolution Event, resolution criteria, timing, and market parameters). In all other respects the Agreement governs.
 
-**1.4 How you accept.** You accept these Terms by doing any of the following: (a) checking the acceptance box presented on the Site before placing a bet; (b) placing a bet, selling ("cashing out") a position, or redeeming a position through any DePrize smart contract, whether through the Site or directly; or (c) otherwise accessing or using the Service. Each time you place a bet you re-confirm the representations in Section 3. **If you do not agree to these Terms, do not use the Service.**
+**1.4 How you accept.** You accept these Terms by doing any of the following: (a) submitting or removing a Prediction on the Site or through the forecast contracts; (b) checking the acceptance box presented on the Site before adding ETH to a prediction; (c) placing an ETH bet, selling ("cashing out") a position, or redeeming a position through any DePrize smart contract, whether through the Site or directly; or (d) otherwise accessing or using the Service. Each time you place an ETH bet, sell, or redeem Outcome Tokens, you make and re-confirm the Market eligibility representations in Section 3.7. **If you do not agree to these Terms, do not use the Service.**
 
 **1.5 Versions.** MoonDAO identifies each version of these Terms by version number and date. The version in effect when you place a bet governs that bet, subject to Section 18. MoonDAO may require you to accept a new version before you place further bets.
 
@@ -73,6 +73,8 @@ Last Updated: October 22, 2026
 
 **"Outcome Token"** means an ERC-1155 conditional token on the CTF representing a claim on Collateral if a specified outcome is reported.
 
+**"Prediction"** means a free, non-monetary pick of an outcome recorded on-chain (including through the Forecasts table), carrying no ETH stake and creating no Outcome Token or claim on Collateral or the Prize Pool. For MoonDAO Citizens holding vMOONEY, a Prediction is weighted by voting power (subject to MoonDAO's weighting rules and per-voter caps) in computing the governance-weighted **DAO Forecast**, and Predictions are scored on the leaderboard upon resolution.
+
 **"Prize"**, **"Prize Pool"**, and **"Prize-Eligible Winner"** have the meanings given in the Prize Rules. In summary, the Prize Pool is the Juicebox/Launchpad project balance funded by campaign contributions and the 5% prize contribution described in Section 10. Market fees are not added to the Prize Pool; they are paid to the MoonDAO treasury. The Prize is the amount disbursed from the Prize Pool to a Prize-Eligible Winner.
 
 **"Project Token"** means the governance token, if any, issued by the Launchpad project bound to a DePrize. Each DePrize is bound to one Launchpad mission, identified on-chain by that DePrize's Juicebox project id, and the Project Token is that mission's own token — so **which token you receive depends on the DePrize you bet in**, and it is not a DePrize-wide or MoonDAO-wide token. For DePrize #1, whose bound mission is the Overview Effect Flight, the Project Token is $OVERVIEW. The bet flow displays the applicable token before you confirm.
@@ -85,7 +87,7 @@ Last Updated: October 22, 2026
 
 **"Senate"** means the MoonDAO governance body of vMOONEY holders that votes on the result of a DePrize under MoonDAO's governance procedures.
 
-**"U.S. Person"** means (a) any natural person resident in the United States of America, its territories or possessions (the "**United States**"); (b) any entity organized under the laws of, or having its principal place of business in, the United States; (c) any trust or estate of which a U.S. resident is a trustee or executor; and (d) any person acting for the account or benefit of a person described in (a)–(c). A person who is physically located in the United States when accessing the Service is treated as a U.S. Person for that use.
+**"U.S. Person"** means (a) any natural person resident in the United States of America, its territories or possessions (the "**United States**"); (b) any entity organized under the laws of, or having its principal place of business in, the United States; (c) any trust or estate of which a U.S. resident is a trustee or executor; and (d) any person acting for the account or benefit of a person described in (a)–(c). A person who is physically located in the United States when placing an ETH bet or transacting in Outcome Tokens is treated as a U.S. Person for that transaction.
 
 ---
 
@@ -93,27 +95,27 @@ Last Updated: October 22, 2026
 
 **3.1 Age and capacity.** The Service is available only to natural persons who are at least eighteen (18) years of age (or the age of majority in their jurisdiction, if greater) and who can form legally binding contracts under Applicable Law, and to entities acting through such persons, consistent with Section 1 of the Agreement.
 
-**3.2 U.S. Persons excluded.** **The Service is not offered to, and may not be used by, U.S. Persons.** Outcome Tokens are not listed on any exchange registered with the U.S. Commodity Futures Trading Commission, and MoonDAO is not registered with any U.S. federal or state financial or gaming regulator. If you are a U.S. Person, you may not place a bet, buy or sell Outcome Tokens, or otherwise transact through the Service, whether through the Site, through a third-party interface, or by interacting with the smart contracts directly.
+**3.2 Predictions open worldwide; ETH Betting restricted as to U.S. Persons.** Browsing the Site, submitting or updating a free Prediction (including through a guest wallet or sponsored gas), having a Citizen Prediction weighted by vMOONEY voting power in the DAO Forecast, and participating on the prediction leaderboard are **open worldwide**, including in the United States and in Restricted Jurisdictions, subject to Sections 3.1 and 3.4. **Adding ETH to a prediction — placing an ETH bet or buying Outcome Tokens through the Service ("ETH Betting") — is not offered to, and may not be used by, U.S. Persons.** Outcome Tokens are not listed on any exchange registered with the U.S. Commodity Futures Trading Commission, and MoonDAO is not registered with any U.S. federal or state financial or gaming regulator. If you are a U.S. Person, you may make free Predictions, but you may not add ETH to a prediction, place an ETH bet, or buy Outcome Tokens, whether through the Site, through a third-party interface, or by interacting with the Market smart contracts directly.
 
-**3.3 Restricted Jurisdictions.** The Service is not offered to, and may not be used by, any person located in, resident of, or organized under the laws of a Restricted Jurisdiction. Schedule A lists the Restricted Jurisdictions as of the Effective Date. MoonDAO may add jurisdictions at any time by updating Schedule A or by notice on the Site; additions apply immediately to new bets. MoonDAO may use IP geolocation, device signals, wallet analysis, and other information to enforce this Section and may block, suspend, or refuse any transaction or account without notice.
+**3.3 Restricted Jurisdictions (ETH Betting).** ETH Betting (adding ETH to a prediction or buying Outcome Tokens) is not offered to, and may not be used by, any person located in, resident of, or organized under the laws of a Restricted Jurisdiction. Schedule A lists the Restricted Jurisdictions as of the Effective Date. MoonDAO may add jurisdictions at any time by updating Schedule A or by notice on the Site; additions apply immediately to new ETH bets. MoonDAO may use IP geolocation, device signals, wallet analysis, and other information to enforce this Section and may block, suspend, or refuse any ETH bet or Market transaction without notice. Free Predictions remain available unless prohibited under Section 3.4.
 
 **3.4 Sanctions.** You may not use the Service if you are (a) a person or entity listed on, or owned 50% or more by persons listed on, the U.S. Treasury Department's Specially Designated Nationals and Blocked Persons List or any other sanctions list maintained by the United States, the United Nations, the United Kingdom, or the European Union; (b) located in or ordinarily resident in a jurisdiction subject to comprehensive sanctions; or (c) otherwise the target of sanctions that would prohibit MoonDAO from dealing with you. MoonDAO may screen wallet addresses and may refuse, freeze at the interface level, or report activity as required by law.
 
-**3.5 No circumvention.** You may not use a virtual private network, proxy, Tor exit, or other method to **misrepresent** your location or identity for the purpose of accessing the Service from the United States or a Restricted Jurisdiction, and you may not assist anyone else in doing so. A location-preserving privacy relay that continues to report your actual country (for example Apple iCloud Private Relay) is not, by itself, a violation of this Section.
+**3.5 No circumvention.** You may not use a virtual private network, proxy, Tor exit, or other method to **misrepresent** your location or identity for the purpose of placing an ETH bet or buying Outcome Tokens from the United States or another Restricted Jurisdiction, and you may not assist anyone else in doing so. A location-preserving privacy relay that continues to report your actual country (for example Apple iCloud Private Relay) is not, by itself, a violation of this Section.
 
-**3.6 Insiders.** You may not use the Service if you are an Insider (Section 9.2) with respect to the DePrize you are transacting in.
+**3.6 Insiders.** You may not buy, sell, or hold Outcome Tokens in a DePrize if you are an Insider (Section 9.2) with respect to that DePrize.
 
-**3.7 Your representations, repeated with every bet.** Each time you access the Service and each time you place a bet, sell, or redeem, you represent and warrant that: (a) you meet the age and capacity requirements in Section 3.1; (b) you are not a resident of the United States and you are not currently located in the United States or any of its territories; (c) you are not acting for or on behalf of any entity organized in, or with its principal place of business in, the United States; (d) you are not a U.S. Person as defined in Section 2; (e) you are not located in, resident of, or organized under the laws of a Restricted Jurisdiction; (f) you are not a sanctioned person under Section 3.4; (g) you are not an Insider and you are not placing the transaction on behalf of anyone else; (h) you are not using a service to misrepresent your location; (i) your participation is lawful in every jurisdiction that applies to you; and (j) the funds you use were lawfully obtained.
+**3.7 Your representations, repeated with every ETH bet.** Each time you add ETH to a prediction, place an ETH bet, buy or sell Outcome Tokens, or redeem Outcome Tokens, you represent and warrant that: (a) you meet the age and capacity requirements in Section 3.1; (b) you are not a resident of the United States and you are not currently located in the United States or any of its territories; (c) you are not acting for or on behalf of any entity organized in, or with its principal place of business in, the United States; (d) you are not a U.S. Person as defined in Section 2; (e) you are not located in, resident of, or organized under the laws of a Restricted Jurisdiction; (f) you are not a sanctioned person under Section 3.4; (g) you are not an Insider and you are not placing the transaction on behalf of anyone else; (h) you are not using a service to misrepresent your location; (i) your participation in the Market is lawful in every jurisdiction that applies to you; and (j) the funds you use were lawfully obtained.
 
-**3.8 Your responsibility for local law.** Prediction markets, betting on future events, and dealing in crypto assets are regulated or prohibited in many places. Consistent with Section 14 of the Agreement, determining whether your participation is lawful where you are is **your sole responsibility**, and MoonDAO is not responsible if Applicable Law restricts or prohibits your access. MoonDAO makes no representation that the Service is appropriate or lawful in any particular jurisdiction outside the exclusions in this Section 3.
+**3.8 Your responsibility for local law.** Prediction markets, betting on future events, and dealing in crypto assets are regulated or prohibited in many places. Consistent with Section 14 of the Agreement, determining whether your participation in ETH Betting or any other feature of the Service is lawful where you are is **your sole responsibility**, and MoonDAO is not responsible if Applicable Law restricts or prohibits your access. MoonDAO makes no representation that ETH Betting is appropriate or lawful in any particular jurisdiction outside the exclusions in this Section 3.
 
-**3.9 Consequences of misrepresentation.** If any representation in this Section 3 is or becomes untrue, you must stop using the Service immediately. MoonDAO may refuse service, cancel or reverse off-chain records, decline to act on your behalf, exclude you from future DePrizes, and take any other action available under these Terms or Applicable Law. On-chain transactions that have already been confirmed cannot be reversed by MoonDAO (Section 7.3), and you remain bound by these Terms with respect to them.
+**3.9 Consequences of misrepresentation.** If any representation you make under this Section 3 is or becomes untrue, you must stop placing ETH bets or using the affected part of the Service immediately. MoonDAO may refuse service, cancel or reverse off-chain records, decline to act on your behalf, exclude you from future DePrizes, and take any other action available under these Terms or Applicable Law. On-chain transactions that have already been confirmed cannot be reversed by MoonDAO (Section 7.3), and you remain bound by these Terms with respect to them.
 
 ---
 
 ## 4. What DePrize Is
 
-**4.1 A non-custodial, on-chain prediction market.** For each DePrize, you may buy and sell Outcome Tokens representing the competing outcomes (the listed Competitors and, where applicable, the Open Field). Prices are set by an automated market maker and reflect the aggregate positions of participants; **prices are not a promise, forecast, guarantee, or advice**, and they are not MoonDAO's opinion of any outcome's likelihood.
+**4.1 Predictions, voting-power forecasts, and an on-chain ETH Market.** Each DePrize combines two separate mechanisms around the same question: (a) **free Predictions**, open worldwide, in which anyone may record a non-monetary pick of the winning outcome and MoonDAO Citizens' picks are weighted by their vMOONEY voting power in the DAO Forecast; and (b) a **non-custodial, on-chain ETH Market**, available only in eligible jurisdictions under Section 3, in which eligible participants may add ETH to a prediction by buying and selling Outcome Tokens representing the competing outcomes (the listed Competitors and, where applicable, the Open Field). Market prices are set by an automated market maker and reflect the aggregate ETH positions of Market participants; **neither Market prices nor DAO Forecast percentages are a promise, guarantee, or advice**, and neither is MoonDAO's opinion of any outcome's likelihood.
 
 **4.2 Non-custodial.** MoonDAO does not take custody of the funds you trade with. Collateral and Outcome Tokens are held by smart contracts and by your own wallet, secured by your own private keys. All bets, positions, resolutions, and redemptions are recorded on a public blockchain (currently Arbitrum One) and are publicly visible and permanent.
 
@@ -129,7 +131,9 @@ Last Updated: October 22, 2026
 
 **4.5 Not an investment.** Outcome Tokens are instruments for expressing a view on a specified event. They are not shares, debt, deposits, or investment products; they carry no ownership, dividend, interest, or governance right; and MoonDAO makes no representation that they will hold or gain value. **You may lose the entire amount you put into any position.**
 
-**4.6 Third-party technology.** The Service relies on the CTF, an LMSR market-maker implementation, the Arbitrum network, wallet software, RPC providers, and other third-party technology that MoonDAO does not control. Section 22 of the Agreement (Third-Party Websites) applies.
+**4.6 Third-party technology.** The Service relies on the CTF, an LMSR market-maker implementation, Tableland forecast tables, the Arbitrum network, wallet software, RPC providers, and other third-party technology that MoonDAO does not control. Section 22 of the Agreement (Third-Party Websites) applies.
+
+**4.7 Free Predictions and voting-power mechanics.** No purchase, payment, or ETH stake is required to submit a Prediction. MoonDAO may, in its discretion and subject to daily and per-address rate limits, sponsor the nominal network gas fee needed to write a Prediction from a connected or guest wallet, and may pause or discontinue gas sponsorship at any time. Predictions carry no monetary stake, never move ETH Market odds, do not contribute to the Prize Pool, and do not entitle any predictor to ETH, tokens, or any financial payout. Citizen Predictions are weighted by vMOONEY voting power (using diminishing-return weighting and per-voter share caps set by MoonDAO) solely to display the DAO Forecast and leaderboard standings.
 
 ---
 
@@ -219,7 +223,7 @@ MoonDAO performs several roles in every DePrize. You acknowledge each of them an
 
 **10.2 Project Token.** Where the bound Launchpad project issues a Project Token, the project's rules may mint Project Tokens to you in respect of your contribution, at the rate then in effect for the project (which may be substantially lower than the rate at which earlier campaign contributors received tokens). **The token, the issuance rate, and the terms attaching to it are the bound mission's, not DePrize's**, and they differ between DePrizes; you should read the bound campaign's terms rather than assuming they match another DePrize. The Project Token is governed by the Launchpad campaign's own terms (for DePrize #1, the [Overview Effect Flight Terms and Conditions](/docs/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions)). Consistent with those terms, the Project Token is issued for governance participation, carries no expectation of profit, and is not offered as an investment. Any right to redeem Project Tokens against the Prize Pool (a Launchpad "cash out") exists only if and when the campaign's rules enable it — for DePrize #1, only in a Refund-Terminal State or after a failure of the Prize's second milestone — and is subject to the campaign's fees and mechanics, not to these Terms.
 
-**10.3 Regulatory status.** Whether a Project Token is a security or other regulated instrument depends on the laws that apply to you. MoonDAO does not offer Project Tokens to U.S. Persons or in Restricted Jurisdictions. Nothing in these Terms is a representation about the Project Token's regulatory status in any jurisdiction, and you should not place a bet because of the Project Token.
+**10.3 Regulatory status.** Whether a Project Token is a security or other regulated instrument depends on the laws that apply to you. MoonDAO does not offer Project Tokens through ETH bets to U.S. Persons or in Restricted Jurisdictions. Nothing in these Terms is a representation about the Project Token's regulatory status in any jurisdiction, and you should not place a bet because of the Project Token.
 
 ---
 
@@ -328,7 +332,7 @@ Questions about these Terms, Competitor listing requests, self-exclusion request
 By using DePrize you acknowledge and agree that:
 
 1. You have read, understood, and agree to these Terms, the Agreement, the Privacy Policy, the DePrize Privacy Notice, and the DePrize Risk Disclosures and Disclaimers.
-2. You are not a U.S. Person, are not located in the United States or a Restricted Jurisdiction, are not a sanctioned person, and are not an Insider — and you re-confirm this every time you bet.
+2. Free Predictions (including voting-power-weighted Citizen predictions) are open worldwide with no money at stake. If you add ETH to a prediction or transact in Outcome Tokens, you are not a U.S. Person, are not located in the United States or another Restricted Jurisdiction, are not a sanctioned person, and are not an Insider — and you re-confirm this every time you place an ETH bet.
 3. Outcome Tokens are not investments. If the outcome you back does not win, your position becomes **worthless** and you may lose everything you put in.
 4. If a DePrize is Cancelled or ends with No Winner, every Outcome Token redeems for **1/N** in ETH — **not** your original stake — and a bet placed above 1/N may redeem for less than you paid.
 5. MoonDAO is the market maker, fee recipient, Oracle, and Prize sponsor, and has financial interests in every Market.
@@ -339,11 +343,11 @@ By using DePrize you acknowledge and agree that:
 
 ---
 
-## Schedule A — Restricted Jurisdictions
+## Schedule A — Restricted Jurisdictions (ETH Betting)
 
-As of the Effective Date, the Service is not available to persons located in, resident of, or organized under the laws of the following jurisdictions. MoonDAO may amend this Schedule at any time under Section 18.2.
+As of the Effective Date, **adding ETH to a prediction (placing an ETH bet or buying Outcome Tokens in a Market)** is not available to persons located in, resident of, or organized under the laws of the following jurisdictions. Free Predictions (including voting-power-weighted Citizen predictions) and browsing the Site remain available worldwide, except where prohibited by comprehensive sanctions under Section 3.4. MoonDAO may amend this Schedule at any time under Section 18.2.
 
-**A. United States of America**, including all states, the District of Columbia, and all territories and possessions (see Section 3.2 for the U.S. Person exclusion, which applies regardless of location).
+**A. United States of America**, including all states, the District of Columbia, and all territories and possessions (see Section 3.2 for the U.S. Person exclusion on ETH Betting, which applies regardless of location).
 
 **B. Comprehensively sanctioned jurisdictions and regions:** Cuba; Iran; North Korea (DPRK); the Crimea, Donetsk, Luhansk, Kherson, and Zaporizhzhia regions of Ukraine.
 
@@ -351,11 +355,11 @@ As of the Effective Date, the Service is not available to persons located in, re
 
 **D. Jurisdictions whose regulators have stated that prediction markets or event contracts are licensed betting or regulated derivatives, or that block such services:** United Kingdom; Ireland; Australia; New Zealand; Singapore; Canada (all provinces and territories); France; Spain; Portugal; Italy; Germany; Netherlands; Belgium; Poland; Czech Republic.
 
-**E. European Union, European Economic Area, and United Kingdom (data protection).** Independently of the above, MoonDAO does not offer the Service to persons in any member state of the European Union or the European Economic Area, or in the United Kingdom, Gibraltar, Jersey, Guernsey, or the Isle of Man.
+**E. European Union, European Economic Area, and United Kingdom (ETH Betting).** Independently of the above, MoonDAO does not offer ETH Betting (adding ETH to a prediction or buying Outcome Tokens) to persons in any member state of the European Union or the European Economic Area, or in the United Kingdom, Gibraltar, Jersey, Guernsey, or the Isle of Man.
 
 **F. Jurisdictions where online betting or dealing in crypto assets is generally prohibited or requires a local licence that MoonDAO does not hold:** People's Republic of China (including the Hong Kong and Macau Special Administrative Regions); Japan; South Korea; Taiwan; India; Pakistan; Bangladesh; Indonesia; Malaysia; Thailand; Vietnam; Philippines; Turkey; United Arab Emirates; Saudi Arabia; Qatar; Kuwait; Brazil.
 
-Where a jurisdiction appears in more than one category, every listed basis applies. The absence of a jurisdiction from this Schedule is not a representation that the Service is lawful there; Section 3.8 applies. MoonDAO reviews this Schedule with counsel before each DePrize opens and at least quarterly.
+Where a jurisdiction appears in more than one category, every listed basis applies. The absence of a jurisdiction from this Schedule is not a representation that ETH Betting is lawful there; Section 3.8 applies. MoonDAO reviews this Schedule with counsel before each DePrize opens and at least quarterly.
 
 ---
 
@@ -367,3 +371,4 @@ Where a jurisdiction appears in more than one category, every listed basis appli
 | 1.1 | September 11, 2026 | Splits the Section 3.7 representations into separate residency, entity, and insider attestations. Clarifies that Section 3.5 prohibits location misrepresentation, not every privacy relay. |
 | 1.2 | September 17, 2026 | Records the prize as a community payload purchase. If the winner does not claim, they may designate a nonprofit; if there is no response, the pool rolls into a future prize. |
 | 1.3 | October 22, 2026 | Removes Syria from Schedule A.B. Comprehensive Syria sanctions ended in 2025; Syria is not moved to another category. Targeted sanctions on designated persons are unchanged. |
+| 1.4 | November 17, 2026 | Clarifies that free Predictions (including Citizen predictions weighted by vMOONEY voting power) are open worldwide, while adding ETH to a prediction (buying or selling Outcome Tokens in a Market) remains restricted in the United States and other Restricted Jurisdictions (Schedule A). |
