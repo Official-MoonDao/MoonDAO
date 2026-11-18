@@ -25,6 +25,19 @@ function sharePickName(pick?: string | null): string | null {
   return name
 }
 
+/**
+ * Name for a share after a write that did not pass the window title.
+ * Undo and guest handoff only have the roster label (`Open Field`); a name
+ * the window already showed (`Other entrants`) wins.
+ */
+export function resolvedSharePick(
+  displayName: string | null | undefined,
+  remembered: string | null | undefined,
+  label: string | null | undefined
+): string | null {
+  return sharePickName(displayName) ?? sharePickName(remembered) ?? sharePickName(label)
+}
+
 /** Prefilled post. Names the pick when we have one. No availability or jurisdiction line. */
 export function forecastShareText(pick?: string | null): string {
   const name = sharePickName(pick)

@@ -7,6 +7,7 @@ import { resetAnalyticsState, trackForecastShared } from '@/lib/analytics/ga4'
 import {
   FORECAST_SHARE_ORIGIN,
   forecastShareText,
+  resolvedSharePick,
   FORECAST_SHARE_TEXT,
   X_POST_LIMIT,
   X_URL_WEIGHT,
@@ -131,6 +132,24 @@ describe('forecast share url and text', () => {
     assert.equal(/0x[a-fA-F0-9]{40}/.test(FORECAST_SHARE_TEXT), false)
   })
 
+  it('keeps a window name when a later write only has the roster label', () => {
+    assert.strictEqual(
+      resolvedSharePick('Other entrants', undefined, 'Open Field'),
+      'Other entrants'
+    )
+    assert.strictEqual(
+      resolvedSharePick(undefined, 'Other entrants', 'Open Field'),
+      'Other entrants'
+    )
+    assert.strictEqual(
+      resolvedSharePick('this competitor', 'Other entrants', 'Open Field'),
+      'Other entrants'
+    )
+    assert.strictEqual(resolvedSharePick(undefined, undefined, 'Firefly'), 'Firefly')
+    assert.strictEqual(resolvedSharePick(undefined, undefined, 'Open Field'), 'Open Field')
+    assert.strictEqual(resolvedSharePick(`Team #${WALLET}`, undefined, 'Firefly'), 'Firefly')
+  })
+
   it('builds an X intent that carries the text and the x utm link', () => {
     const intent = forecastXIntentUrl(dirty)
     assert.ok(intent.startsWith('https://x.com/intent/post?'))
@@ -204,6 +223,12 @@ describe('forecast share is only the free-forecast success state', () => {
     assert.ok(predict.includes('offerShare={session.shareOffer && session.savedPick === index}'))
     assert.ok(predict.includes('session.predict(index, props.teamName)'))
     assert.ok(predict.includes('pick={session.sharePickName}'))
+    const hook = readUi('lib/forecasts/useForecastPredict.ts')
+    const commit = hook.slice(
+      hook.indexOf('async function commitPick'),
+      hook.indexOf('async function clearPick')
+    )
+    assert.ok(commit.includes('resolvedSharePick(displayName'))
     assert.equal(predict.includes('props.labels[session.savedPick]'), false)
     const vote = readUi('lib/deprize/writeForecastVote.ts')
     assert.equal(vote.includes('trackForecastShared'), false)

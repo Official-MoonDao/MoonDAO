@@ -22,6 +22,7 @@ import {
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
 import { sameForecastSession } from '@/lib/forecasts/forecastSession'
+import { resolvedSharePick } from '@/lib/forecasts/forecastShare'
 import { forgetGuestForecast, rememberGuestForecast } from '@/lib/forecasts/guestHandoff'
 import {
   mergeCallerRoster,
@@ -102,6 +103,14 @@ export function useForecastPredict(args: {
   const [shareOffer, setShareOffer] = useState(false)
   /** Name shown in the predict window for this save, not the roster label. */
   const [sharePickName, setSharePickName] = useState<string | null>(null)
+  // Window titles by outcome. Wallet switches clear the current post, then
+  // handoff writes again; the title has to survive that write.
+  const shareNamesRef = useRef(new Map<number, string>())
+  const shareScopeRef = useRef(`${chainSlug}:${deprizeId}`)
+  if (shareScopeRef.current !== `${chainSlug}:${deprizeId}`) {
+    shareScopeRef.current = `${chainSlug}:${deprizeId}`
+    shareNamesRef.current.clear()
+  }
   const [previousPick, setPreviousPick] = useState<number | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -341,8 +350,11 @@ export function useForecastPredict(args: {
       setPreviousPick(savedPick)
       setSavedPick(index)
       setShareOffer(true)
-      const shown = (displayName ?? labels[index] ?? '').replace(/\s+/g, ' ').trim()
-      setSharePickName(shown || null)
+      const windowName = resolvedSharePick(displayName, null, null)
+      if (windowName) shareNamesRef.current.set(index, windowName)
+      setSharePickName(
+        resolvedSharePick(displayName, shareNamesRef.current.get(index), labels[index])
+      )
       rememberRow(allocation, writer)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
