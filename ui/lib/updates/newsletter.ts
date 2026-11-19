@@ -15,7 +15,10 @@ export const NEWSLETTER_AUTHOR = 'MoonDAO'
 const POSTS_ENDPOINT = `${NEWSLETTER_ORIGIN}/profile/fetch-posts`
 const PAGE_SIZE = 10
 const MAX_PAGES = 60
-const REQUEST_TIMEOUT_MS = 8000
+// One budget for the whole archive. A per-page timeout can add up past the
+// 60s Next.js allows for getStaticProps, which fails the build before the
+// snapshot fallback gets a chance to run.
+const REQUEST_TIMEOUT_MS = 12000
 const DESCRIPTION_MAX_CHARS = 220
 
 // Image hosts the site's Content-Security-Policy allows (see `img-src` in
@@ -141,14 +144,16 @@ export function normalizeKitPosts(raw: unknown[]): NewsletterPost[] {
  * archive cannot be read, so callers decide on a fallback.
  */
 export async function fetchNewsletterPosts(
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs: number = REQUEST_TIMEOUT_MS
 ): Promise<NewsletterPost[]> {
   const raw: unknown[] = []
+  const signal = AbortSignal.timeout(timeoutMs)
 
   for (let page = 1; page <= MAX_PAGES; page++) {
     const response = await fetchImpl(`${POSTS_ENDPOINT}?page=${page}&perPage=${PAGE_SIZE}`, {
       headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal,
     })
     if (!response.ok) {
       throw new Error(`Newsletter archive returned ${response.status} for page ${page}`)

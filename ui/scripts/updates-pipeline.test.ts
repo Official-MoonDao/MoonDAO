@@ -715,6 +715,20 @@ describe('newsletter issues', () => {
     if (!threw) throw new Error('expected a failed archive to throw')
   })
 
+  it('gives up when the archive does not answer in time', async () => {
+    const hanging = ((_url: string, init?: { signal?: AbortSignal }) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+      })) as unknown as typeof fetch
+    let threw = false
+    try {
+      await fetchNewsletterPosts(hanging, 30)
+    } catch {
+      threw = true
+    }
+    if (!threw) throw new Error('expected a stalled archive to throw')
+  })
+
   it('ships a non-empty snapshot in the shape the feed expects', () => {
     const posts = snapshot as NewsletterPost[]
     if (posts.length < 100) throw new Error(`snapshot has only ${posts.length} issues`)

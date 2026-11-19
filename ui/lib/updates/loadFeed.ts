@@ -16,8 +16,9 @@ export const FEED_REVALIDATE_SECONDS = 3600
 
 /**
  * Newsletter issues come from the live archive so a new send shows up within
- * the revalidate window without a deploy. If the archive is down, the build
- * and the page still render from the committed snapshot
+ * the revalidate window without a deploy. The read has one short budget for
+ * every page. If it does not finish, or the archive is down, the build and
+ * the page still render from the committed snapshot
  * (`yarn sync:newsletter` refreshes it).
  */
 export async function loadNewsletterPosts(): Promise<NewsletterPost[]> {
