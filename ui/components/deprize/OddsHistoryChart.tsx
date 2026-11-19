@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import {
   buildOddsTimeDomain,
+  buildOddsValueDomain,
   formatOddsTick,
   formatOddsTooltip,
   padOddsSamples,
@@ -120,6 +121,11 @@ export default function OddsHistoryChart({
     return { data: rows, dots, ...domain }
   }, [history, outcomeCount, domainStartMs, markers])
 
+  const yDomain = useMemo(
+    () => buildOddsValueDomain(history, outcomeCount),
+    [history, outcomeCount]
+  )
+
   const labeledOutcomes = useMemo(() => {
     if (!hero || !data.length) return new Set<number>()
     const last = data[data.length - 1]
@@ -188,8 +194,8 @@ export default function OddsHistoryChart({
           padding={hero ? { left: 20, right: 12 } : { left: 8, right: 8 }}
         />
         <YAxis
-          domain={[0, 100]}
-          ticks={[0, 25, 50, 75, 100]}
+          domain={[yDomain.min, yDomain.max]}
+          ticks={yDomain.ticks}
           tickFormatter={(v) => `${v}%`}
           tick={{ fill: '#9ca3af', fontSize: 11 }}
           stroke="#ffffff22"
