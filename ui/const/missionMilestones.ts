@@ -71,11 +71,11 @@ export function getMissionTagline(
 export const MISSION_DESCRIPTION_OVERRIDES: Partial<Record<number, string>> = {
   4: `
 <h2>The competition is back on</h2>
-<p>The campaign to send Frank White to space is live again — and the contest to fly alongside him is back on. This isn&#39;t a reset; it&#39;s step two. Nothing from the first raise has been spent: every dollar is still held, and every original backer keeps their place in the story.</p>
+<p>The campaign to send Frank White to space is live again — and the contest to fly alongside him is back on. The winner of the competition will go to near space alongside Frank. This isn&#39;t a reset; it&#39;s step two. Nothing from the first raise has been spent: every dollar is still held, and every original backer keeps their place in the story.</p>
 <p>After a month of calls with spaceflight providers across three continents and a community vote on where to go next, the answer came back loud and clear: finish what we started.</p>
 <h3>What&#39;s new this round</h3>
 <ul>
-<li><strong>A reachable goal.</strong> Our near-term target is <strong>$250,000</strong> — enough to lock in a guaranteed second seat on a stratospheric flight. Frank&#39;s seat is the floor we&#39;re building on; this milestone is about making good on the original promise: sending a member of our community up with him.</li>
+<li><strong>A reachable goal.</strong> Our near-term target is <strong>$250,000</strong> — enough to lock in a guaranteed second seat on a stratospheric flight. Frank&#39;s seat is the floor we&#39;re building on; this milestone is about making good on the original promise: sending the winner of the competition to near space with him.</li>
 <li><strong>Early backers win.</strong> $OVERVIEW now opens at <strong>500 per ETH</strong>. As we reach milestones, we will reduce the rate of $OVERVIEW contributors get. The earlier you contribute, the more voice you get.</li>
 <li><strong>Contributing is effortless.</strong> We rebuilt the flow end to end, including an Apple Pay on-ramp — backing a real spaceflight now takes seconds, whether or not you&#39;ve ever touched crypto.</li>
 </ul>
@@ -83,7 +83,7 @@ export const MISSION_DESCRIPTION_OVERRIDES: Partial<Record<number, string>> = {
 <p>For nearly four decades, Frank White has been the world&#39;s most patient witness to an experience he never had. He interviewed more than fifty astronauts and gave the feeling they described a name: the Overview Effect. He wrote the language the entire industry now speaks — and he has never been to space.</p>
 <p>In the first round, supporters raised over <strong>$172,000 from 157 contributions</strong> worldwide, with <strong>$0 spent</strong>. We said from the start that if we couldn&#39;t secure at least one seat for Frank, all funds would be returned. That promise still stands.</p>
 <h3>How to fly with Frank</h3>
-<p>One community member will fly alongside Frank. Any contribution of <strong>$100 or more</strong> grants free MoonDAO citizenship, which is required to enter. From there it&#39;s merit-based: community backing, an essay on what the Overview Effect means to you, review by a committee of professional and commercial astronauts, and a final community governance vote.</p>
+<p>The winner of the competition will go to near space alongside Frank. Any contribution of <strong>$100 or more</strong> grants free MoonDAO citizenship, which is required to enter. From there it&#39;s merit-based: community backing, an essay on what the Overview Effect means to you, review by a committee of professional and commercial astronauts, and a final community governance vote.</p>
 <p>The competition is back on. Frank could be next. Let&#39;s get him there.</p>
 `.trim(),
 }
