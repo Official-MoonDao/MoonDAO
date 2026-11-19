@@ -363,6 +363,8 @@ describe('forecast share is only the free-forecast success state', () => {
     const silentAt = panel.indexOf('if (!options?.silent)')
     const offerAt = panel.indexOf('setShareOffer(true)', silentAt)
     assert.ok(silentAt >= 0 && offerAt > silentAt)
+    const silentBlock = panel.slice(silentAt, panel.indexOf('await refetchFresh()', silentAt))
+    assert.ok(silentBlock.includes('setShareOffer(false)'))
     assert.equal(panel.includes('if (ok) onModalClose()'), false)
     const predict = readUi('components/deprize/ForecastPredictModal.tsx')
     assert.equal(predict.includes('wasSignedIn'), false)

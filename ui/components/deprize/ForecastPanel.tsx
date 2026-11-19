@@ -404,6 +404,9 @@ export default function ForecastPanel(props: {
         setShareOffer(true)
         toast.success('Prediction saved', { style: toastStyle })
         fireDePrizeConfetti()
+      } else {
+        // The bet replaced the free forecast. Do not share that paid pick.
+        setShareOffer(false)
       }
       await refetchFresh()
       return true
