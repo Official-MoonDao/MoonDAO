@@ -13,20 +13,39 @@ export default function StickyCitizenBar({ offer }: { offer: CitizenOffer }) {
 
   useEffect(() => {
     const hero = document.getElementById('dp-hero')
-    const offerEl = document.getElementById('join')
-    if (!hero || !offerEl) return
+    if (!hero) return
 
     const heroObserver = new IntersectionObserver(([entry]) => setPastHero(!entry.isIntersecting), {
       threshold: 0,
     })
-    const offerObserver = new IntersectionObserver(([entry]) =>
-      setOfferVisible(entry.isIntersecting)
-    )
     heroObserver.observe(hero)
-    offerObserver.observe(offerEl)
+
+    let offerObserver: IntersectionObserver | undefined
+    const observeOffer = (offerEl: HTMLElement) => {
+      offerObserver = new IntersectionObserver(([entry]) => setOfferVisible(entry.isIntersecting))
+      offerObserver.observe(offerEl)
+    }
+
+    const offerEl = document.getElementById('join')
+    let offerWatcher: MutationObserver | undefined
+    if (offerEl) {
+      observeOffer(offerEl)
+    } else {
+      // OfferSection is code-split; its skeleton has no #join, so client-side
+      // navigations can mount this bar before the offer node exists.
+      offerWatcher = new MutationObserver(() => {
+        const el = document.getElementById('join')
+        if (!el) return
+        observeOffer(el)
+        offerWatcher?.disconnect()
+      })
+      offerWatcher.observe(document.body, { childList: true, subtree: true })
+    }
+
     return () => {
       heroObserver.disconnect()
-      offerObserver.disconnect()
+      offerObserver?.disconnect()
+      offerWatcher?.disconnect()
     }
   }, [])
 
