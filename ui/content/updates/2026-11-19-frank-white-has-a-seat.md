@@ -1,5 +1,5 @@
 ---
-title: "Frank White has a seat to see the Earth he named"
+title: "Mission Update: Frank's seat is secured!"
 description: "A signed Zephalto reservation holds two seats. One is Frank White's. He named the Overview Effect in 1987 and has never seen it. The seat beside him is open."
 date: 2026-11-19
 author: MoonDAO
