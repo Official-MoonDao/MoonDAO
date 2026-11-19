@@ -1,6 +1,7 @@
 /**
  * Data blocks an update can embed as fenced code: ```chart, ```stats,
- * ```heatmap, ```ledger, ```screens and ```cta, each holding one JSON object.
+ * ```heatmap, ```ledger, ```screens, ```cta, ```timeline and ```graphic, each
+ * holding one JSON object.
  * The renderer falls back to a plain code block when the JSON does not parse or
  * fails these checks.
  */
@@ -12,6 +13,8 @@ export const UPDATE_BLOCK_LANGUAGES = [
   'ledger',
   'screens',
   'cta',
+  'timeline',
+  'graphic',
 ] as const
 export type UpdateBlockLanguage = (typeof UPDATE_BLOCK_LANGUAGES)[number]
 
@@ -50,6 +53,8 @@ export type ScatterChart = FigureText & {
 
 export type BarsChart = FigureText & {
   type: 'bars'
+  /** Appended to each value label, e.g. "%". */
+  unit?: string
   rows: { label: string; color?: string }[]
   panels: { name: string; values: number[] }[]
 }
@@ -58,7 +63,8 @@ export type LineChart = FigureText & {
   type: 'line'
   unit?: string
   y: { min: number; max: number }
-  x: { label?: string; count: number }
+  /** `labels` replaces the index ticks; empty strings are skipped. */
+  x: { label?: string; count: number; labels?: string[] }
   bands?: { label: string; from: number; to: number; color?: string }[]
   series: { name: string; color?: string; dashed?: boolean; values: number[] }[]
 }
@@ -123,6 +129,26 @@ export type CtaSpec = {
   note?: string
 }
 
+/** Dated milestones on a vertical rail. `status` sets the marker: done, now or next. */
+export type TimelineSpec = FigureText & {
+  items: {
+    date: string
+    title: string
+    body?: string
+    status?: 'done' | 'now' | 'next'
+  }[]
+}
+
+/**
+ * A drawn illustration or diagram in the figure frame. `narrow` is an optional
+ * phone-width version of the same image.
+ */
+export type GraphicSpec = FigureText & {
+  src: string
+  alt: string
+  narrow?: string
+}
+
 export type UpdateBlock =
   | { kind: 'chart'; spec: ChartSpec }
   | { kind: 'stats'; spec: StatsSpec }
@@ -130,6 +156,8 @@ export type UpdateBlock =
   | { kind: 'ledger'; spec: LedgerSpec }
   | { kind: 'screens'; spec: ScreensSpec }
   | { kind: 'cta'; spec: CtaSpec }
+  | { kind: 'timeline'; spec: TimelineSpec }
+  | { kind: 'graphic'; spec: GraphicSpec }
 
 const isObj = (v: unknown): v is Record<string, any> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -170,6 +198,10 @@ function validChart(s: Record<string, any>): boolean {
         isObj(s.x) &&
         isNum(s.x.count) &&
         s.x.count > 1 &&
+        (s.x.labels === undefined ||
+          (Array.isArray(s.x.labels) &&
+            s.x.labels.length === s.x.count &&
+            s.x.labels.every(isStr))) &&
         Array.isArray(s.series) &&
         s.series.length > 0 &&
         s.series.every((r: any) => isStr(r.name) && nums(r.values, s.x.count))
@@ -243,6 +275,25 @@ export function parseUpdateBlock(lang: string, source: string): UpdateBlock | nu
           (isObj(spec.image) && isStr(spec.image.src) && isStr(spec.image.alt))) &&
         (spec.points === undefined || (Array.isArray(spec.points) && spec.points.every(isStr)))
         ? { kind: 'cta', spec: spec as CtaSpec }
+        : null
+    case 'timeline':
+      return Array.isArray(spec.items) &&
+        spec.items.length > 0 &&
+        spec.items.every(
+          (i: any) =>
+            isObj(i) &&
+            isStr(i.date) &&
+            isStr(i.title) &&
+            (i.body === undefined || isStr(i.body)) &&
+            (i.status === undefined || ['done', 'now', 'next'].includes(i.status))
+        )
+        ? { kind: 'timeline', spec: spec as TimelineSpec }
+        : null
+    case 'graphic':
+      return isStr(spec.src) &&
+        isStr(spec.alt) &&
+        (spec.narrow === undefined || isStr(spec.narrow))
+        ? { kind: 'graphic', spec: spec as GraphicSpec }
         : null
   }
 }
