@@ -89,6 +89,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/mission/[tokenId]',
     '/network',
     '/join',
+    '/dude-perfect',
     '/mooney',
     '/governance',
     '/projects-overview',
