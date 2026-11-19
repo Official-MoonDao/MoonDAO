@@ -39,7 +39,7 @@ type Props = {
 
 /** Hero end labels past this many outcomes stack on top of each other. */
 const HERO_END_LABELS = 2
-/** Two-line labels closer than this (percentage points) draw on top of each other. */
+/** Overlap gap for two-line end labels, as points on a full 0–100 axis. */
 const HERO_LABEL_GAP_PT = 12
 
 function HeroEndLabel(props: {
@@ -130,16 +130,18 @@ export default function OddsHistoryChart({
     if (!hero || !data.length) return new Set<number>()
     const last = data[data.length - 1]
     const value = (i: number) => last[`v${i}`] ?? 0
+    // Keep the same fraction of chart height when the axis zooms in.
+    const overlapGap = (HERO_LABEL_GAP_PT * (yDomain.max - yDomain.min)) / 100
     const ranked = Array.from({ length: outcomeCount }, (_, i) => i).sort(
       (a, b) => value(b) - value(a)
     )
     const picked: number[] = []
     for (const i of ranked) {
       if (picked.length >= HERO_END_LABELS) break
-      if (picked.every((p) => Math.abs(value(p) - value(i)) >= HERO_LABEL_GAP_PT)) picked.push(i)
+      if (picked.every((p) => Math.abs(value(p) - value(i)) >= overlapGap)) picked.push(i)
     }
     return new Set(picked)
-  }, [hero, data, outcomeCount])
+  }, [hero, data, outcomeCount, yDomain])
 
   // The hero chart is narrow; keep ticks at least a sixth of the span apart.
   const xTicks = useMemo(() => {
