@@ -163,8 +163,9 @@ export function unprefixedDePrizeRedirect(resolvedUrl: string): string | null {
 }
 
 /** Prize-page path that lands on the free prediction panel. */
-export function deprizeForecastHref(deprizeId: number | string): string {
-  return `/deprize/${deprizeId}#deprize-forecast`
+export function deprizeForecastHref(deprizeId: number | string, chainSlug?: string): string {
+  const path = chainSlug ? deprizePrefixedHref(chainSlug, deprizeId) : `/deprize/${deprizeId}`
+  return `${path}#deprize-forecast`
 }
 
 /** chainSlug → deprizeId → competition */

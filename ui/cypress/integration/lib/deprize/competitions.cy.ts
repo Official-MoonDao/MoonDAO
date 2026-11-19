@@ -211,6 +211,7 @@ describe('deprize competitions registry', () => {
     expect(deprizeForecastHref('harsh-mistress')).to.equal(
       '/deprize/harsh-mistress#deprize-forecast'
     )
+    expect(deprizeForecastHref(3, 'arbitrum')).to.equal('/deprize/arb/3#deprize-forecast')
   })
 })
 

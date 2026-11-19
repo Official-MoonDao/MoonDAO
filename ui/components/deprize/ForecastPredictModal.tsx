@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { Chain } from 'thirdweb'
 import { useForecastPredict } from '@/lib/forecasts/useForecastPredict'
 import ForecastSharePrompt from '@/components/deprize/ForecastSharePrompt'
@@ -6,7 +7,8 @@ import PredictModal from '@/components/deprize/PredictModal'
 
 /**
  * The DePrize predict window (free MOONEY forecast). Kept mounted for the
- * open prize so a saved pick and its undo survive closing the dialog.
+ * open prize so a saved pick and its undo survive closing the dialog, and so
+ * the rows that open it can mark the saved pick.
  * A successful free forecast leaves the window open on the share prompt.
  * Guests still see how to keep the prediction.
  */
@@ -23,6 +25,8 @@ export default function ForecastPredictModal(props: {
   /** Moon Base Zero race id for the share link and card. */
   raceId?: string
   onClose: () => void
+  /** The writer's saved outcome slot for this prize, or null. */
+  onSavedPick?: (pick: number | null) => void
 }) {
   const session = useForecastPredict({
     chain: props.chain,
@@ -33,6 +37,10 @@ export default function ForecastPredictModal(props: {
     reported: props.reported,
     marketLoading: props.marketLoading,
   })
+  const { onSavedPick } = props
+  useEffect(() => {
+    onSavedPick?.(session.savedPick)
+  }, [onSavedPick, session.savedPick])
 
   if (props.outcomeIndex == null) {
     if (!session.shareOffer) return null
