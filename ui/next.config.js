@@ -70,12 +70,13 @@ module.exports = withBundleAnalyzer(
           '/api/updates/rss': ['./content/updates/**/*.md'],
           // /news and /updates revalidate hourly and re-read these posts.
           // Next 13 memos an include by its glob string, then reuses that
-          // relative path for every page the key matches. The key `/updates`
-          // also matches `/updates/[slug]` and `/api/updates/rss`, whose trace
-          // files sit in deeper folders, so a shared glob makes the deploy
+          // relative path for every page the key matches. Matching is a
+          // substring: `/news` also hits `/api/newsletters`, and `/updates`
+          // also hits `/updates/[slug]` and `/api/updates/rss`. Those routes
+          // live in deeper output folders, so a shared path makes the deploy
           // look for content/updates above ui/. These keys match only the
-          // index pages, and this glob text is not the one the RSS route uses.
-          '/news': ['./content/updates/*.md'],
+          // two index pages, which share one output folder.
+          '/news!(letters)': ['./content/updates/*.md'],
           '/updates!(/**)': ['./content/updates/*.md'],
           '/api/og/listing': [
             './lib/og/fonts/Lato-Regular.ttf',
