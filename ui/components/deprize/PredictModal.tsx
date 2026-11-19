@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import toast from 'react-hot-toast'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import ForecastSharePrompt from '@/components/deprize/ForecastSharePrompt'
 import {
   BetPrimaryActionContext,
   predictionActionLabel,
@@ -32,6 +33,13 @@ export default function PredictModal(props: {
   /** Why predict is unavailable: still checking, switch wallets, or mint. */
   citizenNotice?: ReactNode
   saved: boolean
+  /**
+   * Free-forecast success in this visit. Hidden on the ETH bet window so the
+   * prompt does not sit in the paid flow.
+   */
+  offerShare?: boolean
+  /** Moon Base Zero race id for the share link and card. */
+  raceId?: string
   writing: boolean
   predictEnabled: boolean
   undoEnabled: boolean
@@ -217,6 +225,9 @@ export default function PredictModal(props: {
             ethOffered ? 'border-t border-white/10 pt-4' : ''
           }`}
         >
+          {!isBet && props.saved && props.offerShare ? (
+            <ForecastSharePrompt pick={props.teamName} raceId={props.raceId} />
+          ) : null}
           {!props.connected && !(props.signedOutPredict && !isBet) && (
             <button
               type="button"

@@ -55,6 +55,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import CitizenPredictNotice from '@/components/deprize/CitizenPredictNotice'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
+import ForecastSharePrompt from '@/components/deprize/ForecastSharePrompt'
 import { GuestConsentLine, GuestSaveNotice } from '@/components/deprize/GuestForecastNotice'
 import PredictModal from '@/components/deprize/PredictModal'
 
@@ -164,6 +165,7 @@ export default function ForecastPanel(props: {
 
   const n = labels.length
   const [savedPick, setSavedPick] = useState<number | null>(null)
+  const [shareOffer, setShareOffer] = useState(false)
   const [previousPick, setPreviousPick] = useState<number | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -179,6 +181,7 @@ export default function ForecastPanel(props: {
   if (rosterPrize !== null && rosterPrize !== prizeKey) {
     setRosterPrize(null)
     setSavedPick(null)
+    setShareOffer(false)
   }
   const shownLeaderboard = useMemo(
     () => mergeCallerRoster(consensus?.leaderboard ?? [], overlays, labels),
@@ -277,6 +280,7 @@ export default function ForecastPanel(props: {
   useEffect(() => {
     setSavedPick(null)
     setPreviousPick(null)
+    setShareOffer(false)
     setError(null)
   }, [writerAddress, chainSlug, deprizeId])
 
@@ -397,8 +401,12 @@ export default function ForecastPanel(props: {
       setSavedPick(index)
       rememberRow(allocation, from)
       if (!options?.silent) {
+        setShareOffer(true)
         toast.success('Prediction saved', { style: toastStyle })
         fireDePrizeConfetti()
+      } else {
+        // The bet replaced the free forecast. Do not share that paid pick.
+        setShareOffer(false)
       }
       await refetchFresh()
       return true
@@ -441,6 +449,7 @@ export default function ForecastPanel(props: {
       if (!sameForecastSession(sessionRef.current, started)) return
       setSavedPick(null)
       setPreviousPick(null)
+      setShareOffer(false)
       toast.success('Prediction removed', { style: toastStyle })
       await refetchFresh()
     } catch (err: any) {
@@ -468,13 +477,11 @@ export default function ForecastPanel(props: {
         login()
         return
       }
-      const ok = await commitPick(index, { from: guest })
-      if (ok) onModalClose()
+      await commitPick(index, { from: guest })
       return
     }
     if (plan.action === 'write') {
-      const ok = await commitPick(plan.index)
-      if (ok) onModalClose()
+      await commitPick(plan.index)
     }
   }
 
@@ -538,6 +545,14 @@ export default function ForecastPanel(props: {
     <section id="deprize-forecast" className="scroll-mt-24">
       <h2 className="text-white text-lg font-heading font-semibold">Competitors</h2>
       <p className="mt-1 text-sm text-gray-400">{FORECAST_COPY.panelIntro}</p>
+      {shareOffer && modalIndex == null ? (
+        <div className="mt-3">
+          <ForecastSharePrompt
+            pick={savedPick != null ? labels[savedPick] : undefined}
+            raceId={raceBinding?.sharedGoalId}
+          />
+        </div>
+      ) : null}
 
       {!isLive && (
         <p className="mt-3 text-sm text-amber-200">
@@ -632,7 +647,7 @@ export default function ForecastPanel(props: {
       {savedPick != null && (
         <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
-      {savedPick != null && forecastWriter.isGuest && (
+      {savedPick != null && forecastWriter.isGuest && modalIndex == null && (
         <div className="mt-2">
           <GuestSaveNotice
             onCreateAccount={login}
@@ -654,6 +669,8 @@ export default function ForecastPanel(props: {
           isCitizen={isCitizen}
           citizenNotice={renderCitizenNotice()}
           saved={savedPick === modalIndex}
+          offerShare={shareOffer && savedPick === modalIndex}
+          raceId={raceBinding?.sharedGoalId}
           writing={writing}
           error={error}
           predictEnabled={!!predictAction?.enabled}
@@ -663,6 +680,14 @@ export default function ForecastPanel(props: {
           onConnect={login}
           signedOutPredict={!writer}
           consentNotice={!account ? <GuestConsentLine /> : undefined}
+          guestNotice={
+            forecastWriter.isGuest && savedPick === modalIndex ? (
+              <GuestSaveNotice
+                onCreateAccount={login}
+                onExistingAccount={() => void forecastWriter.switchToExistingAccount()}
+              />
+            ) : undefined
+          }
           onClose={onModalClose}
           onAddEth={() => onModeChange('bet')}
           outcomeIndex={modalIndex}
