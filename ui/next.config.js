@@ -68,9 +68,15 @@ module.exports = withBundleAnalyzer(
           ],
           // The feed lists Updates posts, which are read from disk at request time.
           '/api/updates/rss': ['./content/updates/**/*.md'],
-          // /news and /updates revalidate hourly, which re-reads the posts at runtime.
-          '/news': ['./content/updates/**/*.md'],
-          '/updates': ['./content/updates/**/*.md'],
+          // /news and /updates revalidate hourly and re-read these posts.
+          // Next 13 memos an include by its glob string, then reuses that
+          // relative path for every page the key matches. The key `/updates`
+          // also matches `/updates/[slug]` and `/api/updates/rss`, whose trace
+          // files sit in deeper folders, so a shared glob makes the deploy
+          // look for content/updates above ui/. These keys match only the
+          // index pages, and this glob text is not the one the RSS route uses.
+          '/news': ['./content/updates/*.md'],
+          '/updates!(/**)': ['./content/updates/*.md'],
           '/api/og/listing': [
             './lib/og/fonts/Lato-Regular.ttf',
             './public/metadata-image.png',
