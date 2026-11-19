@@ -1,22 +1,80 @@
-import Image from 'next/image'
-import React from 'react'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { testimonials } from 'const/joinPageContent'
+import dynamic from 'next/dynamic'
+import { getContract, readContract } from 'thirdweb'
+import useCitizenOffer from '@/lib/citizen/useCitizenOffer'
+import { resolveCitizenCount } from '@/lib/stats/publicFigures'
+import { FALLBACK_CITIZEN_YEAR_USD } from '@/lib/subscription/publicYearPrice'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/serverClient'
+import DudePerfectHero from '../components/dude-perfect/DudePerfectHero'
+import StickyCitizenBar from '../components/dude-perfect/StickyCitizenBar'
 import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
+import { ExpandedFooter } from '../components/layout/ExpandedFooter'
 import WebsiteHead from '../components/layout/Head'
-import MailingList from '../components/layout/MailingList'
-import { NoticeFooter } from '../components/layout/NoticeFooter'
-import PreFooter from '../components/layout/PreFooter'
-import ColorsAndSocials from '../components/layout/Sidebar/ColorsAndSocials'
+import { SectionSkeleton } from '../components/layout/SkeletonLoader'
 
-const DudePerfect: React.FC = () => {
-  const title = '🚀 We Sent Dude Perfect to SPACE!'
+const DudePerfectStory = dynamic(() => import('../components/dude-perfect/DudePerfectStory'), {
+  loading: () => <SectionSkeleton />,
+})
+const WhatIsMoonDAO = dynamic(
+  () => import('../components/dude-perfect/DudePerfectStory').then((m) => m.WhatIsMoonDAO),
+  { loading: () => <SectionSkeleton /> }
+)
+const WhyJoinSection = dynamic(() => import('../components/join/WhyJoinSection'), {
+  loading: () => <SectionSkeleton />,
+})
+const HowItWorks = dynamic(
+  () => import('../components/dude-perfect/DudePerfectOffer').then((m) => m.HowItWorks),
+  { loading: () => <SectionSkeleton /> }
+)
+const TestimonialsCarousel = dynamic(() => import('../components/join/TestimonialsCarousel'), {
+  loading: () => <SectionSkeleton />,
+})
+const VoicesSection = dynamic(() => import('../components/home/landing/VoicesSection'), {
+  loading: () => <SectionSkeleton />,
+})
+const OfferSection = dynamic(
+  () => import('../components/dude-perfect/DudePerfectOffer').then((m) => m.OfferSection),
+  { loading: () => <SectionSkeleton /> }
+)
+const StayInTheLoop = dynamic(() =>
+  import('../components/dude-perfect/DudePerfectOffer').then((m) => m.StayInTheLoop)
+)
+const DudePerfectFAQ = dynamic(() => import('../components/dude-perfect/DudePerfectFAQ'), {
+  loading: () => <SectionSkeleton />,
+})
+const DudePerfectFinalCTA = dynamic(
+  () => import('../components/dude-perfect/DudePerfectFinalCTA'),
+  { loading: () => <SectionSkeleton /> }
+)
+
+// Real citizen portraits come from the /join build; here only the astronaut has one on hand.
+const pageTestimonials = testimonials.map((t) => ({
+  ...t,
+  image: t.name === 'Eiman' ? '/assets/astronaut-eiman.png' : null,
+}))
+
+type DudePerfectProps = {
+  citizenYearUsd?: number
+  citizenCount?: number | null
+}
+
+export default function DudePerfect({
+  citizenYearUsd = FALLBACK_CITIZEN_YEAR_USD,
+  citizenCount = null,
+}: DudePerfectProps) {
+  const offer = useCitizenOffer(citizenYearUsd)
+
+  const title = 'We Sent Dude Perfect to Space. Become a MoonDAO Citizen.'
   const description =
-    "🚀 Launching Coby Cotton to space was only the beginning! MoonDAO's mission is to create a self-sustaining, self-governing colony on the Moon!"
+    'Launching Coby Cotton to space was only the beginning. Become a MoonDAO citizen to fund space projects, vote on missions, earn rewards, and help build a lunar settlement.'
   const image = '/assets/dp-og.jpg'
-  const keywords = 'MoonDAO Dude Perfect, Dude Perfect, Coby Cotton, Blue Origin, astronaut'
+  const keywords =
+    'MoonDAO Dude Perfect, Dude Perfect, Coby Cotton, Blue Origin, astronaut, MoonDAO citizen, become a citizen'
 
   return (
-    <>
+    <Container>
       <WebsiteHead
         title={title}
         description={description}
@@ -24,70 +82,53 @@ const DudePerfect: React.FC = () => {
         keywords={keywords}
         robots="index, follow, max-image-preview:large"
       />
-      <section className="flex flex-col justify-start px-4 md:px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
-        <Container>
-          <ContentLayout
-            header="Hey Dude Perfect frens, let's go to space together!"
-            headerSize="max(20px, 3vmax)"
-            mode="compact"
-            isProfile={true}
-            description={
-              <>
-                <p className="pb-4 md:pb-8 text-base md:text-lg leading-relaxed text-white/90">
-                  Launching Coby Cotton to space was only the beginning! MoonDAO is accelerating our
-                  multiplanetary future with an open platform to fund, collaborate, and compete on
-                  challenges that get us closer to a lunar settlement. You can be a part of that
-                  future...
-                </p>
-                <div className="pt-2">
-                  <MailingList />
-                </div>
-              </>
-            }
-            preFooter={
-              <>
-                <PreFooter mode="compact" />
-              </>
-            }
-          >
-            <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mb-6 md:mb-[5vw] 2xl:mb-[2vw]">
-              <div className="overflow-hidden rounded-[5vmax] rounded-tl-[20px]">
-                <Image
-                  className="w-full h-auto shadow-2xl"
-                  src="/assets/dude-perfect.jpg"
-                  alt="Dude Perfect"
-                  width="2048"
-                  height="1366"
-                  priority
-                />
-              </div>
-              <div className="space-y-4 md:space-y-6 text-base md:text-lg leading-relaxed">
-                <p className="text-white/90">
-                  MoonDAO is an international collective of people united by the mission of
-                  decentralizing access to space research and exploration. Be sure to enter your
-                  email address to learn how you can get involved and about some of the exciting
-                  stuff we've got in the works... Like the launch of our second astronaut!
-                </p>
-              </div>
-              <div className="mt-6 md:mt-10 pt-6 md:pt-8 border-t border-white/10">
-                <ColorsAndSocials />
-              </div>
-            </div>
-          </ContentLayout>
-          <div className="mt-8 md:mt-0"></div>
-          <NoticeFooter
-            defaultImage="../assets/MoonDAO-Logo-White.svg"
-            defaultTitle="Need Help?"
-            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
-            defaultButtonText="Submit a Ticket"
-            defaultButtonLink="https://moondao.com/discord"
-            imageWidth={200}
-            imageHeight={200}
-          />
-        </Container>
-      </section>
-    </>
+      <div className="bg-[#010208]">
+        <DudePerfectHero offer={offer} citizenCount={resolveCitizenCount(citizenCount)} />
+        <DudePerfectStory />
+        <WhatIsMoonDAO />
+        <WhyJoinSection />
+        <HowItWorks />
+        <TestimonialsCarousel testimonials={pageTestimonials} />
+        <VoicesSection />
+        <OfferSection offer={offer} />
+        <StayInTheLoop />
+        <DudePerfectFAQ offer={offer} />
+        <DudePerfectFinalCTA offer={offer} />
+        <ExpandedFooter hasCallToAction={false} darkBackground={true} isFullwidth={true} />
+      </div>
+      <StickyCitizenBar offer={offer} />
+    </Container>
   )
 }
 
-export default DudePerfect
+async function readCitizenSupply(): Promise<number | null> {
+  const chain = DEFAULT_CHAIN_V5
+  const address = CITIZEN_ADDRESSES[getChainSlug(chain)]
+  if (!address) return null
+  try {
+    const CitizenABI = (await import('const/abis/Citizen.json')).default
+    const supply = await readContract({
+      contract: getContract({ client: serverClient, address, chain, abi: CitizenABI as any }),
+      method: 'totalSupply' as string,
+      params: [],
+    })
+    const count = Number((supply as any)?.toString?.() ?? supply)
+    return Number.isFinite(count) && count > 0 ? count : null
+  } catch (error) {
+    console.error('Error reading citizen totalSupply:', error)
+    return null
+  }
+}
+
+export async function getStaticProps() {
+  const { readPublicYearlyUsd } = await import('@/lib/subscription/readPublicYearUsd')
+  const [yearly, citizenCount] = await Promise.all([readPublicYearlyUsd(), readCitizenSupply()])
+
+  return {
+    props: {
+      citizenYearUsd: yearly.citizenYearUsd,
+      citizenCount,
+    },
+    revalidate: 300,
+  }
+}
