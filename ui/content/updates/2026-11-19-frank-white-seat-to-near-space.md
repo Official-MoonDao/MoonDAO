@@ -1,6 +1,6 @@
 ---
 title: "We secured Frank White's seat to near space"
-description: "Frank White named the Overview Effect after four decades of interviewing astronauts, but he has never seen it for himself. After a nearly two-year search, MoonDAO has secured a Zephalto capsule to take him to the stratosphere. The seat beside him goes to someone from our community."
+description: "Frank White named the Overview Effect, then spent four decades interviewing the astronauts who lived it, but he has never seen it for himself. After a nearly two-year search, MoonDAO has secured a Zephalto capsule to take him to the stratosphere. The seat beside him goes to someone from our community."
 date: 2026-11-19
 author: MoonDAO
 authorRole: Executive Branch
@@ -16,7 +16,7 @@ featured: true
 draft: true
 ---
 
-Frank White gave the Overview Effect its name. It describes the shift astronauts report when they see the whole Earth from above: a planet without borders, held in a layer of atmosphere thinner than seems possible. For nearly 40 years, Frank has interviewed the people who felt it.
+Frank White gave the Overview Effect its name. It describes the shift astronauts report when they see the whole Earth from above: a planet without borders, held in a layer of atmosphere thinner than seems possible. Frank predicted that shift before he had heard anyone describe it, then spent nearly 40 years interviewing the people who felt it.
 
 He has never felt it himself.
 
@@ -49,15 +49,17 @@ That is about to change. **MoonDAO has secured Frank's seat to near space.** He 
 
 ## The man who named the feeling
 
-In the 1980s, Frank began asking astronauts and cosmonauts a simple question: what was it like to see the Earth from space? Over the following decades he interviewed more than 50 of them. The answers kept pointing to the same experience: awe, a sudden sense of how fragile and connected everything is, and a lasting change in how they saw their place on the planet.
+It started with a window seat. On a flight across the United States, Frank looked down at the country passing below and had a revelation: anyone living in space would always have a view like this, only bigger. They would see the whole planet at once, without borders, and it would change how they thought about the Earth and their place on it.
 
-Frank called it the Overview Effect. His book of the same name is now in its fourth edition. He co-founded the Overview Institute, and the term has spread far beyond spaceflight, into documentaries, classrooms and the language of nearly every company that sells a trip upward.
+The idea and its name came first. Frank called it the Overview Effect, and treated it as a hypothesis to test. Then he went looking for evidence. He began asking astronauts and cosmonauts a simple question: what was it like to see the Earth from space? Over the following decades he interviewed more than 50 of them. Their answers matched what he had predicted: awe, a sudden sense of how fragile and connected everything is, and a lasting change in how they saw their place on the planet.
+
+His book, *The Overview Effect*, is now in its fourth edition. He co-founded the Overview Institute, and the term has spread far beyond spaceflight, into documentaries, classrooms and the language of nearly every company that sells a trip upward.
 
 Then he watched everyone else go. Astronauts, then the first private customers, then celebrities. The person who gave the industry its vocabulary for *why* we go was still on the ground.
 
 > Everyone told us no one deserves to go more than Frank. Plenty of people said it. MoonDAO was the only group that actually fought for it.
 
-Frank is not only the mission's passenger. He is a MoonDAO Citizen and a Senator in our governance, and he has worked alongside the community every step of the way, from town halls with astronauts to daily calls during the raise.
+Frank is not only the mission's passenger. He is a MoonDAO Citizen and a former Senator in our governance, and he has worked alongside the community every step of the way, from town halls with astronauts to daily calls during the raise.
 
 ## Nearly two years, start to seat
 
@@ -172,7 +174,7 @@ That vote is why there is an open seat today. Taking the quick single seat would
 
 We chose Zephalto to take Frank to the edge of space.
 
-Zephalto is a French company building low-carbon flights to the stratosphere. Its pressurized Céleste capsule hangs beneath a large balloon and rises gently, with no rocket burn and no high g-forces, to about 25 kilometres. That is more than twice the cruising height of an airliner and above roughly 97% of the atmosphere. From there the sky turns black in daylight, and the Earth's curve and the thin blue line of the atmosphere are plain to see.
+Zephalto is a French company building low-carbon flights to the stratosphere. Its pressurized capsule hangs beneath a large balloon and rises gently, with no rocket burn and no high g-forces, to about 25 kilometres. That is more than twice the cruising height of an airliner and above roughly 97% of the atmosphere. From there the sky turns black in daylight, and the Earth's curve and the thin blue line of the atmosphere are plain to see.
 
 It is not the Kármán line, and we won't pretend it is. But the Overview Effect is not about crossing a line. It is about *seeing*: the planet as a whole, the fragile layer of air around it, and the dark beyond. In Zephalto's capsule, Frank will have hours to look.
 
@@ -195,7 +197,7 @@ The flight is slow by design. Zephalto's published profile is about 90 minutes o
  "type": "line",
  "figure": "Figure 6",
  "title": "Hours at the top, not minutes",
- "subtitle": "Approximate altitude over a typical Céleste flight.",
+ "subtitle": "Approximate altitude over a typical Zephalto flight.",
  "unit": " km",
  "y": {"min": 0, "max": 30},
  "x": {"label": "Time since lift-off", "count": 13, "labels": ["0", "", "1h", "", "2h", "", "3h", "", "4h", "", "5h", "", "6h"]},
@@ -247,8 +249,8 @@ Frank's seat is confirmed. The seat beside him is still open, and it will go to 
  "subtitle": "A top-down view of the capsule. Frank's seat is confirmed; the seat beside him will go to a community member.",
  "src": "/assets/updates/frank-zephalto/capsule-seats.jpg",
  "narrow": "/assets/updates/frank-zephalto/capsule-seats-narrow.jpg",
- "alt": "Top-down diagram of a round capsule with six passenger seats facing a ring of windows and two pilot seats in the middle. One seat, highlighted gold, is Frank White's. The seat next to it is outlined in blue and marked open, to be chosen by the community.",
- "source": "Six passengers and two pilots, per Zephalto's published design. The seat arrangement is illustrative."
+ "alt": "Top-down diagram of a round capsule with four passenger seats facing a ring of windows and two pilot seats in the middle. One seat, highlighted gold, is Frank White's. The seat next to it is outlined in blue and marked open, to be chosen by the community.",
+ "source": "Four passengers and two pilots. The seat arrangement is illustrative."
 }
 ```
 
