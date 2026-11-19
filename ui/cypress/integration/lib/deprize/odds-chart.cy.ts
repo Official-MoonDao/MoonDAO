@@ -1,6 +1,7 @@
 import {
   ODDS_MIN_SPAN_MS,
   buildOddsTimeDomain,
+  buildOddsValueDomain,
   formatOddsTick,
   padOddsSamples,
   type OddsSample,
@@ -88,6 +89,39 @@ describe('deprize odds chart domain', () => {
         ticks: [],
         spanMs: 0,
       })
+    })
+  })
+
+  describe('buildOddsValueDomain', () => {
+    it('zooms in when the outcomes are clustered', () => {
+      const history: OddsSample[] = [
+        { t: 1, p: [10, 12, 8, 15] },
+        { t: 2, p: [14, 11, 9, 18] },
+      ]
+      const d = buildOddsValueDomain(history, 4)
+      expect(d.min).to.be.at.most(8)
+      expect(d.max).to.be.at.least(18)
+      expect(d.max - d.min).to.be.lessThan(40)
+      expect(d.ticks[0]).to.equal(d.min)
+      expect(d.ticks[d.ticks.length - 1]).to.equal(d.max)
+    })
+
+    it('falls back to 0-100 when the outcomes span the full range', () => {
+      const d = buildOddsValueDomain([{ t: 1, p: [2, 98] }], 2)
+      expect(d).to.deep.equal({ min: 0, max: 100, ticks: [0, 25, 50, 75, 100] })
+    })
+
+    it('keeps a minimum window for flat odds and stays inside 0-100', () => {
+      const flat = buildOddsValueDomain([{ t: 1, p: [50, 50] }], 2)
+      expect(flat.max - flat.min).to.be.at.least(10)
+      const low = buildOddsValueDomain([{ t: 1, p: [0, 1] }], 2)
+      expect(low.min).to.equal(0)
+      const high = buildOddsValueDomain([{ t: 1, p: [99, 100] }], 2)
+      expect(high.max).to.equal(100)
+    })
+
+    it('returns 0-100 for empty history', () => {
+      expect(buildOddsValueDomain([], 3).ticks).to.deep.equal([0, 25, 50, 75, 100])
     })
   })
 
