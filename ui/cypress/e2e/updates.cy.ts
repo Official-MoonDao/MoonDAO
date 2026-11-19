@@ -5,6 +5,27 @@ describe('MoonDAO App | Updates', () => {
     cy.contains('Essay').should('exist')
   })
 
+  it('should list newsletter issues that open at news.moondao.com', () => {
+    cy.visit('/updates', { timeout: 60000 })
+    cy.contains('h3', 'Static Fire and UFOs', { timeout: 60000 })
+      .closest('a')
+      .should('have.attr', 'href')
+      .and('match', /^https:\/\/news\.moondao\.com\/posts\//)
+  })
+
+  it('should list the same entries on /news and /updates', () => {
+    const titles = (path: string) => {
+      cy.visit(path, { timeout: 60000 })
+      return cy.get('h2, h3').then(($headings) => $headings.toArray().map((h) => h.textContent))
+    }
+    titles('/updates').then((updates) => {
+      titles('/news').then((news) => {
+        expect(news.filter((t) => t && !updates.includes(t))).to.deep.equal([])
+        expect(updates.filter((t) => t && !news.includes(t))).to.deep.equal([])
+      })
+    })
+  })
+
   it('should render an update with its body and byline', () => {
     cy.visit('/updates/the-master-plan', { timeout: 60000 })
     cy.contains('h1', 'The Master Plan', { timeout: 60000 }).should('be.visible')

@@ -1,11 +1,11 @@
-import Link from 'next/link'
 import type { UpdateMeta } from '@/lib/updates/types'
+import UpdateEntryLink from './UpdateEntryLink'
 import UpdateMetaLine from './UpdateMeta'
 
 export default function UpdateFeaturedCard({ update }: { update: UpdateMeta }) {
   return (
-    <Link
-      href={`/updates/${update.slug}`}
+    <UpdateEntryLink
+      update={update}
       className="group block overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-600/20 to-purple-600/20 transition-all duration-200 hover:border-blue-400/50"
     >
       {update.image && (
@@ -33,6 +33,6 @@ export default function UpdateFeaturedCard({ update }: { update: UpdateMeta }) {
           {update.authorRole ? ` · ${update.authorRole}` : ''}
         </p>
       </div>
-    </Link>
+    </UpdateEntryLink>
   )
 }

@@ -50,23 +50,10 @@ describe('Main E2E Testing', () => {
       cy.visit('/news', { timeout: 60000 })
     })
 
-    it('should have iframe that covers the viewport', () => {
+    it('should list newsletter issues and MoonDAO updates together', () => {
       cy.visit('/news', { timeout: 60000 })
-
-      // Check iframe is visible and positioned correctly
-      cy.get('iframe')
-        .should('be.visible')
-        .and(($iframe) => {
-          const iframe = $iframe[0]
-          const rect = iframe.getBoundingClientRect()
-          const vw = Cypress.config('viewportWidth')
-          const vh = Cypress.config('viewportHeight')
-
-          expect(rect.top).to.be.closeTo(0, 60)
-          expect(rect.left).to.be.closeTo(0, 60)
-          expect(rect.width).to.be.closeTo(vw, 160)
-          expect(rect.height).to.be.closeTo(vh, 120)
-        })
+      cy.contains('h3', 'Static Fire and UFOs', { timeout: 60000 }).should('exist')
+      cy.contains('h2', 'The Master Plan').should('be.visible')
     })
   })
 
@@ -77,20 +64,20 @@ describe('Main E2E Testing', () => {
 
     it('should have search functionality', () => {
       cy.visit('/townhall', { timeout: 60000 })
-      
+
       cy.get('input[name="search"]').should('exist')
       cy.get('input[name="search"]').should('be.visible')
     })
 
     it('should display summaries list', () => {
       cy.visit('/townhall', { timeout: 60000 })
-      
+
       cy.get('div').should('exist')
     })
 
     it('should have info banner at bottom', () => {
       cy.visit('/townhall', { timeout: 60000 })
-      
+
       cy.contains('improving our AI summaries').should('exist')
     })
   })
@@ -109,16 +96,14 @@ describe('Main E2E Testing', () => {
       cy.visit('/launch', { timeout: 60000 })
       cy.window().then((win) => {
         const nextData = (win as any).__NEXT_DATA__
-        expect(nextData, '__NEXT_DATA__ should be present on /launch').to
-          .exist
+        expect(nextData, '__NEXT_DATA__ should be present on /launch').to.exist
         const props = nextData && nextData.props ? nextData.props : {}
         const pageProps = props.pageProps || {}
         const missions = pageProps.missions
         expect(missions, 'missions should be an array').to.be.an('array')
         expect(
           missions.length,
-          'missions array should not be empty — fetchMissions is failing ' +
-            'on the server'
+          'missions array should not be empty — fetchMissions is failing ' + 'on the server'
         ).to.be.greaterThan(0)
       })
     })
