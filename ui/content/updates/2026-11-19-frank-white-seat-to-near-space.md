@@ -30,7 +30,7 @@ That is about to change. **MoonDAO has secured Frank's seat to near space.** He 
 {
  "items": [
   {"value": "157", "label": "backers in round one, from around the world"},
-  {"value": "$165K+", "label": "raised for the mission, every dollar still held"},
+  {"value": "$165K+", "label": "committed to the mission, every dollar still held"},
   {"value": "12+", "label": "flight providers met in China, the US and Europe"},
   {"value": "1", "label": "whole Zephalto capsule secured for the mission"}
  ]
@@ -51,13 +51,13 @@ That is about to change. **MoonDAO has secured Frank's seat to near space.** He 
 
 It started with a window seat. On a flight across the United States, Frank looked down at the country passing below and had a revelation: anyone living in space would always have a view like this, only bigger. They would see the whole planet at once, without borders, and it would change how they thought about the Earth and their place on it.
 
-The idea and its name came first. Frank called it the Overview Effect, and treated it as a hypothesis to test. Then he went looking for evidence. He began asking astronauts and cosmonauts a simple question: what was it like to see the Earth from space? Over the following decades he interviewed more than 50 of them. Their answers matched what he had predicted: awe, a sudden sense of how fragile and connected everything is, and a lasting change in how they saw their place on the planet.
+The idea and its name came first. Frank called it the Overview Effect, and treated it as a hypothesis to test. Then he went looking for evidence. He began asking astronauts a simple question: what was it like to see the Earth from space? Over the following decades he interviewed more than 50 of them. Their answers matched what he had predicted: awe, a sudden sense of how fragile and connected everything is, and a lasting change in how they saw their place on the planet.
 
-His book, *The Overview Effect*, is now in its fourth edition. He co-founded the Overview Institute, and the term has spread far beyond spaceflight, into documentaries, classrooms and the language of nearly every company that sells a trip upward.
+His book, *The Overview Effect*, is now in its fourth edition. He co-founded the Human Space Program, and the term has spread far beyond spaceflight, into documentaries, classrooms and the language of nearly every company that sells a trip upward.
 
 Then he watched everyone else go. Astronauts, then the first private customers, then celebrities. The person who gave the industry its vocabulary for *why* we go was still on the ground.
 
-> Everyone told us no one deserves to go more than Frank. Plenty of people said it. MoonDAO was the only group that actually fought for it.
+> Everyone always tells us no one deserves to go to space more than Frank. Plenty of people said it. MoonDAO brought them together and fought for it.
 
 Frank is not only the mission's passenger. He is a MoonDAO Citizen and a former Senator in our governance, and he has worked alongside the community every step of the way, from town halls with astronauts to daily calls during the raise.
 
@@ -88,7 +88,7 @@ Getting here took longer and asked more of the community than anyone expected. H
 
 ## A global community made it possible
 
-A mission like this usually needs one wealthy sponsor. This one had 157 backers in its first round, from first-time crypto users to longtime space advocates, and it has raised more than $165,000. None of it has been spent. Every dollar from round one is still held for the flight.
+A mission like this usually needs one wealthy sponsor. This one had 157 backers in its first round, from first-time crypto users to longtime space advocates, and more than $165,000 has been committed. None of it has been spent. Every dollar from round one is still held for the flight.
 
 The raise is still open. The next milestone on the mission page is $250,000.
 
@@ -97,10 +97,10 @@ The raise is still open. The next milestone on the mission page is $250,000.
  "type": "stack",
  "figure": "Figure 2",
  "title": "Two-thirds of the way to the next milestone",
- "subtitle": "Funds raised for the mission against the $250,000 milestone shown on the mission page, in thousands of US dollars.",
+ "subtitle": "Funds committed to the mission against the $250,000 milestone shown on the mission page, in thousands of US dollars.",
  "unit": "k",
  "segments": [
-  {"name": "Raised so far", "color": "#fcd34d"},
+  {"name": "Committed so far", "color": "#fcd34d"},
   {"name": "Still to raise", "color": "#334155"}
  ],
  "rows": [
