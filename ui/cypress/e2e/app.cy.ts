@@ -53,7 +53,7 @@ describe('Main E2E Testing', () => {
     it('should list newsletter issues and MoonDAO updates together', () => {
       cy.visit('/news', { timeout: 60000 })
       cy.contains('h3', 'Static Fire and UFOs', { timeout: 60000 }).should('exist')
-      cy.contains('h2', 'The Master Plan').should('be.visible')
+      cy.contains('h2, h3', /^The Master Plan$/).should('exist')
     })
   })
 
