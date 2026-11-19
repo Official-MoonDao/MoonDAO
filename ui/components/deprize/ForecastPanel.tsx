@@ -161,7 +161,7 @@ export default function ForecastPanel(props: {
       )
     : -1
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
-  const { readyToSign } = useDePrizeChainGuard(chain)
+  const { readyToSign, wrongNetwork, switchToChain, chainLabel } = useDePrizeChainGuard(chain)
 
   const n = labels.length
   const [savedPick, setSavedPick] = useState<number | null>(null)
@@ -498,6 +498,10 @@ export default function ForecastPanel(props: {
     savedPick,
     n,
     commitPick,
+    networkReady: !wrongNetwork,
+    ensureNetwork: switchToChain,
+    networkLabel: chainLabel,
+    signer: account,
   })
 
   function onUndo() {

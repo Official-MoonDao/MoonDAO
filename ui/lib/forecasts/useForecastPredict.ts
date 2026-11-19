@@ -101,7 +101,7 @@ export function useForecastPredict(args: {
     chainSlug,
     deprizeId,
   }
-  const { readyToSign } = useDePrizeChainGuard(chain)
+  const { readyToSign, wrongNetwork, switchToChain, chainLabel } = useDePrizeChainGuard(chain)
   const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(activeAccount?.address)
   const votingWeight = totalVMOONEY || 0
 
@@ -462,6 +462,10 @@ export function useForecastPredict(args: {
     savedPick,
     n,
     commitPick,
+    networkReady: !wrongNetwork,
+    ensureNetwork: switchToChain,
+    networkLabel: chainLabel,
+    signer: account,
   })
 
   function undo() {
