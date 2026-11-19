@@ -9,6 +9,8 @@ import type { UpdateMeta } from './types'
  */
 
 export const NEWSLETTER_ORIGIN = 'https://news.moondao.com'
+/** Set by `next build` while pages are generated. */
+export const PRODUCTION_BUILD_PHASE = 'phase-production-build'
 export const NEWSLETTER_CATEGORY = 'Newsletter'
 export const NEWSLETTER_AUTHOR = 'MoonDAO'
 
@@ -137,6 +139,15 @@ export function normalizeKitPosts(raw: unknown[]): NewsletterPost[] {
     }
   }
   return posts
+}
+
+/**
+ * The production build serves the committed snapshot and does not call the
+ * archive. A hung request there is killed as a failed deploy, before any
+ * fallback can run. The hourly refresh reads the archive live.
+ */
+export function readsLiveArchive(phase: string | undefined = process.env.NEXT_PHASE): boolean {
+  return phase !== PRODUCTION_BUILD_PHASE
 }
 
 /**

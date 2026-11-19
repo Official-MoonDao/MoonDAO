@@ -2,7 +2,7 @@
  * Server-only. Import from `getStaticProps` / scripts, never from a component.
  */
 import { listUpdates } from './loadUpdates'
-import { fetchNewsletterPosts, mergeFeed } from './newsletter'
+import { fetchNewsletterPosts, mergeFeed, readsLiveArchive } from './newsletter'
 import type { NewsletterPost } from './newsletter'
 import snapshot from './newsletterSnapshot.json'
 import type { UpdateMeta } from './types'
@@ -15,13 +15,14 @@ export type FeedProps = {
 export const FEED_REVALIDATE_SECONDS = 3600
 
 /**
- * Newsletter issues come from the live archive so a new send shows up within
- * the revalidate window without a deploy. The read has one short budget for
- * every page. If it does not finish, or the archive is down, the build and
- * the page still render from the committed snapshot
- * (`yarn sync:newsletter` refreshes it).
+ * The production build uses the committed snapshot and does not call out, so
+ * a slow archive cannot fail the deploy. Afterward, the hourly refresh reads
+ * the live archive and a new send shows up without a deploy. If that read
+ * does not finish, the page keeps the snapshot (`yarn sync:newsletter`
+ * refreshes it).
  */
 export async function loadNewsletterPosts(): Promise<NewsletterPost[]> {
+  if (!readsLiveArchive()) return snapshot as NewsletterPost[]
   try {
     return await fetchNewsletterPosts()
   } catch (error) {

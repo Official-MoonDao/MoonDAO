@@ -24,6 +24,7 @@ import {
 import {
   fetchNewsletterPosts,
   mergeFeed,
+  readsLiveArchive,
   normalizeKitPost,
   normalizeKitPosts,
   summarize,
@@ -640,6 +641,12 @@ function kitPost(overrides: Record<string, unknown> = {}) {
 }
 
 describe('newsletter issues', () => {
+  it('skips the live archive during a production build', () => {
+    expectEqual(readsLiveArchive('phase-production-build'), false, 'build')
+    expectEqual(readsLiveArchive(undefined), true, 'refresh')
+    expectEqual(readsLiveArchive('phase-production-server'), true, 'server')
+  })
+
   it('maps a Kit post to the fields the feed uses', () => {
     const post = normalizeKitPost(kitPost())
     if (!post) throw new Error('expected a post')
