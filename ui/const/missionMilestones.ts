@@ -43,7 +43,7 @@ export const MISSION_MINIMUM_GOAL_TOOLTIP =
  * (team-editable via the Edit Mission flow) becomes the source of truth again.
  */
 export const MISSION_TAGLINE_OVERRIDES: Partial<Record<number, string>> = {
-  4: 'The competition is back on. Every dollar from round one is still held — now we’re raising to send a member of our community to space alongside Frank White.',
+  4: 'The competition is back on. Every dollar from round one is still held — now we’re raising to send a member of our community to near space alongside Frank White.',
 }
 
 export function getMissionTagline(
