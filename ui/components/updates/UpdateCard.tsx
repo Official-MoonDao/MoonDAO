@@ -1,11 +1,11 @@
-import Link from 'next/link'
 import type { UpdateMeta } from '@/lib/updates/types'
+import UpdateEntryLink from './UpdateEntryLink'
 import UpdateMetaLine from './UpdateMeta'
 
 export default function UpdateCard({ update }: { update: UpdateMeta }) {
   return (
-    <Link
-      href={`/updates/${update.slug}`}
+    <UpdateEntryLink
+      update={update}
       className="group block border-b border-white/10 py-6 last:border-b-0"
     >
       <div className="flex items-start justify-between gap-6">
@@ -28,10 +28,15 @@ export default function UpdateCard({ update }: { update: UpdateMeta }) {
         </div>
         {update.image && (
           <div className="hidden aspect-[1200/630] w-40 flex-shrink-0 overflow-hidden rounded-lg bg-black/30 sm:block">
-            <img src={update.image} alt="" className="h-full w-full object-contain" />
+            <img
+              src={update.image}
+              alt=""
+              loading="lazy"
+              className="h-full w-full object-contain"
+            />
           </div>
         )}
       </div>
-    </Link>
+    </UpdateEntryLink>
   )
 }
