@@ -41,6 +41,7 @@ describe('metaPixel', () => {
   describe('isPixelPath', () => {
     it('covers only the membership funnel', () => {
       assert.strictEqual(isPixelPath('/citizenship'), true)
+      assert.strictEqual(isPixelPath('/citizenship/decide'), true)
       assert.strictEqual(isPixelPath('/join'), true)
       assert.strictEqual(isPixelPath('/citizen'), true)
       assert.strictEqual(isPixelPath('/join/'), true)

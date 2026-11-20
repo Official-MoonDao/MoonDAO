@@ -52,7 +52,8 @@ export function isValidPixelId(id: string | undefined | null): boolean {
 export function isPixelPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false
   const clean = pathname.split(/[?#]/)[0].replace(/\/+$/, '') || '/'
-  return PIXEL_PATHS.has(clean)
+  // The landing page has one static page per ad angle: /citizenship/<angle>.
+  return PIXEL_PATHS.has(clean) || clean.startsWith('/citizenship/')
 }
 
 export type PixelConsentInput = {

@@ -161,11 +161,13 @@ export function matchCitizenPhotoByName(name: string, citizens: any[]): string |
 export type JoinSocialProof = {
   featuredCitizens: ReturnType<typeof toFeaturedCitizen>[]
   featuredTeams: ReturnType<typeof toFeaturedTeam>[]
+  activeTeamCount: number
   testimonials: TestimonialWithPhoto[]
 }
 
 /**
- * Loads the featured Citizens and Teams (only unexpired members) and matches
+ * Loads the featured Citizens and Teams (only unexpired members), the active
+ * Team count, and matches
  * testimonial photos. Never throws: on any failure it returns the testimonials
  * without photos and empty featured lists, which the marquees hide.
  */
@@ -177,12 +179,7 @@ export async function loadJoinSocialProof(chain: any): Promise<JoinSocialProof> 
     const teamTable = TEAM_TABLE_NAMES[chainSlug]
     const [citizenRows, teamRows]: any[] = await Promise.all([
       citizenTable ? queryTable(chain, `SELECT * FROM ${citizenTable}`) : [],
-      teamTable && FEATURED_TEAMS.length
-        ? queryTable(
-            chain,
-            `SELECT * FROM ${teamTable} WHERE id IN (${FEATURED_TEAMS.map(Number).join(',')})`
-          )
-        : [],
+      teamTable ? queryTable(chain, `SELECT * FROM ${teamTable}`) : [],
     ])
 
     const citizens: NFT[] = (citizenRows || []).map((row: any) => citizenRowToNFT(row))
@@ -202,6 +199,7 @@ export async function loadJoinSocialProof(chain: any): Promise<JoinSocialProof> 
       featuredTeams: FEATURED_TEAMS.map((id: number) => byId(validTeams, id))
         .filter(Boolean)
         .map(toFeaturedTeam),
+      activeTeamCount: validTeams.length,
       testimonials: testimonialsContent.map((testimonial) => ({
         ...testimonial,
         image: matchCitizenPhotoByName(testimonial.name, validCitizens),
@@ -212,6 +210,7 @@ export async function loadJoinSocialProof(chain: any): Promise<JoinSocialProof> 
     return {
       featuredCitizens: [],
       featuredTeams: [],
+      activeTeamCount: 0,
       testimonials: testimonialsContent.map((t) => ({ ...t, image: null })),
     }
   }

@@ -89,6 +89,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/mission/[tokenId]',
     '/network',
     '/join',
+    '/citizenship/[[...angle]]',
     '/dude-perfect',
     '/mooney',
     '/governance',
@@ -115,7 +116,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/moonbase/touchdown' ||
     router.pathname === '/starship' ||
     // Paid-traffic landing page: one action, no site navigation.
-    router.pathname === '/citizenship'
+    router.pathname === '/citizenship/[[...angle]]'
 
   return (
     <div
