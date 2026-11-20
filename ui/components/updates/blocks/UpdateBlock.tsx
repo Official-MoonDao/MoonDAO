@@ -1,6 +1,6 @@
 import type { UpdateBlock as Block } from '@/lib/updates/blocks'
 import { Heatmap, Ledger, Stats } from './DataBlocks'
-import { Cta, Screens } from './Showcase'
+import { Cta, Graphic, Screens, Timeline } from './Showcase'
 import UpdateChart from './UpdateChart'
 
 export default function UpdateBlock({ block }: { block: Block }) {
@@ -17,5 +17,9 @@ export default function UpdateBlock({ block }: { block: Block }) {
       return <Screens spec={block.spec} />
     case 'cta':
       return <Cta spec={block.spec} />
+    case 'timeline':
+      return <Timeline spec={block.spec} />
+    case 'graphic':
+      return <Graphic spec={block.spec} />
   }
 }

@@ -10,7 +10,7 @@ tags:
   - ideas
   - missions
   - governance
-featured: true
+featured: false
 draft: false
 ---
 

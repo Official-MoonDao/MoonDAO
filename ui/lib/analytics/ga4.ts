@@ -722,6 +722,20 @@ export function trackForecastSubmitted() {
   sendEvent('forecast_submitted', { entry_path: entry, ...gaDebugParam() }, false)
 }
 
+export type ForecastShareMethod = 'x' | 'copy'
+
+/**
+ * After a free forecast, the visitor shares the page. Consent mode and the
+ * internal traffic_type cookie stay on the gtag config, the same path as
+ * forecast_submitted. Params are the channel and the tab's first pathname.
+ */
+export function trackForecastShared(method: ForecastShareMethod) {
+  if (typeof window === 'undefined') return
+  if (method !== 'x' && method !== 'copy') return
+  const entry = storedEntryPath() || rememberEntryPath(safeLocation().pathname)
+  sendEvent('forecast_shared', { method, entry_path: entry, ...gaDebugParam() }, false)
+}
+
 export function trackProposalVote(
   proposalId: string | number | null | undefined,
   context?: {

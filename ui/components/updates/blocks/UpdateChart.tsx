@@ -326,6 +326,7 @@ function Bars({ spec, w }: { spec: BarsChart; w: number }) {
                   />
                   <text x={x0 + bw + 8} y={cy + 5} fill="#ffffff" fontSize={13} fontWeight={600}>
                     {v.toLocaleString('en-US')}
+                    {spec.unit || ''}
                   </text>
                 </g>
               )
@@ -401,10 +402,14 @@ function Line({ spec, w }: { spec: LineChart; w: number }) {
         </g>
       ))}
       {Array.from({ length: n }, (_, i) => i)
-        .filter((i) => i % (narrow ? 6 : 2) === 0 || i === n - 1)
+        .filter((i) =>
+          spec.x.labels
+            ? spec.x.labels[i] !== '' && (!narrow || i % 2 === 0 || i === n - 1)
+            : i % (narrow ? 6 : 2) === 0 || i === n - 1
+        )
         .map((i) => (
           <text key={i} x={x(i)} y={b + 18} fill={AXIS} fontSize={11} textAnchor="middle">
-            {i}
+            {spec.x.labels ? spec.x.labels[i] : i}
           </text>
         ))}
       {spec.x.label && (

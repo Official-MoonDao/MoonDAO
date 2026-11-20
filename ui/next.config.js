@@ -68,6 +68,16 @@ module.exports = withBundleAnalyzer(
           ],
           // The feed lists Updates posts, which are read from disk at request time.
           '/api/updates/rss': ['./content/updates/**/*.md'],
+          // /news and /updates revalidate hourly and re-read these posts.
+          // Next 13 memos an include by its glob string, then reuses that
+          // relative path for every page the key matches. Matching is a
+          // substring: `/news` also hits `/api/newsletters`, and `/updates`
+          // also hits `/updates/[slug]` and `/api/updates/rss`. Those routes
+          // live in deeper output folders, so a shared path makes the deploy
+          // look for content/updates above ui/. These keys match only the
+          // two index pages, which share one output folder.
+          '/news!(letters)': ['./content/updates/*.md'],
+          '/updates!(/**)': ['./content/updates/*.md'],
           '/api/og/listing': [
             './lib/og/fonts/Lato-Regular.ttf',
             './public/metadata-image.png',
@@ -79,6 +89,13 @@ module.exports = withBundleAnalyzer(
             './public/assets/MoonDAO-OG.png',
             './public/touchdown/og.jpg',
             './public/touchdown/og-base.jpg',
+          ],
+          '/api/og/forecast': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+            './public/touchdown/og-base.jpg',
+            './public/touchdown/moondao-mark.png',
           ],
           '/api/og/catch': [
             './lib/og/fonts/Lato-Regular.ttf',

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { Chain } from 'thirdweb'
 import { useForecastPredict } from '@/lib/forecasts/useForecastPredict'
+import ForecastSharePrompt from '@/components/deprize/ForecastSharePrompt'
 import { GuestConsentLine, GuestSaveNotice } from '@/components/deprize/GuestForecastNotice'
 import PredictModal from '@/components/deprize/PredictModal'
 
@@ -8,6 +9,8 @@ import PredictModal from '@/components/deprize/PredictModal'
  * The DePrize predict window (free MOONEY forecast). Kept mounted for the
  * open prize so a saved pick and its undo survive closing the dialog, and so
  * the rows that open it can mark the saved pick.
+ * A successful free forecast leaves the window open on the share prompt.
+ * Guests still see how to keep the prediction.
  */
 export default function ForecastPredictModal(props: {
   chain: Chain
@@ -19,6 +22,8 @@ export default function ForecastPredictModal(props: {
   marketLoading: boolean
   outcomeIndex: number | null
   teamName: string
+  /** Moon Base Zero race id for the share link and card. */
+  raceId?: string
   onClose: () => void
   /** The writer's saved outcome slot for this prize, or null. */
   onSavedPick?: (pick: number | null) => void
@@ -37,7 +42,15 @@ export default function ForecastPredictModal(props: {
     onSavedPick?.(session.savedPick)
   }, [onSavedPick, session.savedPick])
 
-  if (props.outcomeIndex == null) return null
+  if (props.outcomeIndex == null) {
+    if (!session.shareOffer) return null
+    return (
+      <div className="border-t border-white/10 p-4">
+        {/* Name from the save, so opening another competitor does not rename the post. */}
+        <ForecastSharePrompt pick={session.sharePickName} raceId={props.raceId} />
+      </div>
+    )
+  }
   const index = props.outcomeIndex
   const shares = session.votingPower
   const total = shares?.reduce((sum, value) => sum + value, 0) ?? 0
@@ -60,16 +73,14 @@ export default function ForecastPredictModal(props: {
         ) : null
       }
       saved={session.savedPick === index}
+      offerShare={session.shareOffer && session.savedPick === index}
+      raceId={props.raceId}
       writing={session.writing}
       error={session.blockedReason ?? session.error}
       predictEnabled={session.predictEnabled}
       undoEnabled={session.undoEnabled && session.savedPick === index}
       onPredict={() => {
-        const wasSignedIn = session.signedIn
-        void session.predict(index).then((ok) => {
-          // A guest stays on the window to see how to keep the prediction.
-          if (ok && wasSignedIn) props.onClose()
-        })
+        void session.predict(index, props.teamName)
       }}
       onUndo={session.undo}
       onConnect={session.onConnect}

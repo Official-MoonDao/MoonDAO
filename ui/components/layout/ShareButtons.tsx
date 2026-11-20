@@ -3,11 +3,18 @@ import toast from 'react-hot-toast'
 
 type ShareButtonsProps = {
   url: string
-  /** Tweet body; the URL is appended by X. */
+  /** Post body; the URL is appended by X. */
   text: string
+  /** Clipboard target. Defaults to `url` when copy and X should share one link. */
+  copyUrl?: string
   className?: string
   shareLabel?: string
   copyLabel?: string
+  /** Existing job and marketplace shares keep the tweet intent. */
+  intent?: 'tweet' | 'post'
+  buttonClassName?: string
+  onShareClick?: () => void
+  onCopied?: () => void
 }
 
 function XIcon({ className }: { className?: string }) {
@@ -22,19 +29,26 @@ function XIcon({ className }: { className?: string }) {
 export default function ShareButtons({
   url,
   text,
+  copyUrl,
   className = '',
   shareLabel = 'Share',
   copyLabel = 'Copy link',
+  intent = 'tweet',
+  buttonClassName = '',
+  onShareClick,
+  onCopied,
 }: ShareButtonsProps) {
-  const xShareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(
-    text,
+  const xShareHref = `https://x.com/intent/${intent}?text=${encodeURIComponent(
+    text
   )}&url=${encodeURIComponent(url)}`
+  const buttonClass = `flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors ${buttonClassName}`
 
   async function copyLink() {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable')
-      await navigator.clipboard.writeText(url)
+      await navigator.clipboard.writeText(copyUrl ?? url)
       toast.success('Link copied')
+      onCopied?.()
     } catch {
       toast.error('Could not copy the link')
     }
@@ -47,17 +61,13 @@ export default function ShareButtons({
         href={xShareHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+        onClick={onShareClick}
+        className={buttonClass}
       >
         <XIcon className="h-4 w-4" />
         {shareLabel}
       </a>
-      <button
-        id="copy-link-button"
-        type="button"
-        onClick={copyLink}
-        className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
-      >
+      <button id="copy-link-button" type="button" onClick={copyLink} className={buttonClass}>
         <LinkIcon className="h-4 w-4" />
         {copyLabel}
       </button>

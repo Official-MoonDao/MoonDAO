@@ -1,7 +1,7 @@
 import { ArrowRightIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import type { CtaSpec, ScreensSpec } from '@/lib/updates/blocks'
+import type { CtaSpec, GraphicSpec, ScreensSpec, TimelineSpec } from '@/lib/updates/blocks'
 import Figure from './Figure'
 
 function SmartLink({
@@ -162,5 +162,88 @@ export function Cta({ spec }: { spec: CtaSpec }) {
         )}
       </div>
     </section>
+  )
+}
+
+const MARKER = {
+  done: 'border-blue-300 bg-blue-400',
+  now: 'border-amber-100 bg-amber-300 shadow-[0_0_0_6px_rgba(252,211,77,0.15),0_0_24px_rgba(252,211,77,0.6)]',
+  next: 'border-slate-500 bg-[#070b18]',
+}
+
+const DATE_TONE = {
+  done: 'text-blue-300/90',
+  now: 'text-amber-200',
+  next: 'text-slate-500',
+}
+
+export function Timeline({ spec }: { spec: TimelineSpec }) {
+  return (
+    <Figure figure={spec.figure} title={spec.title} subtitle={spec.subtitle} source={spec.source}>
+      <ol className="mx-2 mb-2 mt-1 md:mx-4">
+        {spec.items.map((item, i) => {
+          const status = item.status || 'done'
+          const next = spec.items[i + 1]
+          const solid = status === 'done' && (next?.status || 'done') !== 'next'
+          return (
+            <li
+              key={`${item.date}-${item.title}`}
+              className="relative grid grid-cols-[16px_1fr] gap-x-4 pb-7 last:pb-1 md:grid-cols-[128px_16px_1fr] md:gap-x-5"
+            >
+              <span
+                aria-hidden
+                className="relative col-start-1 row-span-2 row-start-1 md:col-start-2 md:row-span-1"
+              >
+                {next && (
+                  <span
+                    className={`absolute bottom-[-4px] left-1/2 top-[22px] -translate-x-1/2 ${
+                      solid ? 'w-px bg-blue-400/45' : 'border-l border-dashed border-slate-600'
+                    }`}
+                  />
+                )}
+                <span
+                  className={`absolute left-0 top-[3px] h-4 w-4 rounded-full border-2 ${MARKER[status]}`}
+                />
+              </span>
+              <p
+                className={`col-start-2 row-start-1 font-RobotoMono text-[11px] uppercase leading-[22px] tracking-[0.16em] md:col-start-1 md:text-right ${DATE_TONE[status]}`}
+              >
+                {item.date}
+              </p>
+              <div className="col-start-2 row-start-2 md:col-start-3 md:row-start-1">
+                <p
+                  className={`text-[16px] font-semibold leading-[22px] ${
+                    status === 'next' ? 'text-slate-300' : 'text-white'
+                  }`}
+                >
+                  {item.title}
+                </p>
+                {item.body && (
+                  <p className="mt-1.5 text-[14px] leading-relaxed text-slate-400">{item.body}</p>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    </Figure>
+  )
+}
+
+export function Graphic({ spec }: { spec: GraphicSpec }) {
+  const img = (
+    <img src={spec.src} alt={spec.alt} loading="lazy" className="block h-auto w-full rounded-xl" />
+  )
+  return (
+    <Figure figure={spec.figure} title={spec.title} subtitle={spec.subtitle} source={spec.source}>
+      {spec.narrow ? (
+        <picture>
+          <source media="(max-width: 639px)" srcSet={spec.narrow} />
+          {img}
+        </picture>
+      ) : (
+        img
+      )}
+    </Figure>
   )
 }

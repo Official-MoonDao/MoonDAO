@@ -35,6 +35,11 @@ export type UpdateMeta = {
   featured: boolean
   draft: boolean
   readingMinutes: number
+  /**
+   * Set on entries that live elsewhere (newsletter issues at news.moondao.com).
+   * Cards link to it instead of `/updates/<slug>`.
+   */
+  externalUrl?: string | null
 }
 
 export type Update = UpdateMeta & { body: string }

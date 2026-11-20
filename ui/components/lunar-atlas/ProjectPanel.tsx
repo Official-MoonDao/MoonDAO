@@ -479,6 +479,7 @@ export default function ProjectPanel({
             marketLoading={bound && payoutPending}
             outcomeIndex={predictOpen ? forecastIndex ?? null : null}
             teamName={project.name}
+            raceId={betGoal?.id}
             onClose={() => setPredictOpen(false)}
             onSavedPick={setSavedForecastPick}
           />

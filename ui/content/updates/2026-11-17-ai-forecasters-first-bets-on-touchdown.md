@@ -12,7 +12,7 @@ tags:
   - deprize
   - touchdown
   - ai
-featured: false
+featured: true
 draft: false
 ---
 

@@ -12,6 +12,12 @@ Announcements, mission updates, press releases, and long-form essays. Publishing
 
 Files that start with `_` and `README.md` are ignored by the loader, so `_template.md` never publishes.
 
+## Newsletter issues
+
+`/updates` and `/news` show the same list: the posts in this folder plus every public issue of the newsletter at [news.moondao.com](https://news.moondao.com). A production build uses the saved snapshot, and the live archive is read again at most once an hour, so a new send appears without another deploy. Issues open at news.moondao.com and are labelled `Newsletter`; nothing needs to be added here for them.
+
+If the archive is unreachable, the pages fall back to `ui/lib/updates/newsletterSnapshot.json`. Refresh it with `yarn sync:newsletter` from `ui/` and commit the result. Newsletter issues are deliberately not in the RSS feed, because Kit reads that feed to send the newsletter and would send issues back out.
+
 ## Frontmatter
 
 | Field | Required | Notes |

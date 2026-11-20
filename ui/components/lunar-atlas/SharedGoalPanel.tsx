@@ -778,6 +778,7 @@ export default function SharedGoalPanel({
             marketLoading={bound && payoutPending}
             outcomeIndex={predictIndex}
             teamName={predictName}
+            raceId={goal.id}
             onClose={() => setPredictIndex(null)}
             onSavedPick={setSavedForecastPick}
           />
