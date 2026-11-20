@@ -20,11 +20,13 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import CitizenOfferCard from '@/components/citizenship/CitizenOfferCard'
 import StickyJoinBar from '@/components/citizenship/StickyJoinBar'
+import CtaButton from '@/components/home/landing/CtaButton'
 import Reveal from '@/components/home/landing/Reveal'
 import SectionHeading from '@/components/home/landing/SectionHeading'
 import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
 import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
 import JoinHero from '@/components/join/JoinHero'
+import AdaptiveImage from '@/components/layout/AdaptiveImage'
 import FAQs from '@/components/layout/FAQs'
 import Head from '@/components/layout/Head'
 import { SectionSkeleton } from '@/components/layout/SkeletonLoader'
@@ -59,7 +61,7 @@ const JOIN_HREF = '/citizen'
 const HEADLINES: Record<string, { title: string; sub: string }> = {
   default: {
     title: "Help decide what's next in space",
-    sub: 'Join astronauts, scientists, and space builders as a MoonDAO Citizen, with access to training and spaceflight opportunities.',
+    sub: 'Join astronauts, scientists, and space builders as a MoonDAO Citizen. Pitch your space project for funding, compete to fly with Frank White, and access training and spaceflight opportunities.',
   },
   decide: {
     title: 'Who decides what we build on the Moon?',
@@ -67,7 +69,7 @@ const HEADLINES: Record<string, { title: string; sub: string }> = {
   },
   people: {
     title: "Space isn't a spectator sport",
-    sub: 'Join astronauts, scientists, and space builders as a MoonDAO Citizen, with access to training and spaceflight opportunities.',
+    sub: 'Join astronauts, scientists, and space builders as a MoonDAO Citizen. Pitch your space project for funding, compete to fly with Frank White, and access training and spaceflight opportunities.',
   },
 }
 
@@ -80,26 +82,47 @@ const PILLARS: WhyJoinPillar[] = [
       'MoonDAO has sent two Citizens to space, and members have flown Zero-G and traveled to launches. Citizens are eligible to apply when new opportunities open.',
   },
   {
+    icon: '/assets/icon-crowdfunding.svg',
+    iconAlt: 'Funding',
+    header: 'Get funding for your space project',
+    paragraph:
+      'Submit a proposal and pitch the community directly. Skip the grant cycle: Citizen projects can be funded in weeks, not years.',
+  },
+  {
+    icon: '/assets/icon-lander.svg',
+    iconAlt: 'Fly with Frank',
+    header: 'Compete to fly with Frank',
+    paragraph:
+      'Citizens can enter the competition for a seat beside Frank White, author of The Overview Effect.',
+  },
+  {
     icon: '/assets/icon-governance.svg',
     iconAlt: 'Voting',
     header: 'Vote on what gets funded',
-    paragraph:
-      'Citizens decide which space projects the community funds, and can propose projects of their own.',
+    paragraph: 'Citizens decide which space projects the community funds.',
   },
   {
-    icon: '/assets/icon-org.svg',
+    icon: '/assets/icon-job.svg',
     iconAlt: 'Jobs',
     header: 'Citizens-only space jobs',
     paragraph:
       'Teams across the space industry post roles on the MoonDAO jobs board. Citizens can read every role and apply directly.',
   },
+  {
+    icon: '/assets/icon-globe.svg',
+    iconAlt: 'Network',
+    header: 'Meet the people building space',
+    paragraph:
+      'Connect with astronauts, scientists, founders, and teams across the space industry.',
+  },
 ]
 
 const OFFER_BENEFITS = [
   'Eligible for training & spaceflight opportunities',
+  'Submit proposals and get your project funded',
+  'Enter the competition to fly with Frank',
   'Vote on which space projects get funded',
   'Apply to citizens-only space jobs',
-  'Your Citizen profile in the network',
 ]
 
 const STEPS = [
@@ -131,7 +154,17 @@ const FAQ = [
   {
     question: 'What do I get this year?',
     answer:
-      'Twelve months of Citizenship: a vote on what gets funded, access to citizens-only roles on the jobs board, a Citizen profile in the network, and eligibility for training and spaceflight opportunities.',
+      'Twelve months of Citizenship: you can submit proposals for funding, vote on what gets funded, enter the competition to fly with Frank, apply to citizens-only roles on the jobs board, and apply for training and spaceflight opportunities.',
+  },
+  {
+    question: 'How do I get my project funded?',
+    answer:
+      'Submit a proposal describing your project and what it needs. Citizens review and vote on proposals, and approved projects receive community funding.',
+  },
+  {
+    question: 'What is Fly with Frank?',
+    answer:
+      'Frank White, author of The Overview Effect, is flying with MoonDAO, and the community is working to send a Citizen with him. Citizenship is required to enter the competition for that seat.',
   },
   {
     question: 'Does it renew automatically?',
@@ -164,6 +197,7 @@ export default function Citizenship({
   testimonials = testimonialsContent,
 }: CitizenshipProps) {
   const headline = HEADLINES[angle] || HEADLINES.default
+  const frank = featuredCitizens.find((citizen) => /overview effect/i.test(citizen.role))
 
   const citizenPriceEth = usePublicYearEth('citizen')
   const cardCheckoutLive = useCitizenCheckoutLive()
@@ -227,10 +261,52 @@ export default function Citizenship({
 
       <FeaturedTeamsMarquee teams={featuredTeams} cardHref={JOIN_HREF} />
 
-      <InlineJoinCTA
-        headline="Join the people building humanity's future in space"
-        subtext={`12-month Citizenship · ${price}`}
-      />
+      <section
+        data-cta-location="paid_landing_frank"
+        className="relative overflow-hidden bg-[#010208] py-20 md:py-28"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(249,185,92,0.12),transparent_60%)]" />
+        <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center gap-10 px-6 text-center md:flex-row md:text-left">
+          {frank?.image && (
+            <Reveal className="shrink-0">
+              <div className="rounded-full bg-gradient-to-br from-[#F9B95C] to-[#743F72] p-[3px]">
+                <AdaptiveImage
+                  src={frank.image}
+                  alt={frank.name}
+                  width={320}
+                  height={320}
+                  className="h-40 w-40 rounded-full object-cover md:h-52 md:w-52"
+                />
+              </div>
+            </Reveal>
+          )}
+          <div className="flex flex-col items-center gap-5 md:items-start">
+            <Reveal>
+              <span className="inline-flex items-center gap-3 font-RobotoMono text-[11px] uppercase tracking-[0.28em] text-moon-gold">
+                <span className="h-px w-6 bg-moon-gold/70" />
+                Fly with Frank
+              </span>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="font-heading text-2xl font-semibold leading-[1.15] text-white md:text-4xl">
+                Compete for the seat beside Frank White
+              </h2>
+            </Reveal>
+            <Reveal delay={0.15}>
+              <p className="max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
+                Frank White, author of <em>The Overview Effect</em>, is flying with MoonDAO, and the
+                community is working to send a Citizen with him. Citizenship is required to enter
+                the competition for that seat.
+              </p>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <CtaButton href={JOIN_HREF} variant="primary">
+                Become a Citizen
+              </CtaButton>
+            </Reveal>
+          </div>
+        </div>
+      </section>
 
       <WhyJoinSection
         eyebrow="What you get"
