@@ -4,6 +4,7 @@
 // ProjectPanel or by clicking the goal's region marker.
 import { FlagIcon, GlobeAmericasIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import FirstTracksTeaser, { FIRST_TRACKS_RACE_GOAL_ID } from '@/components/first-tracks/FirstTracksTeaser'
 import type { MouseEvent } from 'react'
 import { useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
@@ -733,6 +734,7 @@ export default function SharedGoalPanel({
         {/* The landing game is a side quest, not the first thing a race
             panel should ask of someone who doesn't yet know what a race is. */}
         {goal.id === TOUCHDOWN_RACE_GOAL_ID && <TouchdownTeaser variant="atlas" />}
+        {goal.id === FIRST_TRACKS_RACE_GOAL_ID && <FirstTracksTeaser variant="atlas" />}
 
         {!hasRace ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">

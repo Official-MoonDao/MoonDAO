@@ -104,6 +104,13 @@ module.exports = withBundleAnalyzer(
             './public/catch/og.jpg',
             './public/catch/og-base.jpg',
           ],
+          '/api/og/first-tracks': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+            './public/first-tracks/og.jpg',
+            './public/first-tracks/og-base.jpg',
+          ],
         },
         optimizePackageImports: [
           '@heroicons/react',
@@ -282,6 +289,13 @@ module.exports = withBundleAnalyzer(
           {
             source: '/catch',
             destination: '/starship',
+            statusCode: 302,
+          },
+          // The Lunar Rover: First Tracks game lives at /rover; /first-tracks was
+          // its working address. Query strings (challenge links) carry over.
+          {
+            source: '/first-tracks',
+            destination: '/rover',
             statusCode: 302,
           },
           // /touchdown used to 301 to the first Arbitrum DePrize race. It is
