@@ -1,4 +1,9 @@
-import { CameraIcon, GlobeAltIcon, PlayIcon } from '@heroicons/react/24/outline'
+import {
+  CameraIcon,
+  GlobeAltIcon,
+  PlayIcon,
+  WrenchScrewdriverIcon,
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -866,6 +871,13 @@ export default function MoonBaseZeroIndex() {
                   <p className="mt-2 text-center text-xs text-white/45">
                     or pick one from the Races list to explore it
                   </p>
+                  <Link
+                    href="/moonbase/mine"
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-300/60 hover:text-cyan-200"
+                  >
+                    <WrenchScrewdriverIcon className="h-4 w-4" />
+                    Build your own base
+                  </Link>
                 </div>
               )}
 
