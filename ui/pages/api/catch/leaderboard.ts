@@ -10,6 +10,9 @@
  */
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { validateSubmission, type CatchBoardResponse } from '@/lib/catch/leaderboard'
+import { readLeader } from '@/lib/games/boards'
+import { announceNewLeader, removeLeaderPosts } from '@/lib/games/discordAlerts'
+import { nameKey } from '@/lib/touchdown/leaderboard'
 import { leaderboardRedis, rankOf, readBoard, removeEntry, submitLimiter, submitScore } from '@/lib/catch/leaderboardStore'
 import type { ModeId } from '@/lib/catch/modes'
 import { base64ToTape, replayFlight } from '@/lib/catch/replay'
@@ -20,7 +23,7 @@ function modeOf(v: unknown): ModeId {
   return v === 'pro' ? 'pro' : 'easy'
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<CatchBoardResponse | { ok: boolean }>) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<CatchBoardResponse | { ok: boolean; discordRemoved?: number }>) {
   res.setHeader('Cache-Control', 'no-store')
   const today = missionNumberFor()
   const redis = leaderboardRedis()
@@ -72,7 +75,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (flown.score < 1) return res.status(400).json(empty(today, mode, 'Only flights that score points go on the board.'))
       const checked = validateSubmission({ ...req.body, score: flown.score }, today, process.env.TOUCHDOWN_NAME_BLOCKLIST)
       if (!checked.ok) return res.status(400).json(empty(today, mode, checked.error))
+      const previous = await readLeader(redis, 'catch', checked.value.mission, checked.value.mode)
       const rank = await submitScore(redis, checked.value)
+      await announceNewLeader(redis, { game: 'catch', ...checked.value, today, key: nameKey(checked.value.name), previous })
       const board = await readBoard(redis, checked.value.mission, checked.value.mode)
       return res.status(200).json({ enabled: true, mission: checked.value.mission, mode: checked.value.mode, ...board, rank, verifiedScore: checked.value.score })
     }
@@ -82,8 +87,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const admin = process.env.TOUCHDOWN_ADMIN_TOKEN
       if (!admin || admin.length < 16 || req.headers['x-catch-admin'] !== admin) return res.status(403).json({ ok: false })
       if (!redis) return res.status(200).json({ ok: false })
-      const ok = await removeEntry(redis, Number(req.query.m), modeOf(req.query.mode), String(req.query.name ?? ''))
-      return res.status(200).json({ ok })
+      const mission = Number(req.query.m)
+      const mode = modeOf(req.query.mode)
+      const name = String(req.query.name ?? '')
+      const ok = await removeEntry(redis, mission, mode, name)
+      // Take down any new-#1 posts the name earned that day as well.
+      const discordRemoved = await removeLeaderPosts(redis, { game: 'catch', mission, mode, key: nameKey(name) })
+      return res.status(200).json({ ok, discordRemoved })
     }
 
     res.setHeader('Allow', 'GET, POST, DELETE')

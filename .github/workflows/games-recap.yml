@@ -1,0 +1,38 @@
+name: Mini games daily recap
+
+on:
+  schedule:
+    # Missions roll over at 00:00 UTC; wait an hour for late runs to land.
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      mission:
+        description: 'Mission number to recap (blank = yesterday)'
+        required: false
+
+jobs:
+  recap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger mini games recap
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          MISSION: ${{ github.event.inputs.mission }}
+        run: |
+          BASE="${SITE_URL:-https://moondao.com}"
+          URL="$BASE/api/cron/games-recap"
+          if [ -n "$MISSION" ]; then URL="$URL?mission=$MISSION"; fi
+          BODY="$(curl -sS -X POST "$URL" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -w '\n%{http_code}')"
+          HTTP="$(echo "$BODY" | tail -n 1)"
+          JSON="$(echo "$BODY" | sed '$d')"
+          echo "$JSON"
+          if [ "$HTTP" -lt 200 ] || [ "$HTTP" -ge 300 ]; then
+            echo "games-recap HTTP $HTTP"
+            exit 1
+          fi
+          # A Discord rejection comes back 200 with posted=false and a reason; fail on those.
+          echo "$JSON" | jq -e '.configured and (.posted or (.reason | IN("already-posted", "nobody-played", "no-missions-yet")))'
