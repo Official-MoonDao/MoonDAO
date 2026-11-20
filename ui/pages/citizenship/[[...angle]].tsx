@@ -173,7 +173,7 @@ const FAQ = [
   {
     question: 'Can I join from outside the United States?',
     answer:
-      'Yes, including from Canada, Australia, and New Zealand. Citizenship is not yet available in the European Union or the United Kingdom.',
+      'Yes. MoonDAO has Citizens in over 38 countries. Citizenship is not yet available in the European Union or the United Kingdom.',
   },
 ]
 
