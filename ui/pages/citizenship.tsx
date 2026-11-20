@@ -5,6 +5,7 @@ import {
   joinFilm,
   testimonials as testimonialsContent,
 } from 'const/joinPageContent'
+import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -14,6 +15,7 @@ import { useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { pixelViewContent } from '@/lib/analytics/metaPixel'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { loadJoinSocialProof } from '@/lib/join/socialProof'
 import { resolveCitizenCount } from '@/lib/stats/publicFigures'
 import { useCitizenCheckoutLive, usePublicYearEth } from '@/lib/subscription/citizenCheckout'
 import {
@@ -25,6 +27,8 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import CtaButton from '@/components/home/landing/CtaButton'
 import Starfield from '@/components/home/landing/Starfield'
+import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
+import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
 import FilmPlayer from '@/components/layout/FilmPlayer'
 import Head from '@/components/layout/Head'
 import { SectionSkeleton } from '@/components/layout/SkeletonLoader'
@@ -32,6 +36,16 @@ import { SectionSkeleton } from '@/components/layout/SkeletonLoader'
 const TestimonialsCarousel = dynamic(() => import('@/components/join/TestimonialsCarousel'), {
   loading: () => <SectionSkeleton />,
 })
+const FeaturedCitizensMarquee = dynamic(() => import('@/components/join/FeaturedCitizensMarquee'), {
+  loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
+})
+const FeaturedTeamsMarquee = dynamic(() => import('@/components/join/FeaturedTeamsMarquee'), {
+  loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
+})
+
+// Every card and button on this page goes to checkout. Nothing leads off into
+// profiles, team pages, or the rest of the site.
+const JOIN_HREF = '/citizen'
 
 /**
  * Landing page for paid campaigns: one offer, one action, no site navigation
@@ -41,26 +55,26 @@ const TestimonialsCarousel = dynamic(() => import('@/components/join/Testimonial
 const HEADLINES: Record<string, { title: string; sub: string }> = {
   default: {
     title: 'A space program run by its members',
-    sub: 'MoonDAO Citizens vote on which space projects the community funds, join the Teams building them, and apply to citizens-only space jobs.',
+    sub: 'MoonDAO Citizens vote on which space projects the community funds, get access to training and spaceflight opportunities, and apply to citizens-only space jobs.',
   },
   decide: {
     title: 'Who decides what we build on the Moon?',
-    sub: 'MoonDAO Citizens do. Vote on which space projects the community funds, and join the Teams building them.',
+    sub: 'MoonDAO Citizens do. Vote on which space projects the community funds, and get access to training and spaceflight opportunities.',
   },
   people: {
     title: "Space isn't a spectator sport",
-    sub: 'Join a global community that funds real space projects and shows up for them: launch sites, labs, and the Teams doing the work.',
+    sub: 'Join astronauts, scientists, and space fans who fund real space projects, with access to training and spaceflight opportunities.',
   },
 }
 
 const BENEFITS = [
   {
-    title: 'Vote on what we fund',
-    body: 'Citizens decide which space projects receive community funding.',
+    title: 'Training and spaceflight opportunities',
+    body: 'Citizens are eligible for training and spaceflight opportunities, from Zero-G flights to launch trips, as they open up.',
   },
   {
-    title: 'Join the Teams building it',
-    body: 'Work alongside founders, engineers, and scientists on real projects.',
+    title: 'Vote on what we fund',
+    body: 'Citizens decide which space projects receive community funding.',
   },
   {
     title: 'Apply to space jobs',
@@ -71,15 +85,15 @@ const BENEFITS = [
 const FAQ = [
   {
     q: 'What is a Citizen?',
-    a: 'A member of MoonDAO. Citizenship lasts 12 months and lets you vote, join Teams, and apply to citizens-only roles.',
+    a: 'A member of MoonDAO. Citizenship lasts 12 months. Citizens vote on what the community funds, are eligible for training and spaceflight opportunities, and can apply to citizens-only roles.',
+  },
+  {
+    q: 'Who are the Citizens?',
+    a: 'Astronauts, scientists, engineers, founders, and space fans from around the world, alongside the space organizations in our network.',
   },
   {
     q: 'How do I pay?',
-    a: 'At checkout you can pay with Apple Pay, Google Pay, or a debit card. You do not need a crypto wallet beforehand; one is created for you when you sign in.',
-  },
-  {
-    q: 'Why is my Citizenship recorded on a blockchain?',
-    a: 'Your Citizen passport and your votes are recorded on a public blockchain, so every vote and every funding decision can be checked by anyone.',
+    a: 'Pay with Apple Pay, Google Pay, or a debit card. It takes a couple of minutes.',
   },
   {
     q: 'Is Citizenship an investment?',
@@ -90,11 +104,17 @@ const FAQ = [
 type CitizenshipProps = {
   citizenCount: number | null
   citizenYearUsd: number
+  featuredCitizens?: FeaturedCitizen[]
+  featuredTeams?: FeaturedTeam[]
+  testimonials?: TestimonialWithPhoto[]
 }
 
 export default function Citizenship({
   citizenCount = null,
   citizenYearUsd = FALLBACK_CITIZEN_YEAR_USD,
+  featuredCitizens = [],
+  featuredTeams = [],
+  testimonials = testimonialsContent,
 }: CitizenshipProps) {
   const { t } = useTranslation('common')
   const router = useRouter()
@@ -128,7 +148,7 @@ export default function Citizenship({
     <section className="min-h-screen overflow-hidden bg-[#010208] text-white">
       <Head
         title="Become a MoonDAO Citizen"
-        description="A space program run by its members. Vote on which space projects the community funds and join the Teams building them."
+        description="A space program run by its members. Vote on which space projects the community funds and get access to training and spaceflight opportunities."
         robots="noindex, nofollow"
       />
 
@@ -171,7 +191,7 @@ export default function Citizenship({
             {headline.sub}
           </p>
           <div className="mt-10 flex flex-col items-center">
-            <CtaButton href="/citizen" variant="primary">
+            <CtaButton href={JOIN_HREF} variant="primary">
               Become a Citizen
             </CtaButton>
             {priceLine}
@@ -192,6 +212,10 @@ export default function Citizenship({
           </dl>
         </div>
       </section>
+
+      <FeaturedCitizensMarquee citizens={featuredCitizens} cardHref={JOIN_HREF} />
+
+      <FeaturedTeamsMarquee teams={featuredTeams} cardHref={JOIN_HREF} />
 
       <section className="mx-auto w-full max-w-5xl px-6 py-16">
         <div className="grid gap-6 md:grid-cols-3">
@@ -217,7 +241,7 @@ export default function Citizenship({
             endCard={{
               title: t('joinFilmEndTitle'),
               ctaLabel: t('joinFilmEndCta'),
-              ctaHref: '/citizen',
+              ctaHref: JOIN_HREF,
               replayLabel: t('filmReplay'),
             }}
             caption={
@@ -230,7 +254,7 @@ export default function Citizenship({
         </section>
       )}
 
-      <TestimonialsCarousel testimonials={testimonialsContent} />
+      <TestimonialsCarousel testimonials={testimonials} />
 
       <section className="mx-auto w-full max-w-3xl px-6 py-16">
         <h2 className="font-heading text-2xl font-semibold md:text-3xl">Questions</h2>
@@ -252,7 +276,7 @@ export default function Citizenship({
       >
         <h2 className="font-heading text-3xl font-semibold">Ready to help decide?</h2>
         <div className="mt-8">
-          <CtaButton href="/citizen" variant="primary">
+          <CtaButton href={JOIN_HREF} variant="primary">
             Become a Citizen
           </CtaButton>
         </div>
@@ -298,14 +322,18 @@ async function readCitizenTotalSupply(): Promise<number | null> {
 
 export async function getStaticProps() {
   const { readPublicYearlyUsd } = await import('@/lib/subscription/readPublicYearUsd')
-  const [citizenCount, yearlyUsd] = await Promise.all([
+  const [citizenCount, yearlyUsd, socialProof] = await Promise.all([
     readCitizenTotalSupply(),
     readPublicYearlyUsd(),
+    loadJoinSocialProof(DEFAULT_CHAIN_V5),
   ])
   return {
     props: {
       citizenCount,
       citizenYearUsd: yearlyUsd.citizenYearUsd,
+      featuredCitizens: socialProof.featuredCitizens,
+      featuredTeams: socialProof.featuredTeams,
+      testimonials: socialProof.testimonials,
     },
     revalidate: 60,
   }
