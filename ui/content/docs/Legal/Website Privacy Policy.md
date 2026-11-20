@@ -8,7 +8,7 @@ sidebar_label: Privacy Policy
 sidebar_position: 1
 slug: /privacy-policy
 ---
-**Last Updated: October 16, 2026**
+**Last Updated: November 20, 2026**
 
 ## **MoonDAO™ Website Privacy Policy**
 
@@ -46,6 +46,8 @@ Notwithstanding the foregoing, we may continue to contact you for the purpose of
 
 **Further, if you are a resident of the State of California and would like to opt-out from the disclosure of your personal information to any third-party for marketing purposes, please e-mail us at: info@moondao.com; call us at: 1-(734)-846-2638**
 
+**Right to opt out of "sharing."** We do not sell personal information for money. Our use of the Meta Pixel on our membership pages (described under "Advertising Measurement" below) may be considered "sharing" of personal information for cross-context behavioral advertising under the California Consumer Privacy Act and similar laws in other U.S. states. You may opt out at any time on our [Do Not Sell or Share My Personal Information](/privacy-choices) page, by e-mailing info@moondao.com, or by calling 1-(734)-846-2638. We treat a [Global Privacy Control](https://globalprivacycontrol.org/) signal from your browser as a valid opt-out request for that browser. We will not discriminate against you for exercising these rights.
+
 ### **Your Nevada Privacy Rights**
 
 **If you are a resident of the State of Nevada and would like to opt-out from the sale of your personal information to any third party data broker, please e-mail us at: info@moondao.com; call us at: 1-(734)-846-2638.**
@@ -66,7 +68,7 @@ We will retain your Personal Data only for as long as we continue to have a busi
 
 ### **Use and Sharing of Personal Data**
 
-MoonDAO™ will never share, sell, rent, exchange or barter your Personal Data to or with any third party for financial gain or marketing purposes. MoonDAO™ may use your Personal Data to send you promotional messages regarding various MoonDAO™ products and/or services. Other than as set forth in the preceding sentence, MoonDAO™ will never use your Personal Data for marketing purposes of any kind.
+MoonDAO™ will never sell, rent, exchange or barter your Personal Data to or with any third party for financial gain. Other than the advertising measurement described under "Advertising Measurement" below, which you can opt out of, MoonDAO™ will never share your Personal Data with any third party for marketing purposes. MoonDAO™ may use your Personal Data to send you promotional messages regarding various MoonDAO™ products and/or services. Other than as set forth in the preceding sentence, MoonDAO™ will never use your Personal Data for marketing purposes of any kind.
 
 Where you submit Personal Data, we use the Personal Data that you make available to personalize your experience with the Site and to facilitate the provision of the applicable MoonDAO™ Offerings to you, including in connection with customer service and to otherwise respond to any inquiries made by you.
 
@@ -98,11 +100,23 @@ Cookies are generally divided into the following categories:
 
 4. _Marketing Attribution Cookies_: With your consent where required, the Site stores an `md_attribution` Cookie and a matching local storage entry for up to 90 days. They record how you first and most recently arrived at the Site: campaign parameters (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term` and `utm_content`), advertising click identifiers set by Google (`gclid`, `wbraid` and `gbraid`) and Meta (`fbclid`), the landing page, and the referring website. We use this information to measure which of our campaigns and ads bring visitors to the Site, and it may be included in the analytics events described above. If you decline analytics consent, this Cookie and local storage entry are deleted.
 
+5. _Advertising Cookies_: On our membership pages only (the Citizenship landing page, `/join` and `/citizen`), and only where you have granted analytics consent, your browser has not sent a Global Privacy Control signal, and you have not opted out, the Site loads the Meta Pixel. The Meta Pixel may set the `_fbp` and `_fbc` Cookies. See "Advertising Measurement" below.
+
 Most Internet browsers are initially set up to accept Cookies, but you can reset your browser to refuse all Cookies or to indicate when a Cookie is being sent. To disable and reject certain Cookies, follow the instructions associated with your Internet browser. You can also change your analytics choice by clearing the Site’s stored consent and reloading the page.
 
 _Behavioral Tracking_
 
-MoonDAO™ and its service providers use Cookies, local storage, pixels, and similar technologies in connection with the Site for the essential, analytics, functional, and marketing attribution purposes described above. We do not serve third-party advertising on the Site, but we do use advertising click identifiers to measure the performance of our own ads on third-party platforms.
+MoonDAO™ and its service providers use Cookies, local storage, pixels, and similar technologies in connection with the Site for the essential, analytics, functional, marketing attribution, and advertising measurement purposes described above. We do not serve third-party advertising on the Site, but we do use advertising click identifiers and the Meta Pixel to measure and improve the performance of our own ads on third-party platforms.
+
+_Advertising Measurement_
+
+We advertise MoonDAO™ Citizenship on Facebook and Instagram, which are operated by Meta Platforms, Inc. ("Meta"). To measure which of our ads lead to new Citizens, to show our ads to people more likely to be interested, and to show our ads again to people who visited our membership pages, we use the Meta Pixel on our membership pages only (the Citizenship landing page, `/join` and `/citizen`), subject to the conditions in "Advertising Cookies" above.
+
+When the Meta Pixel is active, your browser sends Meta: the page you viewed; when you start checkout; when you complete a Citizenship purchase, with its value in U.S. dollars and the public blockchain transaction identifier; the `_fbp` and `_fbc` Cookie identifiers (including the Meta click identifier, `fbclid`, if you arrived from one of our ads); and technical information Meta receives with any web request, such as your IP address and browser user agent. We do not send Meta your name, e-mail address, phone number, or Wallet ID, and we turn off the Meta Pixel's automatic collection of button and form information. Because a blockchain transaction identifier is public, it can be linked to the Wallet ID that made the purchase.
+
+Meta processes this information under its own terms and [Privacy Policy](https://www.facebook.com/privacy/policy/), and may use it to deliver and measure ads, including in combination with information Meta has about you if you have a Meta account. Information sent through the Meta Pixel is retained by Meta according to Meta's policies. We may also send the same purchase events to Meta directly from our servers (the Meta Conversions API), with the same information and the same limits.
+
+You can stop this at any time on our [Do Not Sell or Share My Personal Information](/privacy-choices) page, by declining or withdrawing analytics consent, or by enabling Global Privacy Control in your browser. You can also manage ad preferences in your Meta account settings.
 
 _Location and eligibility data_
 
