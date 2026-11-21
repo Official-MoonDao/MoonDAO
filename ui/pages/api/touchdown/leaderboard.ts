@@ -10,7 +10,9 @@
  */
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { newsletterClientIp } from '@/lib/convert-kit/subscribeRateLimit'
-import { validateSubmission, type BoardResponse } from '@/lib/touchdown/leaderboard'
+import { readLeader } from '@/lib/games/boards'
+import { announceNewLeader, removeLeaderPosts } from '@/lib/games/discordAlerts'
+import { nameKey, validateSubmission, type BoardResponse } from '@/lib/touchdown/leaderboard'
 import {
   leaderboardRedis,
   rankOf,
@@ -29,7 +31,7 @@ function modeOf(v: unknown): ModeId {
   return v === 'pro' ? 'pro' : 'easy'
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<BoardResponse | { ok: boolean }>) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<BoardResponse | { ok: boolean; discordRemoved?: number }>) {
   res.setHeader('Cache-Control', 'no-store')
   const today = missionNumberFor()
   const redis = leaderboardRedis()
@@ -92,7 +94,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         process.env.TOUCHDOWN_NAME_BLOCKLIST
       )
       if (!checked.ok) return res.status(400).json(empty(today, mode, checked.error))
+      const previous = await readLeader(redis, 'touchdown', checked.value.mission, checked.value.mode)
       const rank = await submitScore(redis, checked.value)
+      await announceNewLeader(redis, {
+        game: 'touchdown',
+        ...checked.value,
+        today,
+        key: nameKey(checked.value.name),
+        previous,
+      })
       const [board, yesterday, allTime] = await Promise.all([
         readBoard(redis, checked.value.mission, checked.value.mode),
         readYesterdaysWinner(redis, checked.value.mission, checked.value.mode),
@@ -116,8 +126,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         return res.status(403).json({ ok: false })
       }
       if (!redis) return res.status(200).json({ ok: false })
-      const ok = await removeEntry(redis, Number(req.query.m), modeOf(req.query.mode), String(req.query.name ?? ''))
-      return res.status(200).json({ ok })
+      const mission = Number(req.query.m)
+      const mode = modeOf(req.query.mode)
+      const name = String(req.query.name ?? '')
+      const ok = await removeEntry(redis, mission, mode, name)
+      // Take down any new-#1 posts the name earned that day as well.
+      const discordRemoved = await removeLeaderPosts(redis, { game: 'touchdown', mission, mode, key: nameKey(name) })
+      return res.status(200).json({ ok, discordRemoved })
     }
 
     res.setHeader('Allow', 'GET, POST, DELETE')

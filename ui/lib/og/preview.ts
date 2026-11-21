@@ -65,6 +65,25 @@ export function clip(value: string | undefined | null, max: number): string {
 }
 
 /**
+ * Like `clip`, but keeps line breaks (at most one blank line in a row), for
+ * Discord embed descriptions, which render them. `clip` would flatten a
+ * multi-line embed into one run-on line.
+ */
+export function clipMultiline(value: string | undefined | null, max: number): string {
+  if (!value) return ''
+  const trimmed = value
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(/[^\S\n]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  if (!trimmed) return ''
+  if (trimmed.length <= max) return trimmed
+  return `${trimmed.slice(0, Math.max(1, max - 1)).trimEnd()}…`
+}
+
+/**
  * Accept an `ipfs://` URI, a gateway URL, or a bare CID. Rejects anything that
  * is not a CID so the OG route never fetches an arbitrary host.
  */
@@ -257,7 +276,7 @@ export function sanitizeDiscordEmbeds(embeds: unknown): DiscordEmbed[] | undefin
     const next: DiscordEmbed = {
       title: typeof embed.title === 'string' ? clip(embed.title, 256) : undefined,
       description:
-        typeof embed.description === 'string' ? clip(embed.description, 4096) : undefined,
+        typeof embed.description === 'string' ? clipMultiline(embed.description, 4096) : undefined,
       url,
       color:
         typeof embed.color === 'number' && Number.isFinite(embed.color) ? embed.color : undefined,

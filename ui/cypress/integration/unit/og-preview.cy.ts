@@ -195,6 +195,11 @@ describe('Discord embeds', () => {
     expect(cleaned?.[1].url).to.equal(undefined)
     expect(cleaned?.[1].image).to.equal(undefined)
   })
+
+  it('keeps line breaks in embed descriptions', () => {
+    const cleaned = sanitizeDiscordEmbeds([{ title: 'T', description: '  one   line\r\ntwo\n\n\n\nthree  ' }])
+    expect(cleaned?.[0].description).to.equal('one line\ntwo\n\nthree')
+  })
 })
 
 describe('previewOrigin', () => {
