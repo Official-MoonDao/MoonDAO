@@ -10,10 +10,10 @@ export type FeaturedCitizen = {
   role: string
 }
 
-function CitizenCard({ citizen }: { citizen: FeaturedCitizen }) {
+function CitizenCard({ citizen, href }: { citizen: FeaturedCitizen; href?: string }) {
   return (
     <Link
-      href={`/citizen/${generatePrettyLinkWithId(citizen.name, citizen.id)}`}
+      href={href || `/citizen/${generatePrettyLinkWithId(citizen.name, citizen.id)}`}
       className="group flex w-40 flex-shrink-0 flex-col items-center gap-3 text-center md:w-48"
     >
       <div className="relative">
@@ -38,7 +38,14 @@ function CitizenCard({ citizen }: { citizen: FeaturedCitizen }) {
   )
 }
 
-export default function FeaturedCitizensMarquee({ citizens }: { citizens: FeaturedCitizen[] }) {
+export default function FeaturedCitizensMarquee({
+  citizens,
+  cardHref,
+}: {
+  citizens: FeaturedCitizen[]
+  /** When set, every card links here instead of the member's profile. */
+  cardHref?: string
+}) {
   if (!citizens?.length) return null
 
   // Duplicate the list so the -50% translate loops seamlessly
@@ -57,7 +64,7 @@ export default function FeaturedCitizensMarquee({ citizens }: { citizens: Featur
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#010208] to-transparent md:w-40" />
           <div className="flex w-max items-center gap-8 py-2 md:gap-12 motion-reduce:animate-none animate-marquee-reverse group-hover:[animation-play-state:paused]">
             {doubled.map((citizen, i) => (
-              <CitizenCard key={`${citizen.id}-${i}`} citizen={citizen} />
+              <CitizenCard key={`${citizen.id}-${i}`} citizen={citizen} href={cardHref} />
             ))}
           </div>
         </div>

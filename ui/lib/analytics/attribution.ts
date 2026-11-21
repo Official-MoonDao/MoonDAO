@@ -31,7 +31,7 @@ export const ATTRIBUTION_TTL_MS = ATTRIBUTION_MAX_AGE_SECONDS * 1000
 const MAX_PARAM_LENGTH = 512
 const MAX_PATH_LENGTH = 300
 const MAX_REFERRER_LENGTH = 300
-const FUNNEL_PATHS = new Set(['/join', '/citizen', '/team'])
+const FUNNEL_PATHS = new Set(['/join', '/citizen', '/team', '/citizenship'])
 
 export type AttributionTouch = {
   utm_source?: string

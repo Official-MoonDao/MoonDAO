@@ -1,4 +1,5 @@
 import { COOKIE_CONSENT_EXEMPT_REGIONS } from '../geo/countryCode'
+import { pixelInitiateCheckout, pixelPurchase } from './metaPixel'
 
 /**
  * GA4 helpers for moondao.com (stream G-QPFCD9VH46).
@@ -227,6 +228,7 @@ export function trackBeginCheckout(params: {
   const valueEth = finiteNumber(params.value_eth)
   const value = finiteNumber(params.value)
   if (valueEth === undefined || value === undefined) return
+  if (params.plan === 'citizen') pixelInitiateCheckout(value)
   sendEvent(
     'begin_checkout',
     {
@@ -276,6 +278,7 @@ export function trackMintSuccess(params: {
   }
   if (transactionId) shared.transaction_id = transactionId
   const eventName = params.plan === 'citizen' ? 'citizen_mint_success' : 'team_mint_success'
+  if (params.plan === 'citizen') pixelPurchase(value, transactionId)
   sendEvent(eventName, shared, true)
   sendEvent(
     'purchase',

@@ -89,6 +89,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/mission/[tokenId]',
     '/network',
     '/join',
+    '/citizenship/[[...angle]]',
     '/dude-perfect',
     '/mooney',
     '/governance',
@@ -111,7 +112,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   // The games (Touchdown, Catch) own the whole viewport: no nav, search button or
   // campaign banners over the canvas. Only the cookie banner (consent) stays.
   const isChromeless =
-    router.pathname === '/touchdown' || router.pathname === '/moonbase/touchdown' || router.pathname === '/starship'
+    router.pathname === '/touchdown' ||
+    router.pathname === '/moonbase/touchdown' ||
+    router.pathname === '/starship' ||
+    // Paid-traffic landing page: one action, no site navigation.
+    router.pathname === '/citizenship/[[...angle]]'
 
   return (
     <div
