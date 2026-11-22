@@ -8,6 +8,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "test": "ts-node src/test.ts",
+    "test:unit": "node --require ts-node/register --test src/__tests__/*.test.ts",
+    "typecheck": "tsc --noEmit",
     "retro": "ts-node src/retro.ts",
     "missing": "ts-node src/find-missing.ts",
     "oauth:setup": "ts-node src/oauth-setup.ts",
