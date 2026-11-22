@@ -30,7 +30,11 @@ function RaceField({
   const backed = new Set(race.assets.map((asset) => asset.project.id))
   // The races near the bottom open below the fold of a short panel.
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), [])
+  useEffect(() => {
+    // Block body: Chrome's scrollIntoView returns a Promise, and an arrow
+    // expression would hand that Promise to React as the effect cleanup.
+    ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [])
   return (
     <div ref={ref} className="mx-1 mb-2 mt-1 rounded-lg border border-white/10 bg-black/30 p-1.5">
       {race.closedReason ? (
