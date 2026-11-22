@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "retro": "ts-node src/retro.ts",
     "missing": "ts-node src/find-missing.ts",
+    "prune-clips": "ts-node src/prune-clips.ts",
     "oauth:setup": "ts-node src/oauth-setup.ts",
     "captions:check": "ts-node src/check-captions.ts",
     "tag-broadcast": "ts-node src/tag-broadcast.ts",
