@@ -3,6 +3,7 @@ import {
   extractVideoId,
   getVideoMetadata,
   validateVideoChannel,
+  YouTubeVideoMetadata,
 } from "./utils/youtube";
 import {
   findBroadcastByVideoId,
@@ -12,40 +13,82 @@ import {
   getTranscript,
   summarizeTranscript,
   formatSummaryForConvertKit,
+  TranscriptNotReadyError,
 } from "./utils/processing";
 import { DEFAULT_MODELS } from "./utils/config";
+import { hoursSinceEnded } from "./utils/townhall";
+import {
+  ProcessResult,
+  formatAlert,
+  formatReport,
+  publishAlert,
+  publishStepSummary,
+  runFailed,
+} from "./utils/report";
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+export interface ProcessDeps {
+  findBroadcastByVideoId: typeof findBroadcastByVideoId;
+  getVideoMetadata: typeof getVideoMetadata;
+  getTranscript: (videoId: string) => Promise<string>;
+  summarizeTranscript: (transcript: string) => Promise<string>;
+  createConvertKitBroadcast: typeof createConvertKitBroadcast;
+}
 
-interface ProcessResult {
-  videoInput: string;
-  videoId?: string;
-  success: boolean;
-  error?: string;
-  broadcastId?: string;
+export interface ProcessOptions {
+  youtubeApiKey: string;
+  convertKitApiKey: string;
+  groqModel?: string;
+  whisperModel?: string;
+  /**
+   * Set by the scheduled run. A stream that ended less than this many hours
+   * ago and has no captions yet is reported as `pending` — the next run picks
+   * it up — instead of `failed`. Leave unset when a person asked for specific
+   * videos: they want to know now.
+   */
+  captionGraceHours?: number;
+  now?: Date;
+  deps?: Partial<ProcessDeps>;
+}
+
+function resolveDeps(options: ProcessOptions): ProcessDeps {
+  const groqModel =
+    options.groqModel || process.env.GROQ_MODEL || DEFAULT_MODELS.llm;
+  const whisperModel =
+    options.whisperModel || process.env.WHISPER_MODEL || DEFAULT_MODELS.whisper;
+
+  let groq: Groq | null = null;
+  const getGroq = () =>
+    (groq ??= new Groq({ apiKey: process.env.GROQ_API_KEY }));
+
+  return {
+    findBroadcastByVideoId,
+    getVideoMetadata,
+    getTranscript: (videoId) => getTranscript(videoId, getGroq(), whisperModel),
+    summarizeTranscript: (transcript) =>
+      summarizeTranscript(transcript, getGroq(), groqModel),
+    createConvertKitBroadcast,
+    ...options.deps,
+  };
 }
 
 async function processVideo(
   videoInput: string,
-  youtubeApiKey: string,
-  convertKitApiKey: string,
-  groqModel: string,
-  whisperModel: string
+  options: ProcessOptions,
+  deps: ProcessDeps
 ): Promise<ProcessResult> {
-  try {
-    const videoId = extractVideoId(videoInput);
-    if (!videoId) {
-      return {
-        videoInput,
-        success: false,
-        error: "Invalid video URL or ID",
-      };
-    }
+  const videoId = extractVideoId(videoInput);
+  if (!videoId) {
+    return { videoInput, status: "failed", error: "Invalid video URL or ID" };
+  }
 
-    const existing = await findBroadcastByVideoId(videoId, convertKitApiKey);
+  let videoMetadata: YouTubeVideoMetadata | null = null;
+
+  try {
+    const existing = await deps.findBroadcastByVideoId(
+      videoId,
+      options.convertKitApiKey
+    );
     if (existing) {
       console.log(
         `⏭️  Skipping ${videoId}: Already processed (broadcast ID: ${existing.id})`
@@ -53,18 +96,17 @@ async function processVideo(
       return {
         videoInput,
         videoId,
-        success: false,
-        error: "Video already processed",
+        status: "already-processed",
         broadcastId: existing.id,
       };
     }
 
-    const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
+    videoMetadata = await deps.getVideoMetadata(videoId, options.youtubeApiKey);
     if (!videoMetadata) {
       return {
         videoInput,
         videoId,
-        success: false,
+        status: "failed",
         error: "Video metadata not found",
       };
     }
@@ -79,7 +121,8 @@ async function processVideo(
         return {
           videoInput,
           videoId,
-          success: false,
+          title: videoMetadata.title,
+          status: "failed",
           error: `Video is not from the allowed YouTube channel. Channel: ${videoMetadata.channelTitle} (${videoMetadata.channelId})`,
         };
       }
@@ -87,8 +130,8 @@ async function processVideo(
 
     console.log(`\nProcessing video: ${videoMetadata.title} (${videoId})`);
 
-    const transcript = await getTranscript(videoId, groq, whisperModel);
-    const summary = await summarizeTranscript(transcript, groq, groqModel);
+    const transcript = await deps.getTranscript(videoId);
+    const summary = await deps.summarizeTranscript(transcript);
     const formattedSummary = await formatSummaryForConvertKit(
       summary,
       videoMetadata.title,
@@ -104,25 +147,70 @@ async function processVideo(
       day: "numeric",
     })}`;
 
-    const broadcast = await createConvertKitBroadcast(
+    const broadcast = await deps.createConvertKitBroadcast(
       broadcastSubject,
       formattedSummary,
-      convertKitApiKey
+      options.convertKitApiKey
     );
 
     return {
       videoInput,
       videoId,
-      success: true,
+      title: videoMetadata.title,
+      status: "created",
       broadcastId: broadcast.id,
     };
   } catch (error) {
-    return {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const hours = videoMetadata
+      ? hoursSinceEnded(videoMetadata, options.now)
+      : null;
+    const base = {
       videoInput,
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      videoId,
+      title: videoMetadata?.title,
+      error: message,
+      hoursSinceEnded: hours ?? undefined,
     };
+
+    const withinGrace =
+      error instanceof TranscriptNotReadyError &&
+      options.captionGraceHours !== undefined &&
+      hours !== null &&
+      hours < options.captionGraceHours;
+
+    if (withinGrace) {
+      console.log(
+        `⏳ ${videoId}: no captions yet ${Math.round(
+          hours
+        )}h after the stream ended. Leaving it for the next run.`
+      );
+      return { ...base, status: "pending" };
+    }
+
+    console.error(`❌ ${videoId}: ${message}`);
+    return { ...base, status: "failed" };
   }
+}
+
+/**
+ * Summarizes the given videos in order and reports what happened to each.
+ * Never throws for a single video's failure; the caller decides what a
+ * `failed` or `pending` result means for the run.
+ */
+export async function processVideos(
+  videoInputs: string[],
+  options: ProcessOptions
+): Promise<ProcessResult[]> {
+  const deps = resolveDeps(options);
+
+  console.log(`\nProcessing ${videoInputs.length} video(s) in provided order...`);
+
+  const results: ProcessResult[] = [];
+  for (const videoInput of videoInputs) {
+    results.push(await processVideo(videoInput, options, deps));
+  }
+  return results;
 }
 
 async function main() {
@@ -141,8 +229,6 @@ async function main() {
   const youtubeApiKey = process.env.YOUTUBE_API_KEY;
   const convertKitApiKey =
     process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY;
-  const groqModel = process.env.GROQ_MODEL || DEFAULT_MODELS.llm;
-  const whisperModel = process.env.WHISPER_MODEL || "whisper-large-v3";
 
   if (!youtubeApiKey) {
     console.error("Error: YOUTUBE_API_KEY environment variable is required");
@@ -161,115 +247,29 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Fetching metadata for ${videoInputs.length} video(s)...\n`);
-
-  // Fetch metadata for all videos first to sort them by published date
-  interface VideoWithMetadata {
-    videoInput: string;
-    videoId: string;
-    metadata: NonNullable<Awaited<ReturnType<typeof getVideoMetadata>>>;
-  }
-
-  const videosWithMetadata: VideoWithMetadata[] = [];
-  const invalidVideos: string[] = [];
-
-  for (const videoInput of videoInputs) {
-    const videoId = extractVideoId(videoInput);
-    if (!videoId) {
-      invalidVideos.push(videoInput);
-      continue;
-    }
-
-    try {
-      const metadata = await getVideoMetadata(videoId, youtubeApiKey);
-      if (!metadata) {
-        invalidVideos.push(videoInput);
-        continue;
-      }
-
-      const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
-      if (allowedChannelId) {
-        const isValidChannel = await validateVideoChannel(
-          metadata,
-          allowedChannelId
-        );
-        if (!isValidChannel) {
-          console.warn(
-            `Skipping video ${videoId}: not from allowed channel. Channel: ${metadata.channelTitle} (${metadata.channelId})`
-          );
-          invalidVideos.push(videoInput);
-          continue;
-        }
-      }
-
-      // TypeScript now knows metadata is non-null here
-      videosWithMetadata.push({ videoInput, videoId, metadata });
-    } catch (error) {
-      console.warn(`Failed to fetch metadata for ${videoInput}:`, error);
-      invalidVideos.push(videoInput);
-    }
-  }
-
-  if (invalidVideos.length > 0) {
-    console.warn(
-      `\n⚠️  Warning: ${invalidVideos.length} invalid video(s) will be skipped:`
-    );
-    invalidVideos.forEach((v) => console.warn(`  - ${v}`));
-  }
-
-  // Process videos in the order provided (preserves user's intended order)
-  console.log(
-    `\nProcessing ${videosWithMetadata.length} video(s) in provided order...\n`
-  );
-  console.log("Processing order:");
-  videosWithMetadata.forEach((v, i) => {
-    const date = new Date(v.metadata.publishedAt).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-    console.log(`  ${i + 1}. ${v.metadata.title} (${date})`);
+  const results = await processVideos(videoInputs, {
+    youtubeApiKey,
+    convertKitApiKey,
   });
-  console.log();
-
-  const results: ProcessResult[] = [];
-
-  for (const { videoInput } of videosWithMetadata) {
-    const result = await processVideo(
-      videoInput,
-      youtubeApiKey,
-      convertKitApiKey,
-      groqModel,
-      whisperModel
-    );
-    results.push(result);
-  }
-
-  // Add errors for invalid videos
-  for (const videoInput of invalidVideos) {
-    results.push({
-      videoInput,
-      success: false,
-      error: "Invalid video URL/ID or metadata not found",
-    });
-  }
 
   console.log("\n" + "=".repeat(50));
   console.log("Retroactive processing completed!");
   console.log("=".repeat(50));
-  console.log(`Total videos provided: ${videoInputs.length}`);
-  console.log(
-    `Successfully processed: ${results.filter((r) => r.success).length}`
-  );
-  console.log(`Failed: ${results.filter((r) => !r.success).length}`);
+  const report = formatReport(results);
+  console.log(report);
   console.log("\nResults:");
   console.log(JSON.stringify(results, null, 2));
 
-  const failedCount = results.filter((r) => !r.success).length;
-  process.exit(failedCount > 0 ? 1 : 0);
+  publishStepSummary(`### Town hall summarizer\n${report}`);
+  publishAlert(formatAlert(results));
+
+  // A video that already has a summary is the desired end state, not an error.
+  process.exit(runFailed(results) ? 1 : 0);
 }
 
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    process.exit(1);
+  });
+}
