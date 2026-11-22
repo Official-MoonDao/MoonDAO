@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { applyConsentToAttribution } from '@/lib/analytics/attribution'
 import { reportAnalyticsConsent } from '@/lib/analytics/ga4'
+import { notifyConsentChange } from '@/lib/analytics/metaPixel'
 import { cookieBannerDecision, type CookieBannerDecision } from '@/lib/geo/countryCode'
 
 type BannerStatus = 'pending' | 'granted' | 'denied' | 'prompt'
@@ -116,6 +117,7 @@ export default function CookieBanner() {
     applyAnalyticsConsent(granted)
     applyConsentToAttribution(granted)
     reportAnalyticsConsent(granted ? 'granted' : 'denied')
+    notifyConsentChange()
   }, [status])
 
   if (status !== 'prompt') return null

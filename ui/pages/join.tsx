@@ -20,14 +20,12 @@ import {
   JOIN_FILM_VIMEO_ID,
   joinFilm,
   testimonials as testimonialsContent,
-  TESTIMONIAL_CITIZEN_IDS,
 } from 'const/joinPageContent'
 import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import {
   BLOCKED_CITIZENS,
   BLOCKED_TEAMS,
   FEATURED_CITIZENS,
-  FEATURED_CITIZEN_ROLES,
   FEATURED_TEAMS,
 } from 'const/whitelist'
 import useTranslation from 'next-translate/useTranslation'
@@ -62,6 +60,12 @@ import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import { getAttribute } from '@/lib/utils/nft'
+import {
+  filterUnexpiredNFTs,
+  matchCitizenPhotoByName,
+  toFeaturedCitizen,
+  toFeaturedTeam,
+} from '@/lib/join/socialProof'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
@@ -794,72 +798,6 @@ export default function Join({
   )
 }
 
-// Validate NFT expirations server-side via Multicall3: one eth_call per ~200
-// NFTs instead of one RPC request per NFT, which the RPC provider rate-limits.
-// (The previous implementation used Array.filter(async ...) which returns
-// truthy promises — it filtered nothing while still firing one RPC per NFT.)
-const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11'
-
-async function filterUnexpiredNFTs(nfts: NFT[], targetAddress: string, chain: any, now: number) {
-  if (!nfts.length) return []
-
-  const { ethers } = await import('ethers')
-  const iface = new ethers.utils.Interface([
-    'function expiresAt(uint256 tokenId) view returns (uint256)',
-  ])
-  const multicall = getContract({
-    client: serverClient,
-    address: MULTICALL3_ADDRESS,
-    chain,
-  })
-
-  const valid: NFT[] = []
-  const CHUNK_SIZE = 200
-  for (let i = 0; i < nfts.length; i += CHUNK_SIZE) {
-    // Token id 0 is mapped to '' by the row converters (`id || ''`), so
-    // resolve from the raw top-level id and skip anything non-numeric.
-    const batch = nfts
-      .slice(i, i + CHUNK_SIZE)
-      .map((nft: any) => {
-        const tokenId = Number(nft?.id ?? nft?.metadata?.id)
-        if (!Number.isFinite(tokenId)) return null
-        return { nft, callData: iface.encodeFunctionData('expiresAt', [tokenId]) }
-      })
-      .filter(Boolean) as { nft: NFT; callData: string }[]
-
-    if (!batch.length) continue
-
-    try {
-      const results: any = await readContract({
-        contract: multicall,
-        method:
-          'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[] returnData)',
-        params: [
-          batch.map(({ callData }) => ({
-            target: targetAddress,
-            allowFailure: true,
-            callData: callData as `0x${string}`,
-          })),
-        ],
-      })
-
-      results.forEach((res: any, idx: number) => {
-        if (!res.success) return
-        const [expiresAt] = iface.decodeFunctionResult('expiresAt', res.returnData)
-        if (+expiresAt.toString() > now) {
-          valid.push(batch[idx].nft)
-        }
-      })
-    } catch (error) {
-      console.error('Error validating NFT expirations:', error)
-      // Fail open for this chunk so a transient RPC error doesn't blank the
-      // directory; expired entries will be filtered on the next revalidation.
-      valid.push(...batch.map(({ nft }) => nft))
-    }
-  }
-  return valid
-}
-
 // Strip an NFT down to only the fields the join page renders (card title,
 // description, image, link and team/citizen type detection) so the page props
 // don't ship the entire Tableland row for every member of the network.
@@ -874,75 +812,6 @@ function toDirectoryItem(nft: any, type: 'team' | 'citizen') {
       attributes: type === 'team' ? [{ trait_type: 'communications', value: '' }] : [],
     },
   }
-}
-
-// Strips a citizen NFT down to what the /join featured-citizens marquee
-// renders, and attaches the marketing tagline from FEATURED_CITIZEN_ROLES
-// (not on-chain data, so it's maintained in const/whitelist.ts).
-function toFeaturedCitizen(nft: any) {
-  const id = nft.id ?? nft.metadata?.id ?? ''
-  return {
-    id,
-    name: nft.metadata?.name ?? '',
-    image: nft.metadata?.image ?? '',
-    role: FEATURED_CITIZEN_ROLES[Number(id)] ?? '',
-  }
-}
-
-// Strips a team NFT down to what the /join featured-teams marquee renders.
-function toFeaturedTeam(nft: any) {
-  return {
-    id: nft.id ?? nft.metadata?.id ?? '',
-    name: nft.metadata?.name ?? '',
-    image: nft.metadata?.image ?? '',
-  }
-}
-
-// Loosely normalize a name for matching testimonial authors against on-chain
-// citizen records — strips quoted nicknames (e.g. "Andrew 'Titan' Parris")
-// and collapses whitespace so first-name-only testimonials still match.
-function normalizeName(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/["'][^"']*["']/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-// Best-effort match of a testimonial author to their citizen profile photo.
-// Checks the explicit TESTIMONIAL_CITIZEN_IDS override first (for cases where
-// the on-chain display name doesn't resemble the testimonial name), then
-// falls back to a fuzzy name match. Falls back to no image (component renders
-// an initials avatar) when neither finds a match — logged so it's visible in
-// build output.
-function matchCitizenPhotoByName(name: string, citizens: any[]): string | null {
-  const overrideId = TESTIMONIAL_CITIZEN_IDS[name]
-  if (overrideId !== undefined) {
-    const overrideMatch = citizens.find(
-      (nft: any) => Number(nft.id ?? nft.metadata?.id) === overrideId
-    )
-    if (overrideMatch) return overrideMatch.metadata?.image || null
-  }
-
-  const needle = normalizeName(name)
-  const matches = citizens.filter((nft: any) => {
-    const rowName = normalizeName(nft.metadata?.name ?? '')
-    return rowName && (rowName.includes(needle) || needle.includes(rowName))
-  })
-  if (!matches.length) {
-    console.warn(
-      `[join] No citizen match found for testimonial name "${name}" — using fallback avatar.`
-    )
-    return null
-  }
-  if (matches.length > 1) {
-    console.warn(
-      `[join] Multiple citizen matches for testimonial name "${name}" — using the first match.`
-    )
-  }
-  // getStaticProps props must be JSON-serializable — undefined isn't allowed,
-  // so an unset image on the citizen record falls back to null, not undefined.
-  return matches[0].metadata?.image || null
 }
 
 // Public /join citizen stat. On-chain minted supply is the source of truth —

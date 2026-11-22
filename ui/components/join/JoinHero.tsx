@@ -3,6 +3,7 @@ import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { JOIN_FILM_VIMEO_ID, joinFilm } from 'const/joinPageContent'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
+import type { ReactNode } from 'react'
 import { resolveCitizenCount } from '@/lib/stats/publicFigures'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -13,9 +14,27 @@ import Reveal from '@/components/home/landing/Reveal'
 import Starfield from '@/components/home/landing/Starfield'
 import FilmPlayer from '@/components/layout/FilmPlayer'
 
+export type JoinHeroStat = {
+  value: number | null
+  prefix?: string
+  suffix?: string
+  label: string
+}
+
 type JoinHeroProps = {
   citizenCount: number | null
   teamCount: number
+  /** Overrides for campaign landing pages. /join uses the defaults. */
+  /** Shown above the headline, e.g. the logo on a page without site navigation. */
+  eyebrow?: ReactNode
+  title?: ReactNode
+  subtitle?: ReactNode
+  /** Shown under the buttons, e.g. the price line. */
+  belowCtas?: ReactNode
+  /** Hide the "Create a Team" button so the page has a single action. */
+  showTeamCta?: boolean
+  /** Replace the stat strip. Receives the resolved Citizen count. */
+  stats?: (citizens: number, teamCount: number) => JoinHeroStat[]
 }
 
 function supplyToNumber(supply: unknown): number | null {
@@ -29,7 +48,16 @@ function supplyToNumber(supply: unknown): number | null {
   return Number.isFinite(count) && count >= 0 ? count : null
 }
 
-export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
+export default function JoinHero({
+  citizenCount,
+  teamCount,
+  eyebrow,
+  title,
+  subtitle,
+  belowCtas,
+  showTeamCta = true,
+  stats: statsOverride,
+}: JoinHeroProps) {
   const { t } = useTranslation('common')
   const hasServerSupply = typeof citizenCount === 'number' && citizenCount > 0
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -51,17 +79,14 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
   const liveSupply = hasServerSupply ? citizenCount : supplyToNumber(supply)
   const mintedSupply = resolveCitizenCount(liveSupply)
 
-  const stats: {
-    value: number | null
-    prefix?: string
-    suffix?: string
-    label: string
-  }[] = [
-    { value: mintedSupply, suffix: '+', label: 'Citizens' },
-    { value: teamCount > 0 ? teamCount : null, suffix: '+', label: 'Teams' },
-    { value: 8, prefix: '$', suffix: 'M+', label: 'Raised onchain' },
-    { value: 2, suffix: '', label: 'Astronauts sent to space' },
-  ]
+  const stats: JoinHeroStat[] = statsOverride
+    ? statsOverride(mintedSupply, teamCount)
+    : [
+        { value: mintedSupply, suffix: '+', label: 'Citizens' },
+        { value: teamCount > 0 ? teamCount : null, suffix: '+', label: 'Teams' },
+        { value: 8, prefix: '$', suffix: 'M+', label: 'Raised onchain' },
+        { value: 2, suffix: '', label: 'Astronauts sent to space' },
+      ]
 
   // With the film live, the hero splits: copy on the left, the film's frame on
   // the right (stacked under the CTAs on mobile).
@@ -96,9 +121,14 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
           }`}
         >
           <div>
+            {eyebrow && (
+              <div className={`mb-8 flex justify-center ${hasFilm ? 'lg:justify-start' : ''}`}>
+                {eyebrow}
+              </div>
+            )}
             <Reveal>
               <h1 className="font-heading font-semibold leading-[1.1] text-white text-3xl md:text-5xl drop-shadow-lg">
-                Join the Space Acceleration Network
+                {title ?? 'Join the Space Acceleration Network'}
               </h1>
             </Reveal>
             <Reveal delay={0.1}>
@@ -107,8 +137,12 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
                   hasFilm ? 'lg:mx-0' : ''
                 }`}
               >
-                An onchain startup society funding, training, and flying everyday people to space —
-                governed by its members, transparent by design.
+                {subtitle ?? (
+                  <>
+                    An onchain startup society funding, training, and flying everyday people to
+                    space — governed by its members, transparent by design.
+                  </>
+                )}
               </p>
             </Reveal>
             <Reveal delay={0.2}>
@@ -120,10 +154,15 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
                 <CtaButton href="/citizen" variant="primary">
                   Become a Citizen
                 </CtaButton>
-                <CtaButton href="/team" variant="secondary">
-                  Create a Team
-                </CtaButton>
+                {showTeamCta && (
+                  <CtaButton href="/team" variant="secondary">
+                    Create a Team
+                  </CtaButton>
+                )}
               </div>
+              {belowCtas && (
+                <div className={`mt-4 ${hasFilm ? 'lg:text-left' : ''}`}>{belowCtas}</div>
+              )}
             </Reveal>
           </div>
           {hasFilm && (
