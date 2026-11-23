@@ -28,7 +28,6 @@ import {
   RAMP_FOOT,
   CLEAR,
   HOLD_SECONDS,
-  KIND_COUNT,
   type Rock,
   START_X,
   START_Z,
@@ -56,20 +55,18 @@ export function holdSteps(kind: keyof typeof HOLD_SECONDS): number {
 }
 
 /**
- * Seconds on the clock when the rover leaves the lander: the day's whole
- * window (the mode's multiple of the site's par time) less every bonus the
- * targets will pay back.
+ * Seconds on the clock when the rover leaves the lander: the mode's share of
+ * the time a flawless driver would need to visit every target.
  */
 export function windowSecondsFor(site: Site, mode: ModeConfig): number {
   if (!(site.parSeconds > 0)) return mode.windowSeconds
-  const bonuses = KIND_COUNT.image * mode.bonusSeconds.image + KIND_COUNT.rock * mode.bonusSeconds.rock + KIND_COUNT.ice * mode.bonusSeconds.ice
-  const window = Math.round(mode.clockFactor * site.parSeconds - bonuses)
+  const window = Math.round(mode.clockFactor * site.parSeconds)
   return window < 25 ? 25 : window
 }
-/** Count a hit. In plot-and-send it also burns time off the clock. */
+/** Count a hit. Off the lander it also burns time off the clock. */
 function countBump(s: Sim): void {
   s.bumps += 1
-  if (s.mode.plan && s.off) s.windowEnd -= Math.round(s.mode.plan.hitSeconds * STEP_HZ)
+  if (s.off) s.windowEnd -= Math.round(s.mode.hitSeconds * STEP_HZ)
 }
 
 /** Below this speed the rover counts as stopped for imaging, m/s. */
@@ -488,7 +485,6 @@ export function stepApplied(s: Sim, th: number, st: number, live: boolean): void
       s.hold[i]++
       if (s.hold[i] >= holdSteps(t.kind)) {
         s.imaged[i] = true
-        s.windowEnd += Math.round(s.mode.bonusSeconds[t.kind] * STEP_HZ)
         s.legs.push({ from: s.legFrom, target: i, metres: s.odo - s.legOdo, energy: s.energy - s.legEnergy, off: Math.sqrt(d2) })
         s.legFrom = [t.x, t.z]
         s.legOdo = s.odo

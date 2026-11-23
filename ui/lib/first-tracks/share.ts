@@ -56,11 +56,11 @@ export function shareText(result: RunResult, rank?: number): string {
       lines = [`🪫 I drove ${m} m on the Moon and ran the rover's battery flat.`, score]
       break
     case 'complete':
-      lines = [`🛰️ ${m} m of tracks on the Moon and all 8 science jobs done, through the signal delay.`, score]
+      lines = [`🛰️ ${m} m of tracks on the Moon and all 12 science jobs done, through the signal delay.`, score]
       break
     default:
       lines = result.firstTracks
-        ? [`🛞 I laid ${m} m of first tracks on the Moon. The orbiter has the photo.`, `${score} · ${result.imaged}/8 science jobs`]
+        ? [`🛞 I laid ${m} m of first tracks on the Moon. The orbiter has the photo.`, `${score} · ${result.imaged} science ${result.imaged === 1 ? 'job' : 'jobs'}`]
         : ['📡 I lost signal before my rover made its first 10 m on the Moon.', score]
   }
   return [...lines, '', DARE].join('\n')

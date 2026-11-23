@@ -62,15 +62,15 @@ const TEN = [
 ]
 
 const GOOD = [
-  'Most of the science on a sensible battery. There is still a better line out there.',
+  'A good haul on a sensible battery. There is still a better line out there.',
   'Tidy driving through the signal delay. Mission control approves.',
-  'A full camera roll, nearly. The last target is still waiting.',
+  'A full camera roll. The richest site may still be out there.',
   'Clean tracks. The orbiter team is framing this one.',
 ]
 
 const GREAT = [
   'Every job done: pictures, spectra and ice. Mission control is on its feet.',
-  'Eight for eight with time on the clock. The orbiter photo is going on the wall.',
+  'Twelve for twelve with time on the clock. The orbiter photo is going on the wall.',
   'A complete traverse, driven blind by a second or two. Remarkable.',
   'All the science and the tracks to prove it. Find the faster line next.',
 ]
@@ -112,7 +112,7 @@ export function outcomeHeadline(r: RunResult): string {
     case 'flat':
       return `${tracks} · battery flat`
     case 'complete':
-      return `${tracks} · all 8 jobs done`
+      return `${tracks} · all ${N_TARGETS} jobs done`
     default:
       return r.firstTracks ? tracks : `${tracks} · short of ${PRIZE_METRES} m`
   }
@@ -132,7 +132,7 @@ export function conditionLabel(r: RunResult): string {
     case 'parked':
       return 'Never left the lander'
     case 'complete':
-      return 'All 8 jobs done'
+      return `All ${N_TARGETS} jobs done`
     default:
       return 'Comms window closed'
   }
@@ -149,7 +149,7 @@ export function formatScore(n: number): string {
 /** The numbers people quote, in one short line. */
 export function bragLine(r: RunResult): string {
   if (!r.off) return 'Zero meters of tracks'
-  return `${r.imaged}/${N_TARGETS} science jobs · ${r.metres.toFixed(0)} m of tracks · ${Math.round(r.batteryLeft * 100)}% battery left`
+  return `${r.imaged} science ${r.imaged === 1 ? 'job' : 'jobs'} · ${r.metres.toFixed(0)} m of tracks · ${Math.round(r.batteryLeft * 100)}% battery left`
 }
 
 export function gradeColor(g: Grade): string {

@@ -7,7 +7,7 @@
  *   yarn first-tracks:bot                       # missions 1..10, both modes, every driver
  *   yarn first-tracks:bot --missions 60         # more days
  *   yarn first-tracks:bot --driver careful      # one driver
- *   yarn first-tracks:bot --mode easy --strict  # exit 1 unless the perfect driver clears at least 7 sites in 10
+ *   yarn first-tracks:bot --mode easy --strict  # exit 1 unless the perfect driver averages at least 5 jobs a site
  *   yarn first-tracks:bot --verbose             # one line per run
  */
 import { siteFor } from '../lib/first-tracks/day'
@@ -87,10 +87,10 @@ for (const modeId of ['easy', 'pro'] as ModeId[]) {
         (replayBad ? `  REPLAY MISMATCHES ${replayBad}` : '') +
         (short ? `  SITES SHORT OF TARGETS ${short}` : '')
     )
-    if (strict && (replayBad > 0 || short > 0 || (kind === 'perfect' && cleared < n * 0.7))) failed = true
+    if (strict && (replayBad > 0 || short > 0 || (kind === 'perfect' && imaged < n * 5))) failed = true
   }
 }
 if (failed) {
-  console.error('\nThe perfect driver cleared fewer than 7 sites in 10, a site was short of targets, or a replay did not match.')
+  console.error('\nThe perfect driver averaged fewer than 5 jobs a site, a site was short of targets, or a replay did not match.')
   process.exit(1)
 }

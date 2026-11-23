@@ -17,11 +17,11 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { createDriver, type Driver, type DriverKind } from '@/lib/first-tracks/autopilot'
 import { MODES, type ModeConfig } from '@/lib/first-tracks/modes'
-import { comboPoints, findAt, PLAN_MAX_METRES, PLAN_MAX_POINTS, planMetres, PlanRun, stopTarget, type Pt } from '@/lib/first-tracks/plan'
+import { comboPoints, PLAN_MAX_METRES, PLAN_MAX_POINTS, planMetres, PlanRun, stopTarget, type Pt } from '@/lib/first-tracks/plan'
 import { MAX_TAPE_STEPS, recordTape, tapeToBase64 } from '@/lib/first-tracks/replay'
 import { KIND_POINTS, scoreRun, type RunResult } from '@/lib/first-tracks/scoring'
 import { BATTERY, clockLeft, createSim, DT, ghostOf, holdSteps, PRIZE_METRES, STEP_HZ, stepSim, toInput, windowSecondsFor, type Sim } from '@/lib/first-tracks/sim'
-import { BODY, CLEAR, DECK, DECK_Y, HALF_L, HALF_W, HOLD_SECONDS, inRect, LANDER_CENTER_Z, RAMP_FOOT, smooth, TARGET_RING, WHEEL_R, WORLD, type Site, type TargetKind } from '@/lib/first-tracks/site'
+import { BODY, CLEAR, DECK, DECK_Y, FINDS, HALF_L, HALF_W, HOLD_SECONDS, inRect, LANDER_CENTER_Z, RAMP_FOOT, smooth, TARGET_RING, WHEEL_R, WORLD, type Site, type TargetKind } from '@/lib/first-tracks/site'
 import { mulberry32 } from '@/lib/touchdown/mission'
 import { makeEnvMap, regolithTextures, type Bag } from '@/components/touchdown/models'
 import { buildMoonBase, type BaseModel } from '@/components/touchdown/moonbase'
@@ -180,7 +180,7 @@ export class FirstTracksEngine {
   private planFrom: Pt = { x: 0, z: 0 }
   private sends = 0
   /** 1 while loose patches are tinted (plot-and-send), else 0. */
-  private softTint = { value: 0 }
+  private softTint = { value: 1 }
   // Regolith thrown up by the wheels: no air, so every grain flies a clean arc and lands.
   private dustPos = new Float32Array(DUST_N * 3)
   private dustVel = new Float32Array(DUST_N * 3)
@@ -191,7 +191,6 @@ export class FirstTracksEngine {
   private dustPts: THREE.Points | null = null
   private dustPrev: [number, number, number] | null = null
   /** Beacon tag pictures: the game's, and plot-and-send's. */
-  private tagMaps: Record<TargetKind, THREE.Texture>[] = []
   /** Jobs finished before the plan in flight was sent; combo points so far; the best single uplink. */
   private jobsAtSend = 0
   private combo = 0
@@ -857,8 +856,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     }
     const beamGeo = this.track(new THREE.CylinderGeometry(0.07, 0.16, 12, 12, 1, true))
     beamGeo.translate(0, 6, 0)
-    // A small tag over each beacon: what the job is and what it pays back.
-    const tagTexture = (kind: TargetKind, plan = false) => {
+    // A small tag over each beacon: what the job is and its base points. What the site holds is hidden until the job is done.
+    const tagTexture = (kind: TargetKind) => {
       const c = document.createElement('canvas')
       c.width = 256
       c.height = 72
@@ -877,14 +876,12 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       g.fillStyle = '#fff'
       g.textAlign = 'right'
       g.font = '700 30px "Lato", system-ui, sans-serif'
-      // Plot-and-send: jobs pay no time back, and what a site holds is hidden until the job is done.
-      g.fillText(plan ? `${KIND_POINTS[kind]} × ?` : `+${MODES.easy.bonusSeconds[kind]} s`, 238, 38)
+      g.fillText(`${KIND_POINTS[kind]} × ?`, 238, 38)
       const t = this.track(new THREE.CanvasTexture(c))
       t.colorSpace = THREE.SRGBColorSpace
       return t
     }
     const tags: Record<TargetKind, THREE.Texture> = { image: tagTexture('image'), rock: tagTexture('rock'), ice: tagTexture('ice') }
-    this.tagMaps = [tags, { image: tagTexture('image', true), rock: tagTexture('rock', true), ice: tagTexture('ice', true) }]
     site.targets.forEach((t) => {
       const group = new THREE.Group()
       group.position.set(t.x, site.ground(t.x, t.z), t.z)
@@ -1080,11 +1077,9 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.placeSun()
     this.resetRun(mode)
     this.driver = autopilot ? createDriver(autopilot, this.site, mode) : null
-    this.softTint.value = mode.plan ? 1 : 0
     this.phase = 'play'
     this.settleMs = 800
     if (mode.plan) {
-      for (const b of this.beacons) (b.tag.material as THREE.SpriteMaterial).map = this.tagMaps[1][b.kind]
       // The rover drives itself off the lander. The clock starts with the player's first uplink.
       this.driver = null
       this.planFrom = { x: this.sim!.x, z: this.sim!.z }
@@ -1498,7 +1493,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
             const combo = this.closeUplink()
             // Shown after this frame's event toasts, so the last job's toast does not replace it.
             if (combo > 0) this.comboNote = `${sim.legs.length - this.jobsAtSend} jobs in one uplink: +${combo}`
-            else if (run.ended === 'blocked') this.cb.onCallout({ text: `Hazard stop: the rover hit something. \u2212${this.mode.plan!.hitSeconds} s. Plot round it.`, tone: 'warn' })
+            else if (run.ended === 'blocked') this.cb.onCallout({ text: `Hazard stop: the rover hit something. \u2212${this.mode.hitSeconds} s. Plot round it.`, tone: 'warn' })
             this.emitHud(true)
           } else [th, st] = cmd
         }
@@ -1578,12 +1573,12 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       const e = sim.events[this.eventCursor++]
       switch (e.kind) {
         case 'bump-lander':
-          this.cb.onCallout({ text: m.plan ? `Bumped the lander \u00b7 \u2212${m.plan.hitSeconds} s` : 'Bumped the lander', tone: 'warn' })
+          this.cb.onCallout({ text: sim.off ? `Bumped the lander \u00b7 \u2212${m.hitSeconds} s` : 'Bumped the lander', tone: 'warn' })
           this.audio?.cue('bump')
           break
         case 'bump-rock':
         case 'bump-boulder':
-          this.cb.onCallout({ text: (e.kind === 'bump-boulder' ? 'Hit a boulder' : 'Hit a rock') + (m.plan ? ` \u00b7 \u2212${m.plan.hitSeconds} s` : ''), tone: 'warn' })
+          this.cb.onCallout({ text: (e.kind === 'bump-boulder' ? 'Hit a boulder' : 'Hit a rock') + ` \u00b7 \u2212${m.hitSeconds} s`, tone: 'warn' })
           this.audio?.cue('bump')
           break
         case 'jolt':
@@ -1599,11 +1594,9 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
           this.shownImaged[i] = true
           this.setBeacon(this.beacons[i], true)
           {
-            const kind = this.site.targets[i].kind
-            if (m.plan) {
-              const find = findAt(this.site, i)
-              this.cb.onCallout({ text: `${KIND_DONE[kind]} \u00b7 ${find.label} \u00d7${find.factor}`, tone: find.factor < 1 ? 'warn' : 'good' })
-            } else this.cb.onCallout({ text: `${KIND_DONE[kind]} · +${m.bonusSeconds[kind]} s`, tone: 'good' })
+            const t = this.site.targets[i]
+            const find = FINDS[t.find]
+            this.cb.onCallout({ text: `${KIND_DONE[t.kind]} \u00b7 ${find.label} \u00d7${find.factor}`, tone: find.factor < 1 ? 'warn' : 'good' })
           }
           this.audio?.cue('imaged')
           break
@@ -1945,7 +1938,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       const t = this.site.targets[i]
       if (Math.hypot(p.x - t.x, p.z - t.z) < TARGET_RING + 0.6) {
         this.holdLabel = KIND_HOLD[t.kind]
-        return m.plan ? '' : `${KIND_HINT[t.kind]} for ${HOLD_SECONDS[t.kind]} s: +${m.bonusSeconds[t.kind]} s`
+        return m.plan ? '' : `${KIND_HINT[t.kind]} for ${HOLD_SECONDS[t.kind]} s`
       }
     }
     return ''
@@ -2011,12 +2004,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
         this.jobsAtSend = sim.legs.length
         this.planRun = null
       }
-      // What each target turned out to hold scales its points.
-      let finds = 0
-      for (const leg of sim.legs) finds += KIND_POINTS[this.site.targets[leg.target].kind] * (findAt(this.site, leg.target).factor - 1)
-      finds = Math.round(finds)
-      this.result.uplink = { sends: this.sends, best: this.comboBest, bonus: this.combo, finds }
-      this.result.score += this.combo + finds
+      this.result.uplink = { sends: this.sends, best: this.comboBest, bonus: this.combo }
+      this.result.score += this.combo
     }
     this.audio?.stopAll()
     this.resetCamera()

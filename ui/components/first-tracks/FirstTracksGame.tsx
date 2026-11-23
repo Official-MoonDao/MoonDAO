@@ -11,10 +11,10 @@ import { trackFirstTracks } from '@/lib/analytics/ga4'
 import type { DriverKind } from '@/lib/first-tracks/autopilot'
 import { cleanBoardName, type FirstTracksBoardResponse } from '@/lib/first-tracks/leaderboard'
 import { MODES, PLAN_MODE, type ModeId } from '@/lib/first-tracks/modes'
-import { BATTERY_POINTS, ROUTE_POINTS, TARGET_POINTS, type RunResult } from '@/lib/first-tracks/scoring'
+import { BATTERY_PER_LEG, ROUTE_PER_LEG, type RunResult } from '@/lib/first-tracks/scoring'
 import { canvasToBlob, challengeQuery, cleanNickname, composeCard, copyImage, SHARE_PATH, shareCard, shareText, stampPhoto, xIntentUrl, type Challenge } from '@/lib/first-tracks/share'
 import { PRIZE_METRES, windowSecondsFor } from '@/lib/first-tracks/sim'
-import { N_TARGETS } from '@/lib/first-tracks/site'
+import { FINDS, N_TARGETS } from '@/lib/first-tracks/site'
 import { bestKey, loadPrefs, savePrefs, type FirstTracksPrefs } from '@/lib/first-tracks/storage'
 import { bragLine, formatScore, isGoodOutcome, outcomeHeadline, verdictFor } from '@/lib/first-tracks/verdicts'
 import { missionDateLabel, missionNumberFor } from '@/lib/touchdown/mission'
@@ -794,19 +794,33 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
         <dl className={`space-y-1 ${compact ? 'mt-2' : 'mt-2.5'}`}>
           {(
             [
-              [`Science ${result.imaged}/${N_TARGETS}`, result.parts.targets, TARGET_POINTS],
-              ['Route', result.parts.route, ROUTE_POINTS],
-              ['Battery', result.parts.battery, BATTERY_POINTS],
+              [`Science ${result.imaged}/${N_TARGETS}`, result.parts.targets, 0],
+              ['Route', result.parts.route, result.imaged * ROUTE_PER_LEG],
+              ['Battery', result.parts.battery, result.imaged * BATTERY_PER_LEG],
             ] as const
           ).map(([label, value, max]) => (
             <div key={label} className="flex items-baseline gap-2 rounded-md bg-white/[0.06] px-2 py-1 text-[13px]">
               <dt className="text-white/75">{label}</dt>
               <dd className="ml-auto font-bold tabular-nums">
                 {value}
-                <span className="text-[10px] font-normal text-white/35">/{max}</span>
+                {max > 0 && <span className="text-[10px] font-normal text-white/35">/{max}</span>}
               </dd>
             </div>
           ))}
+          {result.jobs.length > 0 && (
+            <div className="flex flex-wrap gap-1 px-2 pt-0.5">
+              {result.jobs.map((j, i) => (
+                <span
+                  key={i}
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                    j.find === 3 ? 'bg-emerald-400/20 text-emerald-200' : j.find === 2 ? 'bg-sky-400/15 text-sky-200' : j.find === 1 ? 'bg-white/10 text-white/70' : 'bg-rose-400/15 text-rose-200'
+                  }`}
+                >
+                  {FINDS[j.find].label.replace(' find', '')} ×{FINDS[j.find].factor} · {j.points}
+                </span>
+              ))}
+            </div>
+          )}
           {result.imaged > 0 && (
             <p className="px-2 text-[11px] text-white/55">
               {result.done.image} regolith {result.done.image === 1 ? 'image' : 'images'} · {result.done.rock} boulder {result.done.rock === 1 ? 'spectrum' : 'spectra'} · {result.done.ice} ice {result.done.ice === 1 ? 'core' : 'cores'}
@@ -815,11 +829,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
           {result.uplink && (
             <p className="px-2 pt-0.5 text-[11px] text-white/60">
               {result.uplink.sends} uplink{result.uplink.sends === 1 ? '' : 's'}
-              {result.uplink.best > 1 ? ` · best ${result.uplink.best} jobs in one` : ''} · combo <span className="font-bold text-sky-200">+{result.uplink.bonus}</span> · finds{' '}
-              <span className="font-bold text-sky-200">
-                {result.uplink.finds >= 0 ? '+' : '\u2212'}
-                {Math.abs(result.uplink.finds)}
-              </span>
+              {result.uplink.best > 1 ? ` · best ${result.uplink.best} jobs in one` : ''} · combo <span className="font-bold text-sky-200">+{result.uplink.bonus}</span>
             </p>
           )}
           {(result.parts.time > 0 || result.condition !== 1 || (result.mode === 'pro' && !result.uplink)) && (
@@ -1212,7 +1222,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
               {planOn
                 ? 'Prototype: plot the rover\u2019s path on the ground and send it. A waypoint inside a ring is a science stop. The rover drives it by itself, and loose regolith (the darker grey ground) carries it off your line. The clock starts with your first uplink and never stops, and there is not time for every site: what each one holds is hidden until you get there. Hitting a rock burns 8 s. New site every day.'
-                : 'Drive a rover off its lander and across the Moon. Every command arrives late, so you are always steering where the rover was. Reach as many science sites as you can before the clock runs out. New site every day.'}
+                : 'Drive a rover off its lander and across the Moon. Every command arrives late, so you are always steering where the rover was. There are twelve science sites all round the lander and time for about half of them. What each one holds is hidden until you get there, and it is the same for everyone today. Hitting a rock burns 4 s. New site every day.'}
             </p>
             <div className="mt-3 flex items-stretch gap-2 sm:mt-4 sm:block">
               {modeToggle}

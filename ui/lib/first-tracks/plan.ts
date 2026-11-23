@@ -201,27 +201,6 @@ export function comboPoints(jobs: number): number {
   return jobs < 2 ? 0 : 15 * jobs * (jobs - 1)
 }
 
-export type Find = { factor: number; label: string }
-
-const FINDS: Find[] = [
-  { factor: 0.4, label: 'Poor find' },
-  { factor: 1, label: 'Fair find' },
-  { factor: 1.6, label: 'Good find' },
-  { factor: 2.5, label: 'Rich find' },
-]
-
-/**
- * What a target turns out to be worth: hidden until the job is done, and the
- * same for everyone on the same day, so it can be learned and passed on.
- */
-export function findAt(site: Site, i: number): Find {
-  let h = (site.seed ^ Math.imul(i + 1, 0x9e3779b1)) >>> 0
-  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b)
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35)
-  const u = ((h ^ (h >>> 16)) >>> 0) / 4294967296
-  return FINDS[u < 0.25 ? 0 : u < 0.6 ? 1 : u < 0.85 ? 2 : 3]
-}
-
 /** Length of a path from a start point through its waypoints, m. */
 export function planMetres(x: number, z: number, pts: Pt[]): number {
   let m = 0

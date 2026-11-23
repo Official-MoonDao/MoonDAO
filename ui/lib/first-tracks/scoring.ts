@@ -2,17 +2,20 @@
  * First Tracks scoring. Hard to max: every figure is a sliding scale that
  * falls fastest close to perfect, with no "good enough" band.
  *
- *   targets  400  25 for imaging regolith, 50 for a boulder's spectrum, 75
- *                 for an ice core from a crater floor (three, two and three a
- *                 day): 30% for doing the job + 70% for how close to the
- *                 ring's centre the rover stopped
- *   route    300  shared over all 8 legs: metres driven on each leg against
- *                 that leg's hidden par route; 30% over par scores nothing
- *   battery  300  shared over all 8 legs: energy used on each leg against a
- *                 perfect driver's on par; double scores nothing
- *   time     2 a second left on the clock, only if all 8 targets are imaged
+ *   targets  25 for imaging regolith, 50 for a boulder's spectrum, 75 for an
+ *            ice core from a crater floor (four of each a day), times what
+ *            the target turns out to hold (x0.5 poor, x1 fair, x1.5 good,
+ *            x2.5 rich: hidden until the job is done, fixed for the day).
+ *            30% for doing the job + 70% for how close to the ring's centre
+ *            the rover stopped
+ *   route    35 a leg: metres driven on each leg against that leg's hidden
+ *            par route; 30% over par scores nothing
+ *   battery  35 a leg: energy used on each leg against a perfect driver's on
+ *            par; double scores nothing
+ *   time     2 a second left on the clock, only if every target is done
  *
- * Legs never driven earn no route or battery points. Then the rover's
+ * There are twelve targets and the clock allows about half of them: which to
+ * go for is the player's call. Legs never driven earn no route or battery points. Then the rover's
  * condition (rolling x1, battery flat x0.8, stuck x0.6, tipped x0.25, fell off
  * the lander x0.1), then Pro x1.25.
  *
@@ -26,14 +29,16 @@
 import type { ModeId } from './modes'
 import { parEnergy, parPath, pathLength } from './par'
 import { BATTERY, DT, PRIZE_METRES, type Outcome, type Sim } from './sim'
-import { clamp, HOLD_SECONDS, KIND_COUNT, N_TARGETS, TARGET_RING, type TargetKind } from './site'
+import { clamp, FINDS, HOLD_SECONDS, KIND_COUNT, N_TARGETS, TARGET_RING, type TargetKind } from './site'
 
 export const KIND_POINTS: Record<TargetKind, number> = { image: 25, rock: 50, ice: 75 }
+/** Every job done at a fair find: the day's base science points. */
 export const TARGET_POINTS = KIND_POINTS.image * KIND_COUNT.image + KIND_POINTS.rock * KIND_COUNT.rock + KIND_POINTS.ice * KIND_COUNT.ice
 /** Share of a target's points for imaging it at all; the rest is for centring. */
 export const IMAGED_SHARE = 0.3
-export const ROUTE_POINTS = 300
-export const BATTERY_POINTS = 300
+/** Most a single leg can earn for its route, and for its battery. */
+export const ROUTE_PER_LEG = 35
+export const BATTERY_PER_LEG = 35
 export const TIME_POINTS_PER_SECOND = 2
 /** Share over par at which a leg's route, and its battery, score nothing. */
 export const ROUTE_LIMIT = 0.3
@@ -54,6 +59,8 @@ export type RunResult = {
   condition: number
   /** Targets imaged, of N_TARGETS. */
   imaged: number
+  /** Each job done, in order: its target, what it held (an index into FINDS) and the points it paid. */
+  jobs: { target: number; find: number; points: number }[]
   /** How many of each job were done. */
   done: Record<TargetKind, number>
   /** Fully left the lander. */
@@ -73,7 +80,7 @@ export type RunResult = {
    * Plot-and-send only: uplinks sent, the most jobs one of them finished, and
    * the combo points they earned (already in `score`).
    */
-  uplink?: { sends: number; best: number; bonus: number; /** Net points from what the targets turned out to hold. */ finds: number }
+  uplink?: { sends: number; best: number; bonus: number }
 }
 
 /** 1 at no excess, 0 at `limit`, falling as the square root: steepest right next to perfect. */
@@ -92,8 +99,9 @@ function grade(quality: number, legs: number): Grade {
 
 export function scoreRun(s: Sim): RunResult {
   const site = s.site
-  const perLeg = ROUTE_POINTS / N_TARGETS
-  const perLegBattery = BATTERY_POINTS / N_TARGETS
+  const perLeg = ROUTE_PER_LEG
+  const perLegBattery = BATTERY_PER_LEG
+  const jobs: RunResult['jobs'] = []
   let targets = 0
   let route = 0
   let battery = 0
@@ -104,7 +112,9 @@ export function scoreRun(s: Sim): RunResult {
   for (const leg of s.legs) {
     const t = site.targets[leg.target]
     const c = centreCurve(leg.off)
-    targets += KIND_POINTS[t.kind] * (IMAGED_SHARE + (1 - IMAGED_SHARE) * c)
+    const points = KIND_POINTS[t.kind] * FINDS[t.find].factor * (IMAGED_SHARE + (1 - IMAGED_SHARE) * c)
+    targets += points
+    jobs.push({ target: leg.target, find: t.find, points: Math.round(points) })
     qT += c
     const path = parPath(site, leg.from[0], leg.from[1], t.x, t.z)
     const len = pathLength(path)
@@ -137,6 +147,7 @@ export function scoreRun(s: Sim): RunResult {
     grades: { targets: grade(n ? qT / n : 0, n), route: grade(n ? qR / n : 0, n), battery: grade(n ? qB / n : 0, n) },
     condition,
     imaged: n,
+    jobs,
     done: {
       image: s.legs.filter((leg) => site.targets[leg.target].kind === 'image').length,
       rock: s.legs.filter((leg) => site.targets[leg.target].kind === 'rock').length,
@@ -157,5 +168,5 @@ export function scoreRun(s: Sim): RunResult {
  * a clock no site's window reaches. Only used to bound what the board accepts.
  */
 export function maxScore(multiplier: number): number {
-  return Math.ceil((TARGET_POINTS + ROUTE_POINTS + BATTERY_POINTS + 400 * TIME_POINTS_PER_SECOND) * multiplier)
+  return Math.ceil((TARGET_POINTS * 2.5 + (ROUTE_PER_LEG + BATTERY_PER_LEG) * N_TARGETS + 400 * TIME_POINTS_PER_SECOND) * multiplier)
 }

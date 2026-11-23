@@ -9,9 +9,9 @@ import { createDriver } from '@/lib/first-tracks/autopilot'
 import { MODES } from '@/lib/first-tracks/modes'
 import { parEnergy, parPath, pathLength } from '@/lib/first-tracks/par'
 import { base64ToTape, MAX_TAPE_STEPS, recordTape, replayRun, tapeToBase64 } from '@/lib/first-tracks/replay'
-import { CONDITION, KIND_POINTS, maxScore, scoreRun } from '@/lib/first-tracks/scoring'
+import { BATTERY_PER_LEG, CONDITION, KIND_POINTS, maxScore, ROUTE_PER_LEG, scoreRun } from '@/lib/first-tracks/scoring'
 import { createSim, EGRESS_LIMIT_STEPS, ghostOf, holdSteps, stepSim, windowSecondsFor, type Sim } from '@/lib/first-tracks/sim'
-import { BUMP_MIN, CLEAR, DECK_Y, dist, generateSite, KIND_COUNT, MAX_TOUR, N_TARGETS, RAMP_FOOT, shortestTour, TARGET_RING } from '@/lib/first-tracks/site'
+import { BUMP_MIN, CLEAR, DECK_Y, dist, FINDS, generateSite, KIND_COUNT, LANDER_CENTER_Z, N_TARGETS, RAMP_FOOT, shortestTour, TARGET_RING } from '@/lib/first-tracks/site'
 
 function drive(mission: number, modeId: 'easy' | 'pro', kind: 'perfect' | 'average' | 'careful' | 'sloppy') {
   const site = siteFor(mission)
@@ -47,11 +47,19 @@ describe('first tracks: daily site', () => {
     expect(a.rocks[0]).to.not.deep.equal(b.rocks[0])
   })
 
-  it('gives every day eight targets in a web a driver can finish', () => {
+  it('gives every day twelve targets, near and far, on every side of the lander', () => {
     for (let mission = 1; mission <= 60; mission++) {
       const site = generateSite(mission)
       expect(site.targets.length, `mission ${mission}`).to.equal(N_TARGETS)
-      expect(shortestTour(site.targets, RAMP_FOOT[0], RAMP_FOOT[1]).length <= MAX_TOUR, `mission ${mission} tour`).to.equal(true)
+      // Some behind the lander, some ahead, some to each side.
+      expect(site.targets.filter((t) => t.z < LANDER_CENTER_Z).length >= 3, `mission ${mission} behind`).to.equal(true)
+      expect(site.targets.filter((t) => t.z > 3).length >= 3, `mission ${mission} ahead`).to.equal(true)
+      expect(site.targets.some((t) => t.x < -8) && site.targets.some((t) => t.x > 8), `mission ${mission} sides`).to.equal(true)
+      const far = site.targets.map((t) => dist(t.x, t.z, 0, 0))
+      expect(Math.min(...far) < 17 && Math.max(...far) > 28, `mission ${mission} spread`).to.equal(true)
+      // No two rings overlap, and none sits against the lander.
+      for (const a of site.targets) for (const b of site.targets) if (a !== b) expect(dist(a.x, a.z, b.x, b.z) >= 8.5).to.equal(true)
+      for (const t of site.targets) expect(dist(t.x, t.z, 0, LANDER_CENTER_Z) >= 9).to.equal(true)
       for (const t of site.targets) {
         // No rock tall enough to stop the rover sits inside a target's ring.
         site.hazards.forEach((list) => {
@@ -72,7 +80,7 @@ describe('first tracks: daily site', () => {
   })
 
   it('finds the shortest visiting order', () => {
-    const line = [0, 1, 2, 3].map((i) => ({ x: 0, z: 10 * (i + 1), kind: 'image' as const }))
+    const line = [0, 1, 2, 3].map((i) => ({ x: 0, z: 10 * (i + 1), kind: 'image' as const, find: 1 }))
     const shuffled = [line[2], line[0], line[3], line[1]]
     const tour = shortestTour(shuffled, 0, 0)
     expect(tour.length).to.equal(40)
@@ -162,19 +170,56 @@ describe('first tracks: par and scoring', function () {
     expect(parPath(site, a.x, a.z, b.x, b.z)).to.deep.equal(parPath(generateSite(9), a.x, a.z, b.x, b.z))
   })
 
-  it('never pays a full figure, even to the perfect driver', () => {
+  it('leaves even the perfect driver short of time for every target, and never pays a full figure', () => {
     for (let mission = 1; mission <= 3; mission++) {
-      const { result } = drive(mission, 'pro', 'perfect')
-      expect(result.outcome, `mission ${mission}`).to.equal('complete')
-      expect(result.imaged).to.equal(N_TARGETS)
+      const { sim, result } = drive(mission, 'pro', 'perfect')
+      expect(result.outcome, `mission ${mission}`).to.equal('window')
+      expect(result.imaged >= 4 && result.imaged <= 9, `mission ${mission} did ${result.imaged}`).to.equal(true)
       expect(result.firstTracks).to.equal(true)
-      expect(result.parts.targets < 400).to.equal(true)
-      expect(result.parts.route < 300).to.equal(true)
-      expect(result.parts.battery < 300).to.equal(true)
-      expect(result.parts.time > 0).to.equal(true)
+      expect(result.parts.route < result.imaged * ROUTE_PER_LEG).to.equal(true)
+      expect(result.parts.battery < result.imaged * BATTERY_PER_LEG).to.equal(true)
+      expect(result.parts.time).to.equal(0)
       expect(result.score <= maxScore(1.25)).to.equal(true)
-      expect(result.done).to.deep.equal(KIND_COUNT)
+      // Each job pays its kind's points times what the target held, less for stopping off centre.
+      expect(result.jobs.length).to.equal(result.imaged)
+      let sum = 0
+      result.jobs.forEach((job, i) => {
+        const t = sim.site.targets[job.target]
+        expect(job.target).to.equal(sim.legs[i].target)
+        expect(job.find).to.equal(t.find)
+        const full = KIND_POINTS[t.kind] * FINDS[t.find].factor
+        expect(job.points <= Math.round(full) && job.points >= Math.round(full * 0.3)).to.equal(true)
+        sum += job.points
+      })
+      expect(Math.abs(sum - result.parts.targets) <= result.jobs.length).to.equal(true)
     }
+  })
+
+  it('deals every day the same hand of finds: three poor, four fair, three good, two rich', () => {
+    for (let mission = 1; mission <= 40; mission++) {
+      const count = [0, 0, 0, 0]
+      for (const t of siteFor(mission).targets) count[t.find]++
+      expect(count, `mission ${mission}`).to.deep.equal([3, 4, 3, 2])
+    }
+    expect(siteFor(11).targets.map((t) => t.find)).to.not.deep.equal(siteFor(12).targets.map((t) => t.find))
+  })
+
+  it('takes time off the clock for hitting a rock, but not for bumping about on the deck', () => {
+    const site = siteFor(2)
+    let rock: { x: number; z: number; r: number } | undefined
+    site.hazards.forEach((list) => {
+      for (const r of list) if (!rock && dist(r.x, r.z, 0, 0) > 12 && site.softAt(r.x, r.z - 2) === 0) rock = r
+    })
+    expect(!!rock).to.equal(true)
+    const sim = createSim(site, MODES.easy)
+    sim.off = true
+    sim.windowEnd = 100000
+    sim.h = 0
+    sim.x = rock!.x
+    sim.z = rock!.z - rock!.r - 2.2
+    for (let i = 0; i < 60 * 6 && !sim.bumps; i++) stepSim(sim, 127, 0)
+    expect(sim.bumps).to.equal(1)
+    expect(sim.windowEnd).to.equal(100000 - MODES.easy.hitSeconds * 60)
   })
 
   it('scores legs never driven at nothing and applies the condition multiplier', () => {
@@ -233,7 +278,7 @@ describe('first tracks: jobs, bumps and the day\'s clock', function () {
   // than a laptop, and the suite default is 10 s.
   this.timeout(60000)
 
-  it('gives every day three regolith images, two boulder spectra and three ice cores', () => {
+  it('gives every day four regolith images, four boulder spectra and four ice cores', () => {
     for (let mission = 1; mission <= 40; mission++) {
       const site = siteFor(mission)
       const count = { image: 0, rock: 0, ice: 0 }
@@ -254,17 +299,25 @@ describe('first tracks: jobs, bumps and the day\'s clock', function () {
     }
   })
 
-  it('makes an ice core take longer than an image, and pay back more clock', () => {
+  it('makes an ice core take longer than an image, and pay more', () => {
     expect(holdSteps('ice') > holdSteps('rock') && holdSteps('rock') > holdSteps('image')).to.equal(true)
-    expect(MODES.easy.bonusSeconds.ice > MODES.easy.bonusSeconds.rock && MODES.easy.bonusSeconds.rock > MODES.easy.bonusSeconds.image).to.equal(true)
-    expect(KIND_POINTS.image * KIND_COUNT.image + KIND_POINTS.rock * KIND_COUNT.rock + KIND_POINTS.ice * KIND_COUNT.ice).to.equal(400)
+    expect(KIND_POINTS.ice > KIND_POINTS.rock && KIND_POINTS.rock > KIND_POINTS.image).to.equal(true)
+    expect(KIND_POINTS.image * KIND_COUNT.image + KIND_POINTS.rock * KIND_COUNT.rock + KIND_POINTS.ice * KIND_COUNT.ice).to.equal(600)
   })
 
   it('slows and lifts the rover over a small rock, and charges the battery for it', () => {
     const site = siteFor(3)
     let rock: { x: number; z: number; h: number; r: number } | undefined
     site.bumps.forEach((list) => {
-      for (const r of list) if (!rock && r.h > 0.15 && site.softAt(r.x, r.z) === 0 && dist(r.x, r.z, 0, 0) > 12) rock = r
+      for (const r of list) {
+        if (rock || r.h <= 0.15 || site.softAt(r.x, r.z) !== 0 || dist(r.x, r.z, 0, 0) <= 12) continue
+        // Nothing taller standing in the way of the run-up or the roll-out.
+        let clear = true
+        site.hazards.forEach((tall) => {
+          for (const t of tall) if (dist(t.x, t.z, r.x, r.z) < 5) clear = false
+        })
+        if (clear) rock = r
+      }
     })
     expect(!!rock).to.equal(true)
     expect(rock!.h >= BUMP_MIN && rock!.h <= CLEAR).to.equal(true)
@@ -321,10 +374,11 @@ describe('first tracks: jobs, bumps and the day\'s clock', function () {
   it('sizes the clock from the day\'s site, and gives Pro more of it', () => {
     for (let mission = 1; mission <= 20; mission++) {
       const site = siteFor(mission)
-      expect(site.parSeconds > 60 && site.parSeconds < 220, `mission ${mission}`).to.equal(true)
+      expect(site.parSeconds > 200 && site.parSeconds < 400, `mission ${mission}`).to.equal(true)
       const easy = windowSecondsFor(site, MODES.easy)
       const pro = windowSecondsFor(site, MODES.pro)
-      expect(easy >= 25 && pro > easy, `mission ${mission}`).to.equal(true)
+      // Well short of the time every target would take.
+      expect(easy >= 100 && pro > easy && pro < site.parSeconds * 0.75, `mission ${mission}`).to.equal(true)
     }
     // A raw site has no par time yet: the mode's fallback applies.
     expect(windowSecondsFor(generateSite(1), MODES.easy)).to.equal(MODES.easy.windowSeconds)

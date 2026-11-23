@@ -3,8 +3,8 @@
  *
  * Everyone gets the same site on a given UTC day, derived from the mission
  * number (the seed shared with Touchdown and Catch). What changes each day:
- * the craters, the rocks, the soft-regolith patches, where the eight science
- * targets are, the sun, and which way the rover is parked on the deck.
+ * the craters, the rocks, the soft-regolith patches, where the twelve science
+ * targets are and what each one holds, the sun, and which way the rover is parked on the deck.
  *
  * The leaderboard re-drives a player's inputs on the server, so everything
  * here must come out bit-identical in every JavaScript engine: only + - * /,
@@ -60,9 +60,9 @@ export const RAMP_FOOT: [number, number] = [0, RAMP.z1 + 0.8]
 
 /** The rover cannot leave this square, m from the origin. */
 export const WORLD = 56
-export const N_TARGETS = 8
+export const N_TARGETS = 12
 /** How many of the day's targets are of each kind. They add up to N_TARGETS. */
-export const KIND_COUNT: Record<TargetKind, number> = { image: 3, rock: 2, ice: 3 }
+export const KIND_COUNT: Record<TargetKind, number> = { image: 4, rock: 4, ice: 4 }
 /** Seconds the rover must hold still for each job. */
 export const HOLD_SECONDS: Record<TargetKind, number> = { image: 1, rock: 1.5, ice: 2.5 }
 /** Rocks shorter than this are pebbles: drawn, never felt. */
@@ -94,7 +94,28 @@ export type Soft = { x: number; z: number; r: number }
  *          and the crater wall has to be taken straight, down and back up.
  */
 export type TargetKind = 'image' | 'rock' | 'ice'
-export type Target = { x: number; z: number; kind: TargetKind }
+/**
+ * `find` is what the target turns out to hold, as an index into FINDS: it
+ * multiplies the job's points. Hidden from the player until the job is done,
+ * and the same for everyone on the same day, so it can be learned and passed on.
+ */
+export type Target = { x: number; z: number; kind: TargetKind; find: number }
+
+export type Find = { factor: number; label: string }
+export const FINDS: Find[] = [
+  { factor: 0.5, label: 'Poor find' },
+  { factor: 1, label: 'Fair find' },
+  { factor: 1.5, label: 'Good find' },
+  { factor: 2.5, label: 'Rich find' },
+]
+/** The day's twelve finds, dealt out over the targets: three poor, four fair, three good, two rich. */
+const FIND_DECK = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3]
+/** Rings round the lander the targets are spread over, m from it: four targets in each. */
+const BANDS: [number, number][] = [
+  [10.5, 15],
+  [18, 27],
+  [30, 40],
+]
 
 export type Site = {
   mission: number
@@ -130,12 +151,9 @@ export type Site = {
 
 const TWO_PI = 6.283185307179586
 
-/** Longest straight-line tour of the day's targets, from the ramp foot, that a site may ask for, m. */
-export const MAX_TOUR = 96
-
 /**
  * The visiting order with the least straight-line driving from a start point,
- * and its length. Exact, by dynamic programming over subsets (8 targets: 2,048 states).
+ * and its length. Exact, by dynamic programming over subsets (12 targets: 49,152 states).
  */
 export function shortestTour(t: Target[], x: number, z: number): { order: number[]; length: number } {
   const n = t.length
@@ -243,45 +261,65 @@ export function generateSite(mission: number): Site {
     return h
   }
 
-  // --- Science targets: a web, each 9-15 m from one already placed, so the order is a puzzle ---
+  // --- Science targets: all round the lander, near, middling and far, one to a
+  // twelfth of the compass. There are more than the clock allows: which to go
+  // for, and in what order, is the puzzle.
   const targets: Target[] = []
-  const placeTargets = (minGap: number, budget: number) => {
-    for (let k = 0; targets.length < N_TARGETS && k < budget; k++) {
-      const n = targets.length
-      const from = n ? targets[rng() < 0.6 ? n - 1 : Math.floor(rng() * n)] : { x: 0, z: 4.9 }
-      const a = n ? rng() * TWO_PI : (rng() * 2 - 1) * 1.2
-      const d = n ? 9 + rng() * 6 : 10 + rng() * 3
-      const x = from.x + dsin(a) * d
-      const z = from.z + dcos(a) * d
-      if (dist(x, z, 0, 0) > 44 || dist(x, z, 0, 2) < 9 || (Math.abs(x) < 4.5 && z < 2)) continue
-      if (targets.some((t) => dist(t.x, t.z, x, z) < minGap)) continue
-      targets.push({ x, z, kind: 'image' })
+  const placeTargets = () => {
+    const turn = rng() * TWO_PI
+    // Near, middle, far in a shuffled order, repeated round the compass: neighbours are never in the same ring.
+    const rings = [0, 1, 2]
+    for (let i = 2; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      const t = rings[i]
+      rings[i] = rings[j]
+      rings[j] = t
+    }
+    for (let i = 0; i < N_TARGETS; i++) {
+      for (let k = 0; k < 60; k++) {
+        const a = turn + ((i + 0.15 + rng() * 0.7) / N_TARGETS) * TWO_PI
+        // After a run of failures, try the other rings too.
+        const band = BANDS[k < 30 ? rings[i % 3] : Math.floor(rng() * 3)]
+        const d = band[0] + rng() * (band[1] - band[0])
+        const x = dsin(a) * d
+        const z = dcos(a) * d
+        // Clear of the lander, its legs and the ramp foot.
+        if (dist(x, z, 0, 2) < 9 || dist(x, z, 0, LANDER_CENTER_Z) < 9) continue
+        if (targets.some((t) => dist(t.x, t.z, x, z) < 8.5)) continue
+        targets.push({ x, z, kind: 'image', find: 1 })
+        break
+      }
     }
   }
-  // Some webs sprawl so far that no driver could image them all inside the
-  // clock. Redraw those: keep the first web whose shortest tour is short enough.
+  // Now and then a target finds no room: draw again, and keep the fullest draw.
   let kept: Target[] = []
-  let keptTour = Infinity
   for (let attempt = 0; attempt < 8; attempt++) {
     targets.length = 0
-    placeTargets(8.5, 3000)
-    const tour = targets.length < N_TARGETS ? Infinity : shortestTour(targets, RAMP_FOOT[0], RAMP_FOOT[1]).length
-    if (tour < keptTour || !kept.length) {
-      kept = targets.slice()
-      keptTour = tour
-    }
-    if (tour <= MAX_TOUR) break
+    placeTargets()
+    if (targets.length > kept.length) kept = targets.slice()
+    if (targets.length === N_TARGETS) break
   }
   targets.length = 0
   for (const t of kept) targets.push(t)
+  // What each one holds.
+  {
+    const deck = FIND_DECK.slice()
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      const t = deck[i]
+      deck[i] = deck[j]
+      deck[j] = t
+    }
+    for (let i = 0; i < targets.length; i++) targets[i].find = deck[i % deck.length]
+  }
 
   // --- Ice targets sit on a crater floor. The crater is deep enough that its
   // wall tips a rover crossing it sideways, shallow enough to drive straight
-  // down and back out. Never the first target off the ramp, never beside the lander.
+  // down and back out. Never beside the lander.
   // --- Rock targets sit beside a boulder (placed with the rocks, below).
   {
     const pool: number[] = []
-    for (let i = 1; i < targets.length; i++) if (dist(targets[i].x, targets[i].z, 0, 0) > 14) pool.push(i)
+    for (let i = 0; i < targets.length; i++) if (dist(targets[i].x, targets[i].z, 0, 0) > 16) pool.push(i)
     for (let n = 0; n < KIND_COUNT.ice && pool.length; n++) {
       const pick = pool.splice(Math.floor(rng() * pool.length), 1)[0]
       const t = targets[pick]
