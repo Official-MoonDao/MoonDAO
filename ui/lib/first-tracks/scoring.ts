@@ -76,11 +76,6 @@ export type RunResult = {
   /** Seconds on the clock from leaving the lander to the end. */
   driveSeconds: number
   bumps: number
-  /**
-   * Plot-and-send only: uplinks sent, the most jobs one of them finished, and
-   * the combo points they earned (already in `score`).
-   */
-  uplink?: { sends: number; best: number; bonus: number }
 }
 
 /** 1 at no excess, 0 at `limit`, falling as the square root: steepest right next to perfect. */

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { trackFirstTracks } from '@/lib/analytics/ga4'
 import type { DriverKind } from '@/lib/first-tracks/autopilot'
 import { cleanBoardName, type FirstTracksBoardResponse } from '@/lib/first-tracks/leaderboard'
-import { MODES, PLAN_MODE, type ModeId } from '@/lib/first-tracks/modes'
+import { MODES, type ModeId } from '@/lib/first-tracks/modes'
 import { BATTERY_PER_LEG, ROUTE_PER_LEG, type RunResult } from '@/lib/first-tracks/scoring'
 import { canvasToBlob, challengeQuery, cleanNickname, composeCard, copyImage, SHARE_PATH, shareCard, shareText, stampPhoto, xIntentUrl, type Challenge } from '@/lib/first-tracks/share'
 import { PRIZE_METRES, windowSecondsFor } from '@/lib/first-tracks/sim'
@@ -19,7 +19,7 @@ import { bestKey, loadPrefs, savePrefs, type FirstTracksPrefs } from '@/lib/firs
 import { bragLine, formatScore, isGoodOutcome, outcomeHeadline, verdictFor } from '@/lib/first-tracks/verdicts'
 import { missionDateLabel, missionNumberFor } from '@/lib/touchdown/mission'
 import { FirstTracksSound } from './audio'
-import type { Callout, FirstTracksEngine, HudState, PlanHud } from './engine'
+import type { Callout, FirstTracksEngine, HudState } from './engine'
 import FirstTracksLeaderboard from './FirstTracksLeaderboard'
 import { FIRST_TRACKS_RACE_GOAL_ID } from './FirstTracksRaceView'
 
@@ -219,17 +219,6 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
   const holdRef = useRef<HTMLDivElement>(null)
   const holdBarRef = useRef<HTMLDivElement>(null)
   const hintRef = useRef('')
-  // Plot-and-send prototype: /rover?plan=1. The rover follows a plotted path
-  // instead of a joystick. Scores are not saved (the server replays Easy and Pro).
-  const [planOn, setPlanOn] = useState(false)
-  const planOnRef = useRef(false)
-  useEffect(() => {
-    const on = new URLSearchParams(window.location.search).get('plan') === '1'
-    planOnRef.current = on
-    setPlanOn(on)
-  }, [])
-  const [planHud, setPlanHud] = useState<PlanHud | null>(null)
-  const planKey = useRef('')
   const holdLabelRef = useRef('')
   const baseRef = useRef<HTMLDivElement>(null)
   const landerRef = useRef(true)
@@ -267,11 +256,6 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
     if (h.holdLabel && h.holdLabel !== holdLabelRef.current) {
       holdLabelRef.current = h.holdLabel
       setHoldLabel(h.holdLabel)
-    }
-    const pk = h.plan ? `${h.plan.points}|${h.plan.stops}|${h.plan.metres.toFixed(1)}|${h.plan.canPlot}|${h.plan.state}|${h.plan.sends}|${h.plan.slip}|${h.plan.drift.toFixed(1)}` : ''
-    if (pk !== planKey.current) {
-      planKey.current = pk
-      setPlanHud(h.plan)
     }
     if (h.hint !== hintRef.current) {
       hintRef.current = h.hint
@@ -375,9 +359,8 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
       engine.link = linkRef.current
       const dev = process.env.NODE_ENV !== 'production'
       const auto = dev ? (new URLSearchParams(window.location.search).get('autopilot') as DriverKind | null) : null
-      // Like a bot's run, a plotted run is never saved or kept as a best.
-      botRef.current = !!auto || planOnRef.current
-      engine.start(planOnRef.current ? PLAN_MODE : MODES[m], auto || undefined)
+      botRef.current = !!auto
+      engine.start(MODES[m], auto || undefined)
       setResult(null)
       setCallout(null)
       setKeysFaded(false)
@@ -580,12 +563,6 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
       if (s === 'driving') {
         // A focused button must never fire on Space or Enter mid-drive.
         if (k || e.code === 'Space' || e.code === 'Enter') e.preventDefault()
-        if (planOnRef.current) {
-          if (e.repeat) return
-          if (e.code === 'Space' || e.code === 'Enter') engineRef.current?.planSend()
-          else if (e.code === 'Backspace' || e.code === 'KeyZ') engineRef.current?.planUndo()
-          return
-        }
         if (k && !keys.current[k]) {
           keys.current[k] = true
           pushInput()
@@ -631,11 +608,8 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
   // On a phone the lower half of the screen is the drive stick, so this is the upper half.
   const look = useRef<Map<number, { x: number; y: number }>>(new Map())
   const pinch = useRef(0)
-  // A press that lifts where it landed is a tap: in plot-and-send it drops a waypoint.
-  const tap = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null)
   const onLookDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    tap.current = look.current.size === 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false } : null
     look.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     e.currentTarget.setPointerCapture(e.pointerId)
     if (look.current.size === 2) {
@@ -647,12 +621,6 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
     const last = look.current.get(e.pointerId)
     const engine = engineRef.current
     if (!last || !engine) return
-    const t = tap.current
-    if (t && t.id === e.pointerId && !t.moved) {
-      // Until the pointer has really moved it is still a tap, not a drag.
-      if (Math.hypot(e.clientX - t.x, e.clientY - t.y) < 7) return
-      t.moved = true
-    }
     if (look.current.size >= 2) {
       look.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
       const [a, b] = [...look.current.values()]
@@ -667,11 +635,6 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
   const onLookUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     look.current.delete(e.pointerId)
     pinch.current = 0
-    const t = tap.current
-    if (t && t.id === e.pointerId) {
-      tap.current = null
-      if (!t.moved && e.type === 'pointerup' && planOnRef.current && screenRef.current === 'driving') engineRef.current?.planTap(e.clientX, e.clientY)
-    }
   }
   useEffect(() => {
     const canvas = canvasRef.current
@@ -743,7 +706,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
   const pro = mode === 'pro'
   const cfg = MODES[mode]
   // The day's clock is sized from the day's site, so it differs from day to day.
-  const windowSeconds = windowSecondsFor(site, planOn ? PLAN_MODE : cfg)
+  const windowSeconds = windowSecondsFor(site, cfg)
   const keyCap =
     "flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-black/55 text-base text-white/70 backdrop-blur transition data-[on='1']:border-sky-300 data-[on='1']:bg-sky-500 data-[on='1']:text-white"
 
@@ -834,13 +797,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
               {result.done.image} regolith {result.done.image === 1 ? 'image' : 'images'} · {result.done.rock} boulder {result.done.rock === 1 ? 'spectrum' : 'spectra'} · {result.done.ice} ice {result.done.ice === 1 ? 'core' : 'cores'}
             </p>
           )}
-          {result.uplink && (
-            <p className="px-2 pt-0.5 text-[11px] text-white/60">
-              {result.uplink.sends} uplink{result.uplink.sends === 1 ? '' : 's'}
-              {result.uplink.best > 1 ? ` · best ${result.uplink.best} jobs in one` : ''} · combo <span className="font-bold text-sky-200">+{result.uplink.bonus}</span>
-            </p>
-          )}
-          {(result.parts.time > 0 || result.condition !== 1 || (result.mode === 'pro' && !result.uplink)) && (
+          {(result.parts.time > 0 || result.condition !== 1 || result.mode === 'pro') && (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-2 pt-0.5 text-[11px] text-white/60">
               {result.parts.time > 0 && (
                 <span>
@@ -1035,7 +992,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
           <span ref={clockRef} className="font-heading text-3xl font-extrabold tabular-nums leading-none sm:text-4xl">
             {clockText(windowSeconds)}
           </span>
-          <span className="mt-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-200">{planOn ? 'Starts with your first uplink, then never stops' : `Picture is ${cfg.downlink.toFixed(1)} s old`}</span>
+          <span className="mt-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-200">Picture is {cfg.downlink.toFixed(1)} s old</span>
           <div ref={holdRef} className="mt-1.5 flex w-44 flex-col items-center opacity-0 transition-opacity">
             <div className="whitespace-nowrap text-center text-[9px] font-bold uppercase tracking-widest text-emerald-200">{holdLabel || 'Hold still'}</div>
             <div className={bar}>
@@ -1047,7 +1004,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
         <div className="absolute right-2.5 top-2.5 sm:right-3 sm:top-3">
           <canvas ref={mapRef} className="h-[104px] w-[104px] rounded-full sm:h-[156px] sm:w-[156px]" />
           <p className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.14em] text-white/45">
-            #{mission} · {planOn ? 'Plan' : cfg.label}
+            #{mission} · {cfg.label}
           </p>
         </div>
         {/* Telemetry */}
@@ -1084,7 +1041,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
               <div ref={sinkBarRef} className="absolute inset-y-0 left-0 rounded-full" style={{ width: 0, background: '#ffbf5e' }} />
             </div>
           </div>
-          <div className={`${stat} ${isTouch ? '' : 'w-64'} ${planOn ? 'hidden' : ''}`}>
+          <div className={`${stat} ${isTouch ? '' : 'w-64'}`}>
             <div className={label}>
               Commands in flight · <span className="text-sky-200">{cfg.uplink.toFixed(1)} s</span>
             </div>
@@ -1096,7 +1053,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
           </div>
         </div>
         {/* Desktop: the keys, bottom-right. They light as they are pressed and fade once the drive is under way. */}
-        {!isTouch && !planOn && (
+        {!isTouch && (
           <div className={`absolute bottom-3 right-3 flex flex-col items-end gap-1 transition-opacity duration-700 ${keysFaded ? 'opacity-30' : 'opacity-100'}`}>
             <div className="flex gap-1">
               <span
@@ -1146,7 +1103,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
       {/* Mission control ticker */}
       <div
         aria-live="polite"
-        className={`pointer-events-none absolute left-1/2 z-10 w-[min(92%,34rem)] -translate-x-1/2 text-center transition-opacity duration-300 ${planOn ? 'top-[5.75rem] sm:top-28' : isTouch ? 'top-[38%]' : 'top-[22%]'} ${
+        className={`pointer-events-none absolute left-1/2 z-10 w-[min(92%,34rem)] -translate-x-1/2 text-center transition-opacity duration-300 ${isTouch ? 'top-[38%]' : 'top-[22%]'} ${
           callout && driving ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -1159,58 +1116,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
       </div>
 
       {/* ------------------------------ Touch controls ------------------------------ */}
-      {/* ------------------------------ Plot-and-send bar ------------------------------ */}
-      {planOn && driving && planHud && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[4.5rem] z-20 flex flex-col items-center gap-2 px-3 sm:bottom-20">
-          {planHud.state === 'driving' && (planHud.slip || planHud.drift >= 0.3) && (
-            <p className="rounded-full border border-amber-300/40 bg-black/75 px-3 py-1 text-xs font-bold text-amber-200 backdrop-blur-sm sm:text-sm">
-              <span className="mr-2 text-[10px] tracking-widest text-amber-200/60">WHEEL SLIP</span>
-              {planHud.slip === 'soft' ? 'Loose regolith (darker ground): the wheels are slipping' : planHud.slip === 'slope' ? 'Cross-slope: sliding downhill' : 'Regolith has carried the rover'}
-              {planHud.drift >= 0.3 ? ` \u00b7 ${planHud.drift.toFixed(1)} m off your line` : ''}
-            </p>
-          )}
-          <div className="pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-2xl border border-white/15 bg-black/70 px-3 py-2.5 backdrop-blur-md sm:px-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/50">
-                Uplinks sent <span className="text-white/85">{planHud.sends}</span> · each takes {planHud.sendSeconds} s to arrive
-              </p>
-              <p className="truncate text-sm font-semibold text-white/90">
-                {planHud.state === 'transit'
-                  ? 'Uplink on its way to the Moon…'
-                  : planHud.state === 'driving'
-                    ? planHud.sends === 0
-                      ? 'Rover is driving off the lander…'
-                      : 'Rover is driving the plan.'
-                    : !planHud.canPlot
-                      ? 'Comms window closed.'
-                      : planHud.points
-                        ? `${planHud.points} waypoint${planHud.points > 1 ? 's' : ''}${planHud.stops ? ` · ${planHud.stops} science stop${planHud.stops > 1 ? 's' : ''}` : ''} · ${planHud.metres.toFixed(1)} m.`
-                        : planHud.sends === 0
-                          ? `${isTouch ? 'Tap' : 'Click'} the ground, then Send. Your first uplink starts the clock.`
-                          : `${isTouch ? 'Tap' : 'Click'} the ground, then Send. Clock running.`}
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={!planHud.canPlot || !planHud.points}
-              onClick={() => engineRef.current?.planUndo()}
-              className="rounded-lg border border-white/20 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white/80 transition hover:bg-white/10 disabled:opacity-30"
-            >
-              Undo
-            </button>
-            <button
-              type="button"
-              disabled={!planHud.canPlot || !planHud.points}
-              onClick={() => engineRef.current?.planSend()}
-              className="rounded-lg bg-sky-300 px-4 py-2 text-sm font-extrabold uppercase tracking-wider text-black transition hover:bg-sky-200 disabled:opacity-30"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isTouch && driving && !planOn && (
+      {isTouch && driving && (
         <div className="absolute inset-x-0 bottom-0 top-[46%] z-20" onPointerDown={onStickDown} onPointerMove={onStickMove} onPointerUp={onStickUp} onPointerCancel={onStickUp} onContextMenu={(e) => e.preventDefault()}>
           <div ref={stickRef} className="pointer-events-none absolute h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/35 bg-white/5 opacity-40 transition-opacity" style={{ left: '50%', top: '62%' }}>
             <div ref={knobRef} className="absolute left-1/2 top-1/2 -ml-6 -mt-6 h-12 w-12 rounded-full bg-white/70" />
@@ -1228,9 +1134,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold leading-none tracking-tight sm:mt-1 sm:text-[2.6rem]">LUNAR ROVER</h1>
             <p className="mt-1 font-heading text-sm font-bold tracking-[0.3em] text-white/70 sm:text-base">FIRST TRACKS</p>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              {planOn
-                ? 'Prototype: plot the rover\u2019s path on the ground and send it. A waypoint inside a ring is a science stop. The rover drives it by itself, and loose regolith (the darker grey ground) carries it off your line. The clock starts with your first uplink and never stops, and there is not time for every site: what each one holds is hidden until you get there. Hitting a rock burns 8 s. New site every day.'
-                : 'Drive a rover off its lander and across the Moon. Every command arrives late, so you are always steering where the rover was. There are twelve science sites all round the lander and time for about half of them. What each one holds is hidden, the same for everyone today, and the rover reads a weak or strong signal once it is within 12 m. Hitting a rock burns 4 s. New site every day.'}
+              Drive a rover off its lander and across the Moon. Every command arrives late, so you are always steering where the rover was. There are twelve science sites all round the lander and time for about half of them. What each one holds is hidden, the same for everyone today, and the rover reads a weak or strong signal once it is within 12 m. Hitting a rock burns 4 s. New site every day.
             </p>
             <div className="mt-3 flex items-stretch gap-2 sm:mt-4 sm:block">
               {modeToggle}

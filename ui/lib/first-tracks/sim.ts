@@ -88,10 +88,6 @@ export const E_SPIN = 1.6
 export const E_ROLL_TURN = 0.3
 export const E_START = 1.5
 export const E_STALL = 2.0
-/** Plan mode: radians of unseen heading drift per metre where the regolith is loosest. */
-export const YAW_SLIP = 0.012
-/** Plan mode: metres slid downhill per metre driven, per unit of cross-slope. */
-export const SIDE_SLIP = 0.6
 /** Per metre driven with a wheel up on a rock, at the full clearance height. */
 export const E_BUMP = 2.5
 /** Share of its speed the rover loses climbing a rock as tall as its clearance. */
@@ -166,8 +162,6 @@ export type Sim = {
   lastBump: number
   /** Height of the tallest small rock under a wheel right now, m. */
   rockUnder: number
-  /** Plan mode: heading the regolith has turned the rover by, unseen by its odometry, radians. */
-  slipH: number
   /** Small rocks driven over. */
   jolts: number
   onRock: boolean
@@ -216,7 +210,6 @@ export function createSim(site: Site, mode: ModeConfig): Sim {
     bumps: 0,
     lastBump: -1000,
     rockUnder: 0,
-    slipH: 0,
     jolts: 0,
     onRock: false,
     delay,
@@ -330,26 +323,10 @@ export function stepApplied(s: Sim, th: number, st: number, live: boolean): void
   s.v += clamp(target - s.v, -accel * DT, accel * DT)
   s.h -= st * TURN * (1 - 0.3 * soft) * DT
   const speed = s.v < 0 ? -s.v : s.v
-  // Plan mode: loose regolith scrubs the heading round as the wheels turn, and
-  // a cross-slope carries the rover downhill. Neither shows in wheel odometry.
-  let slideX = 0
-  let slideZ = 0
-  if (s.mode.plan && s.off) {
-    const k = s.mode.plan.slip
-    const ph = site.startHeading * 3
-    const field = dsin(s.x * 0.61 + ph) * dcos(s.z * 0.47 - ph) + 0.5 * dsin((s.x + s.z) * 0.23 + ph)
-    const yaw = k * field * YAW_SLIP * (1 + 6 * soft) * speed * DT
-    s.h += yaw
-    s.slipH += yaw
-    // Roll positive is right side up: it slides to its left.
-    const side = -s.rollTan * k * SIDE_SLIP * speed * DT
-    slideX = -fz0 * side
-    slideZ = fx0 * side
-  }
   const fx = dsin(s.h)
   const fz = dcos(s.h)
-  let nx = s.x + fx * s.v * DT + slideX
-  let nz = s.z + fz * s.v * DT + slideZ
+  let nx = s.x + fx * s.v * DT
+  let nz = s.z + fz * s.v * DT
 
   // The lander itself. On the deck only the descent stage behind it blocks; on
   // the ground the whole lander does.

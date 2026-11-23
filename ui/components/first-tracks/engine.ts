@@ -17,11 +17,10 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { createDriver, type Driver, type DriverKind } from '@/lib/first-tracks/autopilot'
 import { MODES, type ModeConfig } from '@/lib/first-tracks/modes'
-import { comboPoints, PLAN_MAX_METRES, PLAN_MAX_POINTS, planMetres, PlanRun, stopTarget, type Pt } from '@/lib/first-tracks/plan'
 import { MAX_TAPE_STEPS, recordTape, tapeToBase64 } from '@/lib/first-tracks/replay'
 import { KIND_POINTS, scoreRun, type RunResult } from '@/lib/first-tracks/scoring'
-import { BATTERY, clockLeft, createSim, DT, ghostOf, holdSteps, PRIZE_METRES, STEP_HZ, stepSim, toInput, windowSecondsFor, type Sim } from '@/lib/first-tracks/sim'
-import { BODY, CLEAR, DECK, DECK_Y, FINDS, HALF_L, HALF_W, HOLD_SECONDS, inRect, LANDER_CENTER_Z, RAMP_FOOT, smooth, TARGET_RING, WHEEL_R, WORLD, type Site, type TargetKind } from '@/lib/first-tracks/site'
+import { BATTERY, clockLeft, createSim, DT, ghostOf, holdSteps, PRIZE_METRES, STEP_HZ, stepSim, toInput, type Sim } from '@/lib/first-tracks/sim'
+import { BODY, CLEAR, DECK, DECK_Y, FINDS, HALF_L, HALF_W, HOLD_SECONDS, inRect, LANDER_CENTER_Z, smooth, TARGET_RING, WHEEL_R, type Site, type TargetKind } from '@/lib/first-tracks/site'
 import { mulberry32 } from '@/lib/touchdown/mission'
 import { makeEnvMap, regolithTextures, type Bag } from '@/components/touchdown/models'
 import { buildMoonBase, type BaseModel } from '@/components/touchdown/moonbase'
@@ -51,26 +50,6 @@ export type HudState = {
   baseX: number
   baseY: number
   baseOn: boolean
-  /** Plot-and-send: null in the joystick modes. */
-  plan: PlanHud | null
-}
-
-export type PlanHud = {
-  /** Waypoints plotted and not yet sent, and the path's length. */
-  points: number
-  metres: number
-  /** How many of them are science stops: waypoints inside a target's ring. */
-  stops: number
-  /** The ground can be tapped: the rover is off the lander and idle. */
-  canPlot: boolean
-  /** 'transit' while the uplink is on its way, 'driving' while the rover follows it. */
-  state: 'idle' | 'transit' | 'driving'
-  sends: number
-  sendSeconds: number
-  /** Why the rover is being carried off its line right now, if it is. */
-  slip: '' | 'soft' | 'slope'
-  /** Metres between where the rover is and where its odometry says it is. */
-  drift: number
 }
 
 /** What each kind of target is, in the words the HUD and the photo use. */
@@ -182,12 +161,7 @@ export class FirstTracksEngine {
   private sim: Sim | null = null
   private hist = new Float32Array((MAX_TAPE_STEPS + 2) * STRIDE)
   private tape: number[] = []
-  // Plot-and-send: the draft path, the plan being driven, and how many were sent.
-  private planPts: Pt[] = []
-  private planRun: PlanRun | null = null
-  private planFrom: Pt = { x: 0, z: 0 }
-  private sends = 0
-  /** 1 while loose patches are tinted (plot-and-send), else 0. */
+  /** 1 while loose patches are tinted a darker grey. */
   private softTint = { value: 1 }
   // Regolith thrown up by the wheels: no air, so every grain flies a clean arc and lands.
   private dustPos = new Float32Array(DUST_N * 3)
@@ -198,15 +172,6 @@ export class FirstTracksEngine {
   private dustDue = [0, 0, 0, 0]
   private dustPts: THREE.Points | null = null
   private dustPrev: [number, number, number] | null = null
-  /** Beacon tag pictures: the game's, and plot-and-send's. */
-  /** Jobs finished before the plan in flight was sent; combo points so far; the best single uplink. */
-  private jobsAtSend = 0
-  private combo = 0
-  private comboBest = 0
-  private comboNote = ''
-  private planLine: THREE.Mesh | null = null
-  private planMat: THREE.MeshBasicMaterial | null = null
-  private planDots: THREE.Mesh[] = []
   private wall = 0
   private inTh = 0
   private inSt = 0
@@ -480,7 +445,7 @@ vec4 sampledDiffuseColor = mix(rNear * (0.55 + 0.75 * rMidC.g), rMidC * (0.55 + 
 sampledDiffuseColor = mix(sampledDiffuseColor, rFarC, rFar);
 // Soft regolith is finer: less speckle.
 sampledDiffuseColor = mix(sampledDiffuseColor, vec4(vec3(0.76), 1.0), vSoft * 0.55);
-// Plot-and-send: loose patches are a darker grey so a path can be plotted round them.
+// Loose patches are a darker grey so they can be seen and driven round.
 sampledDiffuseColor.rgb *= mix(1.0, 0.58, smoothstep(0.06, 0.4, vSoft) * uSoftTint);
 diffuseColor *= sampledDiffuseColor;`
         )
@@ -1038,13 +1003,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.mode = mode
     this.sim = createSim(this.site, mode)
     this.tape = []
-    this.planPts = []
-    this.planRun = null
-    this.sends = 0
-    this.jobsAtSend = 0
-    this.combo = 0
-    this.comboBest = 0
-    this.drawPlan()
     this.wall = 0
     this.inTh = 0
     this.inSt = 0
@@ -1101,13 +1059,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.driver = autopilot ? createDriver(autopilot, this.site, mode) : null
     this.phase = 'play'
     this.settleMs = 800
-    if (mode.plan) {
-      // The rover drives itself off the lander. The clock starts with the player's first uplink.
-      this.driver = null
-      this.planFrom = { x: this.sim!.x, z: this.sim!.z }
-      this.planRun = new PlanRun(this.sim!, [{ x: 0, z: 2.1 }, { x: RAMP_FOOT[0], z: RAMP_FOOT[1] }], 0)
-      this.cb.onCallout({ text: 'Rover is driving off the lander. The clock starts with your first uplink.', tone: 'info' })
-    } else this.cb.onCallout({ text: `Turn to face the ramp. Commands take ${mode.uplink.toFixed(1)} s to arrive.`, tone: 'info' })
+    this.cb.onCallout({ text: `Turn to face the ramp. Commands take ${mode.uplink.toFixed(1)} s to arrive.`, tone: 'info' })
     this.emitHud(true)
   }
 
@@ -1132,177 +1084,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
 
   resetCamera() {
     this.orbitYaw = 0
-    // Plotting wants to see the ground ahead: start higher and further back.
-    this.orbitPitch = this.mode.plan ? 0.2 : 0
-    this.zoomBy = this.mode.plan ? 1.6 : 1
-  }
-
-  // ---------------------------------------------------------------------------
-  // Plot-and-send
-  // ---------------------------------------------------------------------------
-
-  private canPlot(): boolean {
-    const sim = this.sim
-    return !!sim && !!this.mode.plan && this.phase === 'play' && !this.planRun && !sim.outcome && sim.off
-  }
-
-  /** The way down the ramp, which every plan sent from the deck starts with. */
-  private rampPts(): Pt[] {
-    return this.sim!.off ? [] : [{ x: 0, z: 2.1 }, { x: RAMP_FOOT[0], z: RAMP_FOOT[1] }]
-  }
-
-  /** Where a tap on the canvas meets the ground, or null if it meets the sky. */
-  private pickGround(clientX: number, clientY: number): Pt | null {
-    const rect = this.renderer.domElement.getBoundingClientRect()
-    const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1)
-    const ray = new THREE.Raycaster()
-    ray.setFromCamera(ndc, this.camera)
-    const o = ray.ray.origin
-    const d = ray.ray.direction
-    let prev = 0
-    for (let t = 0.5; t < 260; t += 0.25) {
-      const x = o.x + d.x * t
-      const z = o.z + d.z * t
-      if (o.y + d.y * t <= this.site.ground(x, z)) {
-        // Close in on the crossing between the last two samples.
-        let a = prev
-        let b = t
-        for (let i = 0; i < 12; i++) {
-          const m = (a + b) / 2
-          if (o.y + d.y * m <= this.site.ground(o.x + d.x * m, o.z + d.z * m)) b = m
-          else a = m
-        }
-        return { x: o.x + d.x * b, z: o.z + d.z * b }
-      }
-      prev = t
-    }
-    return null
-  }
-
-  /** A tap on the scene: add a waypoint there. Returns whether one was added. */
-  planTap(clientX: number, clientY: number): boolean {
-    if (!this.canPlot()) return false
-    const sim = this.sim!
-    const p = this.pickGround(clientX, clientY)
-    if (!p || Math.abs(p.x) > WORLD - 1 || Math.abs(p.z) > WORLD - 1) return false
-    if (inRect(DECK, p.x, p.z, 0.9) || inRect(BODY, p.x, p.z, 0.9) || (sim.off && Math.abs(p.x) < 1.7 && p.z > DECK.z1 && p.z < RAMP_FOOT[1] - 0.6)) {
-      this.cb.onCallout({ text: 'Plot on open ground, clear of the lander.', tone: 'warn' })
-      return false
-    }
-    if (this.planPts.length >= PLAN_MAX_POINTS) {
-      this.cb.onCallout({ text: `One uplink carries ${PLAN_MAX_POINTS} waypoints. Send these first.`, tone: 'warn' })
-      return false
-    }
-    if (planMetres(sim.x, sim.z, [...this.rampPts(), ...this.planPts, p]) > PLAN_MAX_METRES) {
-      this.cb.onCallout({ text: `Too far for one uplink (${PLAN_MAX_METRES} m). Send, then plot the rest.`, tone: 'warn' })
-      return false
-    }
-    this.planPts.push(p)
-    this.audio?.cue('tick')
-    const job = stopTarget(this.site, p, sim.imaged)
-    if (job >= 0) this.cb.onCallout({ text: `Science stop: the rover will halt here for the ${KIND_TAG[this.site.targets[job].kind].toLowerCase()} job, then carry on.`, tone: 'good' })
-    this.drawPlan()
-    this.emitHud(true)
-    return true
-  }
-
-  planUndo() {
-    if (!this.canPlot() || !this.planPts.length) return
-    this.planPts.pop()
-    this.drawPlan()
-    this.emitHud(true)
-  }
-
-  /** Uplink the plotted path. The clock runs from here until the rover stops. */
-  planSend() {
-    if (!this.canPlot() || !this.planPts.length) return
-    const sim = this.sim!
-    this.planFrom = { x: sim.x, z: sim.z }
-    this.planRun = new PlanRun(sim, [...this.rampPts(), ...this.planPts], Math.round(this.mode.plan!.sendSeconds * STEP_HZ))
-    this.planPts = []
-    this.sends++
-    this.jobsAtSend = sim.legs.length
-    this.wall = sim.steps * DT
-    this.audio?.cue('send')
-    this.drawPlan()
-    this.emitHud(true)
-  }
-
-  /** Bank the combo for the uplink that has just finished. Returns its points. */
-  private closeUplink(): number {
-    const jobs = this.sim!.legs.length - this.jobsAtSend
-    const pts = this.sends > 0 ? comboPoints(jobs) : 0
-    this.combo += pts
-    if (jobs > this.comboBest) this.comboBest = jobs
-    return pts
-  }
-
-  /** The plotted path as a ribbon on the ground, with a ring at each waypoint. */
-  private drawPlan() {
-    if (this.planLine) {
-      this.scene.remove(this.planLine)
-      this.planLine.geometry.dispose()
-      this.planLine = null
-    }
-    const sim = this.sim
-    const run = this.planRun
-    const pts = run ? run.pts : this.planPts.length ? [...this.rampPts(), ...this.planPts] : []
-    for (let i = 0; i < this.planDots.length; i++) this.planDots[i].visible = false
-    if (!sim || !pts.length || this.phase !== 'play') return
-    if (!this.planMat) this.planMat = this.track(new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, toneMapped: false }))
-    // Blue while it is a draft, amber once it has been sent.
-    this.planMat.color.copy(run ? new THREE.Color(2.4, 1.5, 0.35) : new THREE.Color(0.5, 1.7, 2.6))
-    const from = run ? this.planFrom : { x: sim.x, z: sim.z }
-    const line: number[] = []
-    let ax = from.x
-    let az = from.z
-    for (const p of pts) {
-      const n = Math.max(1, Math.ceil(Math.hypot(p.x - ax, p.z - az) / 0.3))
-      for (let i = line.length ? 1 : 0; i <= n; i++) line.push(ax + ((p.x - ax) * i) / n, az + ((p.z - az) * i) / n)
-      ax = p.x
-      az = p.z
-    }
-    const n = line.length / 2
-    const pos = new Float32Array(n * 6)
-    const idx: number[] = []
-    const half = 0.07
-    for (let i = 0; i < n; i++) {
-      const x = line[i * 2]
-      const z = line[i * 2 + 1]
-      const a = Math.max(0, i - 1)
-      const b = Math.min(n - 1, i + 1)
-      const dx = line[b * 2] - line[a * 2]
-      const dz = line[b * 2 + 1] - line[a * 2 + 1]
-      const l = Math.hypot(dx, dz) || 1
-      const px = (-dz / l) * half
-      const pz = (dx / l) * half
-      const y = this.site.ground(x, z) + 0.06
-      pos.set([x + px, y, z + pz, x - px, y, z - pz], i * 6)
-      // Dashes: every other stretch is left out.
-      if (i < n - 1 && i % 2 === 0) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2)
-    }
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    geo.setIndex(idx)
-    this.planLine = new THREE.Mesh(geo, this.planMat)
-    this.planLine.frustumCulled = false
-    this.planLine.renderOrder = 3
-    this.scene.add(this.planLine)
-    for (let i = 0; i < pts.length; i++) {
-      let dot = this.planDots[i]
-      if (!dot) {
-        dot = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.3, 24), this.planMat)
-        dot.rotation.x = -Math.PI / 2
-        dot.renderOrder = 3
-        dot.frustumCulled = false
-        this.planDots[i] = dot
-        this.scene.add(dot)
-      }
-      dot.visible = true
-      // A science stop is drawn larger than a waypoint the rover only passes through.
-      dot.scale.setScalar(stopTarget(this.site, pts[i], sim.imaged) >= 0 ? 1.9 : 1)
-      dot.position.set(pts[i].x, this.site.ground(pts[i].x, pts[i].z) + 0.07, pts[i].z)
-    }
+    this.orbitPitch = 0
+    this.zoomBy = 1
   }
 
   /** Throttle and steer, -1..1. */
@@ -1483,42 +1266,12 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const sim = this.sim!
     this.updateDust(dt)
     if (this.phase === 'play') {
-      // Plot-and-send: time waits for the first uplink. After that it never stops.
-      const plan = !!this.mode.plan
-      const live = !plan || !!this.planRun || this.sends > 0
-      if (live || sim.outcome) this.wall += dt
-      else this.wall = sim.steps * DT
+      this.wall += dt
       // Step the sim up to the wall clock, feeding it the input as given now.
-      while (!sim.outcome && live && (sim.steps + 1) * DT <= this.wall + 1e-9 && sim.steps < MAX_TAPE_STEPS) {
+      while (!sim.outcome && (sim.steps + 1) * DT <= this.wall + 1e-9 && sim.steps < MAX_TAPE_STEPS) {
         let th = this.inTh
         let st = this.inSt
         if (this.driver) [th, st] = this.driver.input(sim)
-        if (plan) {
-          th = 0
-          st = 0
-        }
-        const run = plan ? this.planRun : null
-        if (run) {
-          const cmd = run.input(sim)
-          if (!cmd) {
-            // The rover has stopped and waits for the next plan. The clock does not.
-            this.planRun = null
-            this.drawPlan()
-            const drift = Math.hypot(run.bx - sim.x, run.bz - sim.z)
-            if (this.sends === 0) {
-              // The drive off the lander is free: the whole window is still there for the first uplink.
-              sim.clockStart = sim.steps
-              sim.windowEnd = sim.steps + windowSecondsFor(this.site, this.mode) * STEP_HZ
-              this.cb.onCallout({ text: 'Plot a path, then Send. The clock starts with your first uplink.', tone: 'info' })
-            } else if (run.ended === 'bogged') this.comboNote = 'Stopped: the wheels were digging in, so the rover backed out. Plot round the loose patch.'
-            else if (run.ended !== 'blocked' && drift >= 0.5) this.comboNote = `Stopped ${drift.toFixed(1)} m off your line: the wheels slipped in loose regolith.`
-            const combo = this.closeUplink()
-            // Shown after this frame's event toasts, so the last job's toast does not replace it.
-            if (combo > 0) this.comboNote = `${sim.legs.length - this.jobsAtSend} jobs in one uplink: +${combo}`
-            else if (run.ended === 'blocked') this.cb.onCallout({ text: `Hazard stop: the rover hit something. \u2212${this.mode.hitSeconds} s. Plot round it.`, tone: 'warn' })
-            this.emitHud(true)
-          } else [th, st] = cmd
-        }
         if (th !== this.sentTh || st !== this.sentSt || (sim.steps % 15 === 0 && (th !== 0 || st !== 0))) {
           if (th !== this.sentTh || st !== this.sentSt) this.audio?.cue('send')
           this.sentTh = th
@@ -1533,10 +1286,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       const shown = this.wall - this.mode.downlink
       this.samplePose(shown)
       this.showEvents(shown)
-      if (this.comboNote) {
-        this.cb.onCallout({ text: this.comboNote, tone: this.comboNote.startsWith('Stopped') ? 'warn' : 'good' })
-        this.comboNote = ''
-      }
       this.updateGhost()
       this.depositTracks()
       const ended = !!sim.outcome && shown >= sim.endStep * DT
@@ -1608,7 +1357,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
           this.audio?.cue('jolt')
           break
         case 'egress':
-          if (!m.plan) this.cb.onCallout({ text: 'Clear of the lander. The clock is running.', tone: 'info' })
+          this.cb.onCallout({ text: 'Clear of the lander. The clock is running.', tone: 'info' })
           this.audio?.cue('egress')
           break
         case 'imaged': {
@@ -1714,16 +1463,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       ;(b.beam.material as THREE.MeshBasicMaterial).opacity = (this.scanned[i] === 2 ? 0.4 : this.scanned[i] === 1 ? 0.12 : 0.22) * smooth(4.5, 13, d) * smooth(1.2, 3.5, near)
       ;(b.tag.material as THREE.SpriteMaterial).opacity = this.phase === 'play' ? smooth(3, 7, d) * (1 - smooth(48, 70, d)) : 0
     })
-  }
-
-  /** What is carrying the rover off its plotted line right now, and how far off it has been carried. */
-  private slipNote(): { slip: '' | 'soft' | 'slope'; drift: number } {
-    const sim = this.sim!
-    const run = this.planRun
-    if (!run || run.inTransit || !sim.off || this.sends === 0) return { slip: '', drift: 0 }
-    const moving = Math.abs(sim.v) > 0.1
-    const slip = !moving ? '' : this.site.softAt(sim.x, sim.z) > 0.15 ? 'soft' : Math.abs(sim.rollTan) > 0.05 ? 'slope' : ''
-    return { slip, drift: Math.hypot(run.bx - sim.x, run.bz - sim.z) }
   }
 
   /** Regolith off the wheels: more of it in loose ground, and from whichever way each wheel is turning. */
@@ -1963,8 +1702,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const p = this.pose
     const m = this.mode
     if (this.phase !== 'play') return ''
-    if (m.plan && !p.off) return 'The rover drives itself off the lander.'
-    if (m.plan && !p.off) return ''
     if (!p.off) return 'Turn to face the ramp. The tray is only 1.6 m wide, and the clock starts when you are off the lander.'
     if (p.sink > 0.35) return 'Sinking! Drive straight, or reverse out.'
     this.holdLabel = ''
@@ -1973,7 +1710,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       const t = this.site.targets[i]
       if (Math.hypot(p.x - t.x, p.z - t.z) < TARGET_RING + 0.6) {
         this.holdLabel = KIND_HOLD[t.kind]
-        return m.plan ? '' : `${KIND_HINT[t.kind]} for ${HOLD_SECONDS[t.kind]} s`
+        return `${KIND_HINT[t.kind]} for ${HOLD_SECONDS[t.kind]} s`
       }
     }
     return ''
@@ -2001,18 +1738,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       baseX: (scratch.set(this.basePos.x, this.basePos.y + 34, this.basePos.z).project(this.camera).x + 1) / 2,
       baseY: (1 - scratch.y) / 2,
       baseOn: scratch.z < 1 && Math.abs(scratch.x) < 0.97 && scratch.y < 0.97 && scratch.y > -0.9,
-      plan: this.mode.plan
-        ? {
-            points: this.planPts.length,
-            stops: new Set(this.planPts.map((p) => stopTarget(this.site, p, sim.imaged)).filter((i) => i >= 0)).size,
-            metres: planMetres(sim.x, sim.z, [...this.rampPts(), ...this.planPts]),
-            canPlot: this.canPlot(),
-            state: !this.planRun ? 'idle' : this.planRun.inTransit ? 'transit' : 'driving',
-            sends: this.sends,
-            sendSeconds: this.mode.plan.sendSeconds,
-            ...this.slipNote(),
-          }
-        : null,
     })
     void force
   }
@@ -2045,16 +1770,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       ;(b.beam.material as THREE.MeshBasicMaterial).opacity = 0.45
       ;(b.tag.material as THREE.SpriteMaterial).opacity = 1
     })
-    if (this.mode.plan) {
-      // A run can end mid-plan (the last job, the window closing): bank that uplink too.
-      if (this.planRun) {
-        this.closeUplink()
-        this.jobsAtSend = sim.legs.length
-        this.planRun = null
-      }
-      this.result.uplink = { sends: this.sends, best: this.comboBest, bonus: this.combo }
-      this.result.score += this.combo
-    }
     this.audio?.stopAll()
     this.resetCamera()
     this.measureSpan()

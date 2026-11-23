@@ -34,36 +34,11 @@ export type ModeConfig = {
   /** Seconds on the clock for a site with no par time worked out (tests only). */
   windowSeconds: number
   scoreMultiplier: number
-  /**
-   * Plot-and-send (prototype, /rover?plan=1): the player plots waypoints and
-   * the rover drives them itself by wheel odometry. `slip` scales how far loose
-   * regolith and cross-slopes carry it off the plotted line, which its
-   * odometry cannot see. `sendSeconds` is how long each uplink takes to reach
-   * the rover.
-   */
-  plan?: { slip: number; sendSeconds: number }
 }
 
 export const MODES: Record<ModeId, ModeConfig> = {
   easy: { id: 'easy', label: 'Easy', uplink: 0.5, downlink: 0.5, ghost: true, sunBonusDeg: 5, clockFactor: 0.62, hitSeconds: 4, windowSeconds: 50, scoreMultiplier: 1 },
   pro: { id: 'pro', label: 'Pro', uplink: 1.3, downlink: 1.3, ghost: false, sunBonusDeg: 0, clockFactor: 0.68, hitSeconds: 4, windowSeconds: 80, scoreMultiplier: 1.25 },
-}
-
-/**
- * Plot-and-send prototype. No joystick lag: the rover follows the plan on
- * board, so the delay is paid once per uplink instead of on every twitch.
- * Scores are not saved in this mode; the server replays Easy and Pro only.
- */
-export const PLAN_MODE: ModeConfig = {
-  ...MODES.easy,
-  label: 'Plan',
-  uplink: 0,
-  downlink: 0,
-  ghost: false,
-  // The clock never stops after the first uplink, thinking included.
-  clockFactor: 0.75,
-  hitSeconds: 8,
-  plan: { slip: 1, sendSeconds: 2.6 },
 }
 
 export function modeOf(v: unknown): ModeId {
