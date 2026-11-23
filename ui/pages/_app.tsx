@@ -26,8 +26,10 @@ import { getChainById } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
+import PageErrorBoundary from '../components/layout/PageErrorBoundary'
 import AttributionCapture from '@/components/analytics/AttributionCapture'
 import { Ga4Identity } from '@/components/analytics/Ga4Identity'
+import MetaPixel from '@/components/analytics/MetaPixel'
 import { MoonbaseEngagement } from '@/components/analytics/MoonbaseEngagement'
 import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
 import GuestUpgradeWatcher from '@/components/privy/GuestUpgradeWatcher'
@@ -103,6 +105,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
     <SessionProvider session={session}>
       <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <AttributionCapture />
+      <MetaPixel />
       <MoonbaseEngagement />
       <ChainContextV5.Provider value={chainContextValue}>
         <PrivyWalletContext.Provider value={walletContextValue}>
@@ -152,7 +155,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                     <OnrampReturnHandler />
                     <Layout lightMode={lightMode} setLightMode={setLightMode}>
                       <FlagProvider>
-                        <Component {...pageProps} />
+                        <PageErrorBoundary key={router.pathname}>
+                          <Component {...pageProps} />
+                        </PageErrorBoundary>
                       </FlagProvider>
                     </Layout>
                   </NextQueryParamProvider>

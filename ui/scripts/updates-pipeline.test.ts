@@ -9,6 +9,7 @@ import {
   weekStart,
 } from '../lib/activity-feed/format'
 import { buildActivityRssXml, feedItemsFromUpdates } from '../lib/activity-feed/rss'
+import { parseUpdateBlock, stripNonProse } from '../lib/updates/blocks'
 import formatUpdateDate from '../lib/updates/formatUpdateDate'
 import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
 import {
@@ -20,6 +21,16 @@ import {
   resetUpdatesCache,
   slugFromFilename,
 } from '../lib/updates/loadUpdates'
+import {
+  fetchNewsletterPosts,
+  mergeFeed,
+  readsLiveArchive,
+  normalizeKitPost,
+  normalizeKitPosts,
+  summarize,
+} from '../lib/updates/newsletter'
+import type { NewsletterPost } from '../lib/updates/newsletter'
+import snapshot from '../lib/updates/newsletterSnapshot.json'
 import { readingMinutes } from '../lib/updates/readingTime'
 
 function expectEqual<T>(actual: T, expected: T, label: string) {
@@ -68,6 +79,8 @@ author: Pablo
 authorRole: Founder
 category: Press Release
 image: /assets/MoonDAO-OG.png
+imageAlt: The Moon
+imageCaption: "Illustration: MoonDAO"
 tags:
   - ideas
 featured: true
@@ -80,6 +93,8 @@ draft: false
     expectEqual(frontmatter.date, '2023-09-12', 'date')
     expectEqual(frontmatter.authorRole, 'Founder', 'role')
     expectEqual(frontmatter.category, 'Press Release', 'category')
+    expectEqual(frontmatter.imageAlt, 'The Moon', 'image alt')
+    expectEqual(frontmatter.imageCaption, 'Illustration: MoonDAO', 'image caption')
     expectEqual(frontmatter.featured, true, 'featured')
     expectEqual(frontmatter.draft, false, 'draft')
     expectEqual(frontmatter.tags.join(','), 'ideas', 'tags')
@@ -113,6 +128,114 @@ describe('reading time', () => {
   it('rounds word count at 220 wpm', () => {
     const words = Array.from({ length: 440 }, () => 'word').join(' ')
     expectEqual(readingMinutes(words), 2, '440 words')
+  })
+})
+
+describe('update data blocks', () => {
+  const dots = {
+    type: 'dots',
+    series: [{ name: 'A' }, { name: 'B' }],
+    rows: [{ label: 'X', values: [10, 20], marker: 15 }],
+  }
+
+  it('parses a valid chart, stats, heatmap and ledger', () => {
+    expectEqual(parseUpdateBlock('chart', JSON.stringify(dots))?.kind, 'chart', 'chart')
+    expectEqual(
+      parseUpdateBlock('stats', JSON.stringify({ items: [{ value: '4', label: 'models' }] }))?.kind,
+      'stats',
+      'stats'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'heatmap',
+        JSON.stringify({
+          columns: ['a', 'b'],
+          rows: [{ label: 'r', cells: [{ value: 1 }, { value: -2 }] }],
+        })
+      )?.kind,
+      'heatmap',
+      'heatmap'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'ledger',
+        JSON.stringify({ rows: [{ label: 'r', trades: [{ outcome: 'o', size: 0.001 }] }] })
+      )?.kind,
+      'ledger',
+      'ledger'
+    )
+  })
+
+  it('parses screens and cta blocks and rejects them without links or images', () => {
+    const shot = { src: '/a.jpg', alt: 'A page', url: 'moondao.com/a', href: '/a' }
+    expectEqual(
+      parseUpdateBlock('screens', JSON.stringify({ items: [shot] }))?.kind,
+      'screens',
+      'screens'
+    )
+    expectEqual(
+      parseUpdateBlock('screens', JSON.stringify({ items: [{ src: '/a.jpg' }] })),
+      null,
+      'screens without alt'
+    )
+    const cta = { title: 'Predict', actions: [{ label: 'Go', href: '/deprize', primary: true }] }
+    expectEqual(parseUpdateBlock('cta', JSON.stringify(cta))?.kind, 'cta', 'cta')
+    expectEqual(
+      parseUpdateBlock('cta', JSON.stringify({ ...cta, actions: [] })),
+      null,
+      'cta without actions'
+    )
+    expectEqual(
+      parseUpdateBlock('cta', JSON.stringify({ ...cta, image: { src: '/a.jpg' } })),
+      null,
+      'cta image without alt'
+    )
+  })
+
+  it('returns null for unknown languages, bad JSON and mismatched shapes', () => {
+    expectEqual(parseUpdateBlock('js', JSON.stringify(dots)), null, 'language')
+    expectEqual(parseUpdateBlock('chart', '{not json'), null, 'json')
+    expectEqual(parseUpdateBlock('chart', JSON.stringify({ ...dots, type: 'pie' })), null, 'type')
+    expectEqual(
+      parseUpdateBlock('chart', JSON.stringify({ ...dots, rows: [{ label: 'X', values: [1] }] })),
+      null,
+      'values per series'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'chart',
+        JSON.stringify({
+          type: 'line',
+          y: { min: 5, max: 1 },
+          x: { count: 2 },
+          series: [{ name: 'a', values: [1, 2] }],
+        })
+      ),
+      null,
+      'inverted range'
+    )
+    expectEqual(
+      parseUpdateBlock(
+        'heatmap',
+        JSON.stringify({ columns: ['a'], rows: [{ label: 'r', cells: [] }] })
+      ),
+      null,
+      'cells per column'
+    )
+  })
+
+  it('leaves data blocks and collapsed details out of the reading time', () => {
+    const prose = Array(440).fill('word').join(' ')
+    const chart =
+      '```chart\n' + JSON.stringify({ filler: Array(2000).fill('x') }, null, 1) + '\n```'
+    const details =
+      '<details>\n<summary>Notes</summary>\n\n' +
+      Array(2000).fill('note').join(' ') +
+      '\n\n</details>'
+    const body = [prose, chart, details].join('\n\n')
+    expectEqual(stripNonProse(body).includes('filler'), false, 'chart stripped')
+    expectEqual(readingMinutes(body), 2, 'reading minutes')
+    expectEqual(stripNonProse('```js\nconst a = 1\n```').includes('const a'), true, 'code kept')
   })
 })
 
@@ -215,6 +338,7 @@ body
     const [update] = listUpdates(dir)
     expectEqual(update.authorRole, null, 'authorRole')
     expectEqual(update.image, null, 'image')
+    expectEqual(update.imageCaption, null, 'imageCaption')
     expectEqual(JSON.stringify(update).includes('undefined'), false, 'serializable')
   })
 
@@ -498,5 +622,229 @@ describe('activity feed formatting', () => {
       )
     )
       throw new Error('missing escaped list')
+  })
+})
+
+function kitPost(overrides: Record<string, unknown> = {}) {
+  return {
+    slug: 'moon-base-zero-launches-tomorrow',
+    title: 'Moon Base Zero launches tomorrow',
+    status: 'published',
+    isPaid: false,
+    readingTime: 2,
+    publishedAt: '2026-11-12T01:58:27.000Z',
+    thumbnailUrl: 'https://embed.filekitcdn.com/e/abc/def/email',
+    url: 'https://news.moondao.com/posts/moon-base-zero-launches-tomorrow',
+    introContent: 'Hey Reader, We have built the critical path tech tree for a Moonbase...',
+    ...overrides,
+  }
+}
+
+describe('newsletter issues', () => {
+  it('skips the live archive during a production build', () => {
+    expectEqual(readsLiveArchive('phase-production-build'), false, 'build')
+    expectEqual(readsLiveArchive(undefined), true, 'refresh')
+    expectEqual(readsLiveArchive('phase-production-server'), true, 'server')
+  })
+
+  it('maps a Kit post to the fields the feed uses', () => {
+    const post = normalizeKitPost(kitPost())
+    if (!post) throw new Error('expected a post')
+    expectEqual(post.date, '2026-11-12', 'date')
+    expectEqual(post.readingMinutes, 2, 'reading minutes')
+    expectEqual(post.image, 'https://embed.filekitcdn.com/e/abc/def', 'image drops /email')
+    expectEqual(
+      post.description,
+      'We have built the critical path tech tree for a Moonbase',
+      'greeting and trailing ellipsis are trimmed'
+    )
+  })
+
+  it('skips drafts, paid posts and posts without a title or date', () => {
+    expectEqual(normalizeKitPost(kitPost({ status: 'draft' })), null, 'draft')
+    expectEqual(normalizeKitPost(kitPost({ isPaid: true })), null, 'paid')
+    expectEqual(normalizeKitPost(kitPost({ title: '' })), null, 'title')
+    expectEqual(normalizeKitPost(kitPost({ publishedAt: 'soon' })), null, 'date')
+    expectEqual(normalizeKitPost(null), null, 'null')
+  })
+
+  it('uses a YouTube thumbnail for play-button images and drops hosts the CSP blocks', () => {
+    const playbutton =
+      'https://functions-js.kit.com/playbutton?play=%233197e0&thumbnailof=' +
+      encodeURIComponent('https://www.youtube.com/watch?v=K9TEI-Dhky0')
+    expectEqual(
+      normalizeKitPost(kitPost({ thumbnailUrl: playbutton }))?.image,
+      'https://img.youtube.com/vi/K9TEI-Dhky0/hqdefault.jpg',
+      'youtube'
+    )
+    expectEqual(
+      normalizeKitPost(kitPost({ thumbnailUrl: 'https://example.com/a.png' }))?.image,
+      null,
+      'other host'
+    )
+  })
+
+  it('caps long descriptions at a word boundary', () => {
+    const long = summarize(`${'word '.repeat(100)}`)
+    if (long.length > 222) throw new Error(`description too long: ${long.length}`)
+    if (!long.endsWith('…')) throw new Error('expected an ellipsis')
+  })
+
+  it('drops duplicate slugs', () => {
+    expectEqual(normalizeKitPosts([kitPost(), kitPost()]).length, 1, 'deduped')
+  })
+
+  it('reads every page of the archive', async () => {
+    const calls: string[] = []
+    const fakeFetch = (async (url: string) => {
+      calls.push(url)
+      const page = Number(new URL(url).searchParams.get('page'))
+      const posts =
+        page === 1
+          ? [kitPost({ slug: 'one', publishedAt: '2026-01-01T00:00:00Z' })]
+          : [kitPost({ slug: 'two', publishedAt: '2026-02-01T00:00:00Z' })]
+      return { ok: true, status: 200, json: async () => ({ posts, hasMore: page < 2 }) }
+    }) as unknown as typeof fetch
+
+    const posts = await fetchNewsletterPosts(fakeFetch)
+    expectEqual(calls.length, 2, 'requests')
+    expectEqual(posts.map((p) => p.slug).join(','), 'two,one', 'newest first')
+  })
+
+  it('throws when the archive cannot be read, so callers can fall back', async () => {
+    const failing = (async () => ({ ok: false, status: 503 })) as unknown as typeof fetch
+    let threw = false
+    try {
+      await fetchNewsletterPosts(failing)
+    } catch {
+      threw = true
+    }
+    if (!threw) throw new Error('expected a failed archive to throw')
+  })
+
+  it('gives up when the archive does not answer in time', async () => {
+    const hanging = ((_url: string, init?: { signal?: AbortSignal }) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+      })) as unknown as typeof fetch
+    let threw = false
+    try {
+      await fetchNewsletterPosts(hanging, 30)
+    } catch {
+      threw = true
+    }
+    if (!threw) throw new Error('expected a stalled archive to throw')
+  })
+
+  it('ships a non-empty snapshot in the shape the feed expects', () => {
+    const posts = snapshot as NewsletterPost[]
+    if (posts.length < 100) throw new Error(`snapshot has only ${posts.length} issues`)
+    for (const post of posts) {
+      if (
+        !post.slug ||
+        !post.title ||
+        !isValidUpdateDate(post.date) ||
+        !post.url.startsWith('https://')
+      ) {
+        throw new Error(`bad snapshot entry ${JSON.stringify(post)}`)
+      }
+    }
+  })
+})
+
+describe('merged news and updates feed', () => {
+  let dir: string
+
+  beforeEach(() => {
+    resetUpdatesCache()
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'feed-'))
+  })
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('lists updates and newsletter issues together, newest first', () => {
+    writeUpdate(dir, '2024-01-01-essay.md', '')
+    const issues: NewsletterPost[] = [
+      {
+        slug: 'newer',
+        title: 'Newer issue',
+        date: '2024-03-01',
+        description: 'd',
+        image: null,
+        url: 'https://news.moondao.com/posts/newer',
+        readingMinutes: 1,
+      },
+      {
+        slug: 'same-day',
+        title: 'Same-day issue',
+        date: '2024-01-01',
+        description: 'd',
+        image: null,
+        url: 'https://news.moondao.com/posts/same-day',
+        readingMinutes: 1,
+      },
+    ]
+    const feed = mergeFeed(listUpdates(dir), issues)
+    expectEqual(
+      feed.map((entry) => entry.slug).join(','),
+      'newsletter-newer,essay,newsletter-same-day',
+      'order, with the update first on a same-day tie'
+    )
+    expectEqual(feed[0].externalUrl, 'https://news.moondao.com/posts/newer', 'issue link')
+    expectEqual(feed[0].category, 'Newsletter', 'issue category')
+    expectEqual(feed[1].externalUrl ?? null, null, 'updates stay on-site')
+  })
+
+  it('keeps same-day newsletter issues in the order they were sent', () => {
+    const issues: NewsletterPost[] = [
+      {
+        slug: 'later',
+        title: 'Later',
+        date: '2024-03-01',
+        description: 'd',
+        image: null,
+        url: 'https://news.moondao.com/posts/later',
+        readingMinutes: 1,
+      },
+      {
+        slug: 'earlier',
+        title: 'Earlier',
+        date: '2024-03-01',
+        description: 'd',
+        image: null,
+        url: 'https://news.moondao.com/posts/earlier',
+        readingMinutes: 1,
+      },
+    ]
+    expectEqual(
+      mergeFeed([], issues)
+        .map((entry) => entry.slug)
+        .join(','),
+      'newsletter-later,newsletter-earlier',
+      'send order'
+    )
+  })
+
+  it('serializes for getStaticProps (no undefined values)', () => {
+    const [entry] = mergeFeed(
+      [],
+      [
+        {
+          slug: 'a',
+          title: 'A',
+          date: '2024-01-01',
+          description: '',
+          image: null,
+          url: 'https://news.moondao.com/posts/a',
+          readingMinutes: 1,
+        },
+      ]
+    )
+    expectEqual(JSON.stringify(entry).includes('undefined'), false, 'json')
+    for (const [key, value] of Object.entries(entry)) {
+      if (value === undefined) throw new Error(`${key} is undefined`)
+    }
   })
 })

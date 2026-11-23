@@ -49,6 +49,54 @@ export function buildOddsTimeDomain(
   return { tMin, tMax, ticks, spanMs: span }
 }
 
+export type OddsValueDomain = { min: number; max: number; ticks: number[] }
+
+const ODDS_Y_FULL: OddsValueDomain = { min: 0, max: 100, ticks: [0, 25, 50, 75, 100] }
+/** Narrowest Y window (percentage points), so near-flat odds are not blown up. */
+export const ODDS_MIN_Y_SPAN = 10
+const ODDS_Y_STEPS = [1, 2, 5, 10, 20, 25]
+const ODDS_Y_TARGET_TICKS = 5
+
+/**
+ * Fit the Y axis to the plotted odds instead of a fixed 0–100, so outcomes
+ * that sit close together stay distinguishable. Bounds snap to a round tick
+ * step and never leave 0–100.
+ */
+export function buildOddsValueDomain(history: OddsSample[], outcomeCount: number): OddsValueDomain {
+  let lo = Infinity
+  let hi = -Infinity
+  for (const s of history) {
+    for (let i = 0; i < outcomeCount; i++) {
+      const v = s.p[i]
+      if (typeof v !== 'number' || !Number.isFinite(v)) continue
+      if (v < lo) lo = v
+      if (v > hi) hi = v
+    }
+  }
+  if (lo === Infinity) return ODDS_Y_FULL
+
+  const pad = Math.max((hi - lo) * 0.15, 1)
+  let min = Math.max(0, lo - pad)
+  let max = Math.min(100, hi + pad)
+  if (max - min < ODDS_MIN_Y_SPAN) {
+    const mid = (min + max) / 2
+    min = mid - ODDS_MIN_Y_SPAN / 2
+    max = mid + ODDS_MIN_Y_SPAN / 2
+    if (min < 0) [min, max] = [0, ODDS_MIN_Y_SPAN]
+    if (max > 100) [min, max] = [100 - ODDS_MIN_Y_SPAN, 100]
+  }
+
+  const rough = (max - min) / (ODDS_Y_TARGET_TICKS - 1)
+  const step = ODDS_Y_STEPS.find((s) => s >= rough) ?? 25
+  const snappedMin = Math.max(0, Math.floor(min / step) * step)
+  const snappedMax = Math.min(100, Math.ceil(max / step) * step)
+  if (snappedMax - snappedMin >= 100) return ODDS_Y_FULL
+
+  const ticks: number[] = []
+  for (let t = snappedMin; t <= snappedMax + 1e-9; t += step) ticks.push(t)
+  return { min: snappedMin, max: snappedMax, ticks }
+}
+
 /** One label per local calendar day, so a multi-day axis cannot skip a date. */
 function calendarDayTicks(tMin: number, tMax: number): number[] {
   const days: number[] = []

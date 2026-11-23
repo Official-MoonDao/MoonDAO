@@ -78,9 +78,9 @@ export function eligibilityMessage(reason: EligibilityReason): string {
     case 'invalid-wallet':
       return 'Connect a valid wallet to bet.'
     case 'country-unknown':
-      return 'We could not confirm your location, so betting is unavailable.'
+      return 'We could not confirm your location, so adding ETH is unavailable.'
     case 'restricted-jurisdiction':
-      return 'DePrize is not available in your location.'
+      return 'Adding ETH to a prediction is not available in your location. Free predictions are open to everyone.'
     case 'vpn-or-proxy':
       return 'Turn off any VPN, proxy, or Tor connection and try again.'
     case 'wallet-denied':

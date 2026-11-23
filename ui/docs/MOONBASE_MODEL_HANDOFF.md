@@ -771,7 +771,12 @@ avoid up front and annoying to find later.
     not a filled band);
   - street lights (`StreetLight`, a neutral-colored wrapper around the
     depot's own `DepotLightMast`, now parameterized by height/boom length
-    so one fixture serves both) along the spine and every branch and spur;
+    so one fixture serves both) along the spine and every branch and spur.
+    The fixture is the settlement's light standard — a telescoping mast on a
+    sintered ballast block, with a cable-stayed blade head whose top face is
+    its radiator — built as three merged geometries shared by every post
+    (`getLampGeometry`). `StreetLight` sinks the post by `SEAT_LIFT` so it
+    stands on the terrain while its pool stays above the road;
   - staged cargo along the road shoulders — `CrateCluster`,
     `CableReel` (paired with a small `CargoCrate`), `SparePartsPallet`, and
     `BrickPallet`, all exported from the logistics prop library

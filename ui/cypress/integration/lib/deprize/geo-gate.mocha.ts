@@ -236,7 +236,7 @@ describe('PR-0 DePrize geo gate', () => {
     expect(modal).to.not.include('does not change the ETH odds')
     expect(modal).to.include('regionRestricted')
     expect(modal).to.include('!isBet && props.regionRestricted')
-    expect(copy).to.include("Betting isn't available in your region")
+    expect(copy).to.include("Adding ETH isn't available in your region")
     expect(copy).to.match(/you can still make a prediction/i)
     for (const file of surfaces) {
       const src = readUi(file)

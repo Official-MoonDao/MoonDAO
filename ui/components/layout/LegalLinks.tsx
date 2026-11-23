@@ -6,7 +6,7 @@ interface LegalLinksProps {
 
 export default function LegalLinks({ isCentered = true }: LegalLinksProps) {
   return (
-    <div className={`w-full flex items-center ${isCentered ? 'justify-center' : 'justify-start'} min-h-[80px] md:min-h-[0px]`}>
+    <div className={`w-full flex flex-wrap gap-y-2 items-center ${isCentered ? 'justify-center' : 'justify-start'} min-h-[80px] md:min-h-[0px]`}>
       <Link
         className="pr-5 opacity-[60%] hover:opacity-[100%]"
         href="/privacy-policy"
@@ -19,6 +19,13 @@ export default function LegalLinks({ isCentered = true }: LegalLinksProps) {
         href="/terms-of-service"
       >
         Terms of Service
+      </Link>
+      <span>&nbsp;|&nbsp;</span>
+      <Link
+        className="pl-5 opacity-[60%] hover:opacity-[100%]"
+        href="/privacy-choices"
+      >
+        Do Not Sell or Share My Personal Information
       </Link>
     </div>
   )

@@ -21,6 +21,7 @@ import {
   writePendingHandoffs,
 } from '@/lib/forecasts/guestHandoff'
 import { retainForecastWriter } from '@/lib/forecasts/retainForecastWriter'
+import { handoffNetworkAction, handoffSignerReady } from '@/lib/forecasts/useGuestForecastHandoff'
 import { isGuestRecord, isPrivyGuest, rememberPrivyUser } from '@/lib/privy/guest'
 
 const UI_ROOT = path.resolve(__dirname, '../../../../')
@@ -311,6 +312,35 @@ describe('server guest lookup', () => {
   })
 })
 
+describe('handoffNetworkAction', () => {
+  it('writes when the wallet chain is ready or unknown to the caller', () => {
+    expect(handoffNetworkAction(true, false)).to.equal('write')
+    expect(handoffNetworkAction(true, true)).to.equal('write')
+    expect(handoffNetworkAction(undefined, false)).to.equal('write')
+  })
+
+  it('switches once while the wallet is on another chain and does not write', () => {
+    expect(handoffNetworkAction(false, false)).to.equal('switch')
+    expect(handoffNetworkAction(false, true)).to.equal('wait')
+  })
+})
+
+describe('handoffSignerReady', () => {
+  const previous = { address: '0xabc' }
+  const rebuilt = { address: '0xabc' }
+
+  it('writes immediately when the wallet was already on the prize chain', () => {
+    expect(handoffSignerReady(false, previous, previous)).to.equal(true)
+    expect(handoffSignerReady(false, undefined, undefined)).to.equal(true)
+  })
+
+  it('waits until the signing account is replaced after a chain switch', () => {
+    expect(handoffSignerReady(true, previous, previous)).to.equal(false)
+    expect(handoffSignerReady(true, undefined, undefined)).to.equal(false)
+    expect(handoffSignerReady(true, rebuilt, previous)).to.equal(true)
+  })
+})
+
 describe('guest wiring', () => {
   it('rejects guests in verifyPrivyAuth unless a route opts in', () => {
     const src = readUi('lib', 'privy', 'privyAuth.tsx')
@@ -378,12 +408,26 @@ describe('guest wiring', () => {
     const decodeReturn = hook.indexOf('if (pick == null) return', decodeAt)
     expect(decodeReturn).to.be.greaterThan(decodeAt)
     expect(hook.slice(decodeAt, decodeReturn)).not.to.contain('takePendingHandoff')
+    // A wallet on the wrong chain is switched before the rewrite. That switch
+    // must not burn the attempt or delete the stored copy.
+    const networkAt = hook.indexOf('const networkAction = handoffNetworkAction(')
+    expect(networkAt).to.be.greaterThan(decodeReturn)
+    expect(commitAt).to.be.greaterThan(networkAt)
+    const networkBranch = hook.slice(networkAt, commitAt)
+    expect(networkBranch).to.contain("networkAction === 'wait'")
+    expect(networkBranch).to.contain("networkAction === 'switch'")
+    expect(networkBranch).to.contain('handoffSignerReady(')
+    expect(networkBranch).to.contain('return')
+    expect(networkBranch).not.to.contain('takePendingHandoff')
     for (const file of [
       'components/deprize/ForecastPanel.tsx',
       'lib/forecasts/useForecastPredict.ts',
     ]) {
       const panel = readUi(file)
       expect(panel).to.contain('useGuestForecastHandoff(')
+      expect(panel).to.contain('networkReady: !wrongNetwork')
+      expect(panel).to.contain('ensureNetwork: switchToChain')
+      expect(panel).to.contain('signer: account')
       expect(panel).to.contain('chainSlug')
       expect(panel).to.contain('deprizeId')
       expect(panel).to.contain('rememberGuestForecast(')

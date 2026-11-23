@@ -27,6 +27,7 @@ import {
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import { atlasForecastBook } from '@/lib/forecasts/atlasBook'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import {
   PARTICIPATION_LABEL,
   earthSideVenue,
@@ -158,14 +159,14 @@ export default function SharedGoalPanel({
 
   // Predict / cash-out. Reset during render when the race changes so a
   // stale index can never target the next market.
-  const [predictArmed, setPredictArmed] = useState(false)
+  const [savedForecastPick, setSavedForecastPick] = useState<number | null>(null)
   const [predictIndex, setPredictIndex] = useState<number | null>(null)
   const [predictName, setPredictName] = useState('')
   const [exitIndex, setExitIndex] = useState<number | null>(null)
   const [trackedGoalId, setTrackedGoalId] = useState(goal.id)
   if (trackedGoalId !== goal.id || (resolved && (predictIndex !== null || exitIndex !== null))) {
     setTrackedGoalId(goal.id)
-    setPredictArmed(false)
+    setSavedForecastPick(null)
     setPredictIndex(null)
     setPredictName('')
     setExitIndex(null)
@@ -205,7 +206,6 @@ export default function SharedGoalPanel({
 
   const openPredict = (index: number | undefined, name: string) => {
     if (index === undefined || (bound && payoutPending) || forecastOutcomeCount <= index) return
-    setPredictArmed(true)
     setPredictIndex(index)
     setPredictName(name)
   }
@@ -502,7 +502,9 @@ export default function SharedGoalPanel({
                             bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
                             disabled:cursor-not-allowed disabled:opacity-40"
                         >
-                          {DEPRIZE_PREDICT_CTA}
+                          {savedForecastPick === forecastIndex
+                            ? FORECAST_COPY.predicted
+                            : DEPRIZE_PREDICT_CTA}
                         </button>
                       )}
                       {resolved && bound && redeemValueEth !== undefined && (
@@ -600,7 +602,9 @@ export default function SharedGoalPanel({
                             bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
                             disabled:cursor-not-allowed disabled:opacity-40"
                           >
-                            {DEPRIZE_PREDICT_CTA}
+                            {savedForecastPick === fieldOutcomeIndex
+                              ? FORECAST_COPY.predicted
+                              : DEPRIZE_PREDICT_CTA}
                           </button>
                         )}
                         {resolved && fieldRedeemValueEth !== undefined && (
@@ -761,8 +765,7 @@ export default function SharedGoalPanel({
         )}
       </div>
 
-      {predictArmed &&
-        hasRace &&
+      {hasRace &&
         !resolved &&
         chain &&
         chainSlug &&
@@ -777,7 +780,9 @@ export default function SharedGoalPanel({
             marketLoading={bound && payoutPending}
             outcomeIndex={predictIndex}
             teamName={predictName}
+            raceId={goal.id}
             onClose={() => setPredictIndex(null)}
+            onSavedPick={setSavedForecastPick}
           />
         )}
 

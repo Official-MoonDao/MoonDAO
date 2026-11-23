@@ -1,4 +1,5 @@
 import { COOKIE_CONSENT_EXEMPT_REGIONS } from '../geo/countryCode'
+import { pixelInitiateCheckout, pixelPurchase } from './metaPixel'
 
 /**
  * GA4 helpers for moondao.com (stream G-QPFCD9VH46).
@@ -227,6 +228,7 @@ export function trackBeginCheckout(params: {
   const valueEth = finiteNumber(params.value_eth)
   const value = finiteNumber(params.value)
   if (valueEth === undefined || value === undefined) return
+  if (params.plan === 'citizen') pixelInitiateCheckout(value)
   sendEvent(
     'begin_checkout',
     {
@@ -276,6 +278,7 @@ export function trackMintSuccess(params: {
   }
   if (transactionId) shared.transaction_id = transactionId
   const eventName = params.plan === 'citizen' ? 'citizen_mint_success' : 'team_mint_success'
+  if (params.plan === 'citizen') pixelPurchase(value, transactionId)
   sendEvent(eventName, shared, true)
   sendEvent(
     'purchase',
@@ -741,6 +744,20 @@ export function trackForecastSubmitted() {
   if (typeof window === 'undefined') return
   const entry = storedEntryPath() || rememberEntryPath(safeLocation().pathname)
   sendEvent('forecast_submitted', { entry_path: entry, ...gaDebugParam() }, false)
+}
+
+export type ForecastShareMethod = 'x' | 'copy'
+
+/**
+ * After a free forecast, the visitor shares the page. Consent mode and the
+ * internal traffic_type cookie stay on the gtag config, the same path as
+ * forecast_submitted. Params are the channel and the tab's first pathname.
+ */
+export function trackForecastShared(method: ForecastShareMethod) {
+  if (typeof window === 'undefined') return
+  if (method !== 'x' && method !== 'copy') return
+  const entry = storedEntryPath() || rememberEntryPath(safeLocation().pathname)
+  sendEvent('forecast_shared', { method, entry_path: entry, ...gaDebugParam() }, false)
 }
 
 export function trackProposalVote(

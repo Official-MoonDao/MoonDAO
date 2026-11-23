@@ -71,7 +71,7 @@ export const DEPRIZE_RISK_DISCLOSURES_URL =
   '/docs/Legal/DePrize/DePrize-Risk-Disclosures-and-Disclaimers'
 // Bump whenever the published Terms change materially; the bet flow keys the
 // user's acceptance on this so a new version re-prompts them.
-export const DEPRIZE_TERMS_VERSION = '1.3'
+export const DEPRIZE_TERMS_VERSION = '1.4'
 
 export const FUND_MIN_WEI = 10n ** 15n
 export const FUND_CONFIRM_ABOVE_WEI = 10n ** 18n
@@ -81,7 +81,7 @@ export const DEPRIZE_PATRONS_ENABLED = process.env.NEXT_PUBLIC_DEPRIZE_PATRONS_E
 export const DEPRIZE_FUND_ENABLED = process.env.NEXT_PUBLIC_DEPRIZE_FUND_ENABLED !== 'false'
 
 export const DEPRIZE_AVAILABILITY_LEGEND =
-  'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
+  'Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.'
 
 export const DEPRIZE_PREDICT_CTA = 'Predict'
 

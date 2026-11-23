@@ -9,6 +9,7 @@ import { resolveLiveDePrizeId } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { useClientDePrizeRestricted } from '@/lib/deprize/useClientDePrizeRestricted'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
@@ -22,6 +23,7 @@ import {
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
 import { sameForecastSession } from '@/lib/forecasts/forecastSession'
+import { resolvedSharePick } from '@/lib/forecasts/forecastShare'
 import { forgetGuestForecast, rememberGuestForecast } from '@/lib/forecasts/guestHandoff'
 import {
   mergeCallerRoster,
@@ -51,6 +53,10 @@ export type ForecastPredictController = {
   votingPowerLoading: boolean
   regionRestricted: boolean
   savedPick: number | null
+  /** A free forecast was saved in this visit, so the share prompt may show. */
+  shareOffer: boolean
+  /** Name the predict window showed for the saved pick. */
+  sharePickName: string | null
   writing: boolean
   error: string | null
   blockedReason: string | null
@@ -60,7 +66,8 @@ export type ForecastPredictController = {
   /** Voting power per outcome. Undefined until the roster has loaded. */
   votingPower: number[] | undefined
   onConnect: () => void
-  predict: (index: number) => Promise<boolean>
+  /** `displayName` is the window title, kept for the share post. */
+  predict: (index: number, displayName?: string) => Promise<boolean>
   undo: () => void
 }
 
@@ -94,11 +101,23 @@ export function useForecastPredict(args: {
     chainSlug,
     deprizeId,
   }
+  const { readyToSign, wrongNetwork, switchToChain, chainLabel } = useDePrizeChainGuard(chain)
   const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(activeAccount?.address)
   const votingWeight = totalVMOONEY || 0
 
   const n = numOutcomes
   const [savedPick, setSavedPick] = useState<number | null>(null)
+  const [shareOffer, setShareOffer] = useState(false)
+  /** Name shown in the predict window for this save, not the roster label. */
+  const [sharePickName, setSharePickName] = useState<string | null>(null)
+  // Window titles by outcome. Wallet switches clear the current post, then
+  // handoff writes again; the title has to survive that write.
+  const shareNamesRef = useRef(new Map<number, string>())
+  const shareScopeRef = useRef(`${chainSlug}:${deprizeId}`)
+  if (shareScopeRef.current !== `${chainSlug}:${deprizeId}`) {
+    shareScopeRef.current = `${chainSlug}:${deprizeId}`
+    shareNamesRef.current.clear()
+  }
   const [previousPick, setPreviousPick] = useState<number | null>(null)
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -116,6 +135,8 @@ export function useForecastPredict(args: {
   if (rosterPrize !== null && rosterPrize !== prizeKey) {
     setRosterPrize(null)
     setSavedPick(null)
+    setShareOffer(false)
+    setSharePickName(null)
   }
 
   const shownLeaderboard = useMemo(
@@ -169,6 +190,8 @@ export function useForecastPredict(args: {
   useEffect(() => {
     setSavedPick(null)
     setPreviousPick(null)
+    setShareOffer(false)
+    setSharePickName(null)
     setError(null)
     setConsensus(null)
     setOverlays([])
@@ -265,13 +288,24 @@ export function useForecastPredict(args: {
     })
   }
 
-  async function commitPick(index: number, from?: typeof account): Promise<boolean> {
+  /** Guest writes name the chain themselves. Only the active wallet can be on another network. */
+  async function onPrizeNetwork(writer: { address: string }): Promise<boolean> {
+    if (writer.address.toLowerCase() !== activeAccount?.address?.toLowerCase()) return true
+    return readyToSign()
+  }
+
+  async function commitPick(
+    index: number,
+    from?: typeof account,
+    displayName?: string
+  ): Promise<boolean> {
     let writer = from ?? account
     if (!writer) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
       return false
     }
+    if (!(await onPrizeNetwork(writer))) return false
     const started = {
       address: writer.address.toLowerCase(),
       chainSlug,
@@ -329,6 +363,12 @@ export function useForecastPredict(args: {
       if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
+      setShareOffer(true)
+      const windowName = resolvedSharePick(displayName, null, null)
+      if (windowName) shareNamesRef.current.set(index, windowName)
+      setSharePickName(
+        resolvedSharePick(displayName, shareNamesRef.current.get(index), labels[index])
+      )
       rememberRow(allocation, writer)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
@@ -347,6 +387,7 @@ export function useForecastPredict(args: {
 
   async function clearPick() {
     if (!account || !forecastsContract) return
+    if (!(await onPrizeNetwork(account))) return
     const writer = account
     const started = {
       address: writer.address.toLowerCase(),
@@ -373,6 +414,8 @@ export function useForecastPredict(args: {
       if (!sameForecastSession(sessionRef.current, started)) return
       setSavedPick(null)
       setPreviousPick(null)
+      setShareOffer(false)
+      setSharePickName(null)
       toast.success('Prediction removed', { style: toastStyle })
       await refetchFresh()
     } catch (err: any) {
@@ -384,7 +427,7 @@ export function useForecastPredict(args: {
     }
   }
 
-  async function predict(index: number): Promise<boolean> {
+  async function predict(index: number, displayName?: string): Promise<boolean> {
     const plan = tapPlan({
       index,
       savedPick,
@@ -400,10 +443,10 @@ export function useForecastPredict(args: {
         login()
         return false
       }
-      return commitPick(index, guest)
+      return commitPick(index, guest, displayName)
     }
     if (plan.action !== 'write') return false
-    return commitPick(plan.index)
+    return commitPick(plan.index, undefined, displayName)
   }
 
   // A guest who signed in to an existing account left their pick in
@@ -419,6 +462,10 @@ export function useForecastPredict(args: {
     savedPick,
     n,
     commitPick,
+    networkReady: !wrongNetwork,
+    ensureNetwork: switchToChain,
+    networkLabel: chainLabel,
+    signer: account,
   })
 
   function undo() {
@@ -441,6 +488,8 @@ export function useForecastPredict(args: {
     votingPowerLoading: !!activeAccount && votingPowerLoading,
     regionRestricted,
     savedPick,
+    shareOffer,
+    sharePickName,
     writing,
     error,
     blockedReason,

@@ -28,6 +28,12 @@ const HUB_LINKS: HubLink[] = [
     icon: '/assets/linktree/icon-frank-96.png',
   },
   {
+    name: "We secured Frank's seat",
+    description: 'Read the update on his flight to near space',
+    url: 'https://moondao.com/updates/frank-white-seat-to-near-space?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-frank-update',
+    icon: '/assets/linktree/icon-update-96.png',
+  },
+  {
     name: 'Events and Town Hall',
     description: 'Gatherings for the MoonDAO community',
     url: 'https://moondao.com/events?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-events',

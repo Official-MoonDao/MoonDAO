@@ -288,7 +288,7 @@ export default function RaceMarketCard({
   const bettingEnabled = showLiveMarket && bettingOpenReal
   const forecastHref =
     bound && !!bettingBlockedReason && deprizeId !== undefined
-      ? deprizeForecastHref(deprizeId)
+      ? deprizeForecastHref(deprizeId, chainSlug)
       : undefined
 
   // Stage is unknown until the first market read returns. Treating that as

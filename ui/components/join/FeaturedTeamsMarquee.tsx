@@ -9,10 +9,10 @@ export type FeaturedTeam = {
   image: string
 }
 
-function TeamCard({ team }: { team: FeaturedTeam }) {
+function TeamCard({ team, href }: { team: FeaturedTeam; href?: string }) {
   return (
     <Link
-      href={`/team/${generatePrettyLink(team.name)}`}
+      href={href || `/team/${generatePrettyLink(team.name)}`}
       className="group flex w-40 flex-shrink-0 flex-col items-center gap-3 text-center md:w-48"
     >
       <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10 transition-all duration-300 group-hover:ring-white/30 md:h-28 md:w-28">
@@ -29,7 +29,14 @@ function TeamCard({ team }: { team: FeaturedTeam }) {
   )
 }
 
-export default function FeaturedTeamsMarquee({ teams }: { teams: FeaturedTeam[] }) {
+export default function FeaturedTeamsMarquee({
+  teams,
+  cardHref,
+}: {
+  teams: FeaturedTeam[]
+  /** When set, every card links here instead of the member's profile. */
+  cardHref?: string
+}) {
   if (!teams?.length) return null
 
   // Duplicate the list so the -50% translate loops seamlessly
@@ -48,7 +55,7 @@ export default function FeaturedTeamsMarquee({ teams }: { teams: FeaturedTeam[] 
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#010208] to-transparent md:w-40" />
           <div className="flex w-max items-center gap-8 py-2 md:gap-12 motion-reduce:animate-none animate-marquee group-hover:[animation-play-state:paused]">
             {doubled.map((team, i) => (
-              <TeamCard key={`${team.id}-${i}`} team={team} />
+              <TeamCard key={`${team.id}-${i}`} team={team} href={cardHref} />
             ))}
           </div>
         </div>

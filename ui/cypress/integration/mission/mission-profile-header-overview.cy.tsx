@@ -264,6 +264,9 @@ describe('MissionProfileHeader — Overview Flight (mission 4) re-opened raise',
     // The deadline tile reads "Open" instead of a day countdown — the
     // re-open runs without a meaningful closing date.
     cy.contains('Open').should('be.visible')
+    cy.contains(
+      'now we’re raising to send a member of our community to near space alongside Frank White'
+    ).should('be.visible')
     // Closed-state UI is gone.
     cy.get('[data-testid="overview-contributions-closed-banner"]').should(
       'not.exist'

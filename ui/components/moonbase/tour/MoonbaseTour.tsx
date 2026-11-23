@@ -217,18 +217,19 @@ export default function MoonbaseTour() {
           <TourChapter id="predict">
             <TourCard
               location={TOUR_STOPS.predict.label}
-              title="Predict for free with MOONEY."
+              title="Predict for free."
               visual={<PredictScene variant="tour" active={activeId === 'predict'} />}
             >
-              Citizens pick who they think wins, weighted by voting power. Picks form the MOONEY
-              forecast, which sits beside the ETH odds and never moves them.
+              Anyone in the world can pick who they think wins for free. Citizens&apos; picks are
+              weighted by voting power to form the MOONEY forecast, which sits beside the ETH odds
+              and never moves them.
             </TourCard>
           </TourChapter>
 
           <TourChapter id="bet">
             <TourCard
               location={TOUR_STOPS.bet.label}
-              title="Or bet real ETH."
+              title="Or add ETH to your prediction."
               visual={<BetScene variant="tour" active={activeId === 'bet'} />}
             >
               A share costs the current chance and pays 1 ETH if that team wins.
