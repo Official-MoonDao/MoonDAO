@@ -2156,7 +2156,11 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const hide: THREE.Object3D[] = [this.ghost.group]
     for (const b of this.beacons) {
       // The rich finds stay in the picture, found or missed: they are the reason to drive it again.
-      if (b.reveal) continue
+      if (b.reveal) {
+        // Twice the size for the card: it is looked at far smaller than the live view.
+        b.tag.scale.multiplyScalar(2)
+        continue
+      }
       hide.push(b.tag)
       if (!b.shown) hide.push(b.group)
     }
@@ -2187,6 +2191,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     out.height = H
     out.getContext('2d')!.drawImage(this.canvas, 0, 0, W, H)
     hide.forEach((o, i) => (o.visible = was[i]))
+    for (const b of this.beacons) if (b.reveal) b.tag.scale.multiplyScalar(0.5)
     r.setPixelRatio(ratio)
     r.setSize(size.x, size.y, false)
     cam.position.copy(keep.pos)
