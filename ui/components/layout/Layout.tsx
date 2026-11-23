@@ -102,6 +102,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/moonbase',
     '/moonbase/[projectId]',
     '/moonbase/mine',
+    '/moonbase/base/[id]',
     '/moonbase/touchdown',
     '/touchdown',
     '/starship',
