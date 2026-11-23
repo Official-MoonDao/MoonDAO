@@ -5,9 +5,10 @@
  * Two kinds, both server-side and both from scores the leaderboard routes have
  * already verified by replaying the recorded inputs:
  *
+ *   - First score: the first run of the day on a board, which opens it.
  *   - New #1: a run takes the top spot on today's mission from someone else.
- *     Capped per game and day, and never posted for a driver improving a lead
- *     they already held, so one player cannot flood the channel.
+ *     Both are capped per game and day, and neither is posted for a player
+ *     improving a lead they already held, so one player cannot flood the channel.
  *   - Daily recap: once a day, the podium of yesterday's mission for every game.
  *
  * Nothing here is reachable from the browser: there is no share-button
@@ -17,7 +18,7 @@
  * (local, previews) the posts go to the test channel instead.
  *
  * Redis, under games:discord:<prod|dev>:
- *   cap:<game>:<mission>                     counter   new-#1 posts that day
+ *   cap:<game>:<mission>                     counter   first-score and new-#1 posts that day
  *   msg:<game>:<mission>:<mode>:<name key>   list      Discord message ids, for moderation
  *   recap:<mission>                          string    set once the recap is posted
  */
@@ -43,7 +44,7 @@ export const GAME_IDS: GameId[] = ['touchdown', 'catch']
 export const GAME_MODES: GameModeId[] = ['easy', 'pro']
 const MODE_LABEL: Record<GameModeId, string> = { easy: 'Easy', pro: 'Pro' }
 
-/** New-#1 posts per game per mission, across both modes. */
+/** First-score and new-#1 posts per game per mission, across both modes. */
 export const NEW_LEADER_DAILY_CAP = 6
 /** Keys live a little past the board's own three weeks so moderation can still find old posts. */
 const KEY_TTL_SECONDS = 22 * 24 * 60 * 60
@@ -66,7 +67,7 @@ export function gamesChannelId(env: Env = process.env): string {
   return isLiveBoard(env) ? GENERAL_CHANNEL_ID : TEST_CHANNEL_ID
 }
 
-export type NewLeaderReason = 'not-today' | 'no-rival' | 'same-leader' | 'not-ahead' | 'daily-cap'
+export type NewLeaderReason = 'not-today' | 'same-leader' | 'not-ahead' | 'daily-cap'
 
 /**
  * Whether a verified run that just went on the board deserves a post. `previous`
@@ -83,11 +84,12 @@ export function planNewLeaderPost(args: {
 }): { post: true } | { post: false; reason: NewLeaderReason } {
   // Yesterday's mission still takes late runs; the recap covers those.
   if (args.mission !== args.today) return { post: false, reason: 'not-today' }
-  // The first score of the day beats nobody.
-  if (!args.previous) return { post: false, reason: 'no-rival' }
-  if (args.previous.key === args.key) return { post: false, reason: 'same-leader' }
-  // Ties share the top spot; only a strictly higher score takes it.
-  if (!(args.score > args.previous.score)) return { post: false, reason: 'not-ahead' }
+  // No `previous` means an empty board: this is the day's first score, which posts too.
+  if (args.previous) {
+    if (args.previous.key === args.key) return { post: false, reason: 'same-leader' }
+    // Ties share the top spot; only a strictly higher score takes it.
+    if (!(args.score > args.previous.score)) return { post: false, reason: 'not-ahead' }
+  }
   if (args.postedCount >= (args.cap ?? NEW_LEADER_DAILY_CAP)) return { post: false, reason: 'daily-cap' }
   return { post: true }
 }
@@ -106,17 +108,29 @@ export function buildNewLeaderEmbed(args: {
   mission: number
   name: string
   score: number
-  previous: Leader
+  /** The #1 this run passed; absent for the day's first score. */
+  previous?: Leader
   origin?: string
 }): DiscordEmbed {
   const game = GAMES[args.game]
   const url = playUrl(args.game, args.origin)
+  const mode = MODE_LABEL[args.mode]
+  const name = `**${escapeDiscordUserText(args.name)}**`
+  const score = `**${points(args.score)}** points`
+  const opener = args.previous
+    ? {
+        title: `🏆 New #1 on ${game.title} (${mode})`,
+        text:
+          `${name} took the top spot on today's mission with ${score}, ` +
+          `passing ${escapeDiscordUserText(args.previous.name)} (${points(args.previous.score)}).`,
+      }
+    : {
+        title: `🚀 First on the board: ${game.title} (${mode})`,
+        text: `${name} set the first score on today's mission: ${score}. Who can beat it?`,
+      }
   return {
-    title: `🏆 New #1 on ${game.title} (${MODE_LABEL[args.mode]})`,
-    description:
-      `**${escapeDiscordUserText(args.name)}** took the top spot on today's mission with **${points(args.score)}** points, ` +
-      `passing ${escapeDiscordUserText(args.previous.name)} (${points(args.previous.score)}).\n\n` +
-      `[Play today's mission](${url})`,
+    title: opener.title,
+    description: `${opener.text}\n\n[Play today's mission](${url})`,
     url,
     color: GAMES_EMBED_COLOR,
     footer: { text: `Mission ${args.mission} · ${missionDateLabel(args.mission)}` },
@@ -158,7 +172,7 @@ function msgKey(game: GameId, mission: number, mode: GameModeId, key: string, en
 }
 
 /**
- * Post a new-#1 alert if the run earned one. Never throws, and keeps the
+ * Post a first-score or new-#1 alert if the run earned one. Never throws, and keeps the
  * Discord call short so the score response is not held up.
  */
 export async function announceNewLeader(
@@ -184,7 +198,7 @@ export async function announceNewLeader(
 
     await redis.incr(capKey)
     await redis.expire(capKey, KEY_TTL_SECONDS)
-    const embed = buildNewLeaderEmbed({ ...args, previous: args.previous! })
+    const embed = buildNewLeaderEmbed(args)
     const result: DiscordPostResult = await (deps.post ?? postDiscordChannelMessage)({
       channelId,
       embeds: [embed],

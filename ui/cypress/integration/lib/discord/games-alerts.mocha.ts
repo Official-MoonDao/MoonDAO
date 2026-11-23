@@ -74,9 +74,14 @@ describe('games discord: planNewLeaderPost', () => {
     expect(planNewLeaderPost({ ...base, previous: rival })).to.deep.equal({ post: true })
   })
 
-  it('skips yesterday’s late runs, the first score, own improvements and ties', () => {
+  it('posts the first score of the day on an empty board', () => {
+    expect(planNewLeaderPost({ ...base })).to.deep.equal({ post: true })
+    expect(planNewLeaderPost({ ...base, mission: 9 })).to.deep.equal({ post: false, reason: 'not-today' })
+    expect(planNewLeaderPost({ ...base, postedCount: NEW_LEADER_DAILY_CAP })).to.deep.equal({ post: false, reason: 'daily-cap' })
+  })
+
+  it('skips yesterday’s late runs, own improvements and ties', () => {
     expect(planNewLeaderPost({ ...base, mission: 9, previous: rival })).to.deep.equal({ post: false, reason: 'not-today' })
-    expect(planNewLeaderPost({ ...base })).to.deep.equal({ post: false, reason: 'no-rival' })
     expect(planNewLeaderPost({ ...base, previous: { ...rival, key: 'ada' } })).to.deep.equal({ post: false, reason: 'same-leader' })
     expect(planNewLeaderPost({ ...base, previous: { ...rival, score: 900 } })).to.deep.equal({ post: false, reason: 'not-ahead' })
     expect(planNewLeaderPost({ ...base, previous: { ...rival, score: 950 } })).to.deep.equal({ post: false, reason: 'not-ahead' })
@@ -114,6 +119,14 @@ describe('games discord: embeds', () => {
     expect(embed.description).to.contain('Bob\\_ (1,100)')
     expect(embed.description).to.contain('**1,240** points')
     expect(embed.url).to.equal('https://moondao.com/starship')
+  })
+
+  it('announces the first score of the day without naming anyone passed', () => {
+    const embed = buildNewLeaderEmbed({ game: 'touchdown', mode: 'easy', mission: 13, name: 'ryan', score: 992, origin: 'https://moondao.com' })
+    expect(embed.title).to.equal('🚀 First on the board: Touchdown (Easy)')
+    expect(embed.description).to.equal(
+      "**ryan** set the first score on today's mission: **992** points. Who can beat it?\n\n[Play today's mission](https://moondao.com/touchdown)"
+    )
   })
 
   it('builds one recap of every game that was played, and nothing for an empty day', () => {
