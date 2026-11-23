@@ -24,6 +24,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
+  // New contributions now go out in one end-of-day digest
+  // (`/api/cron/contribution-digest`). Set CONTRIBUTIONS_INSTANT_DISCORD=true
+  // to bring back a post per submission.
+  if (process.env.CONTRIBUTIONS_INSTANT_DISCORD !== 'true') {
+    return res.status(200).json({ posted: false, digest: true })
+  }
+
   const id = Number(req.body?.id)
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ message: 'Invalid contribution id.' })

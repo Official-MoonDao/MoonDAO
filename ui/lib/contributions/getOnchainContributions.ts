@@ -56,6 +56,26 @@ export async function getAllContributionRows(): Promise<ContributionRow[]> {
   return (rows ?? []) as ContributionRow[]
 }
 
+/**
+ * Visible rows submitted through the in-app form with createdAt in
+ * (sinceS, untilS], oldest first, in feed shape. Used by the daily digest.
+ */
+export async function getSubmittedFeedContributionsBetween(
+  sinceS: number,
+  untilS: number
+): Promise<Contribution[]> {
+  const table = contributionsTable(chainSlug)
+  if (!table || !Number.isFinite(sinceS) || !Number.isFinite(untilS)) return []
+  const rows = ((await queryTable(
+    chain,
+    `SELECT * FROM ${table.name} WHERE hidden = 0 AND (origin = 0 OR origin IS NULL) AND createdAt > ${Math.floor(
+      sinceS
+    )} AND createdAt <= ${Math.floor(untilS)} ORDER BY createdAt ASC, id ASC`
+  )) ?? []) as ContributionRow[]
+  const citizens = await getCitizensForAuthors(rows.map((r) => r.author))
+  return rows.map((row) => rowToFeedContribution(row, citizens.get(row.author.toLowerCase())))
+}
+
 export async function getContributionRow(id: number): Promise<ContributionRow | null> {
   const table = contributionsTable(chainSlug)
   if (!table || !Number.isInteger(id) || id <= 0) return null

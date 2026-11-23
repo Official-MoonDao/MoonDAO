@@ -1,0 +1,64 @@
+name: Contribution daily digest
+
+# One Discord post per evening summarizing the day's community contributions,
+# or a 7-day look-back with a call to submit on a quiet day (at most weekly).
+# Replaces the post-per-submission announcements.
+on:
+  schedule:
+    # 22:00 UTC = 5pm ET in winter, 6pm ET in summer.
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build the message and print it without posting'
+        type: boolean
+        default: false
+      force:
+        description: 'Post even if a digest already went out in the last 20 hours'
+        type: boolean
+        default: false
+      kind:
+        description: 'Force a digest kind (blank = decide automatically)'
+        type: choice
+        options: ['', 'daily', 'lookback']
+        default: ''
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger contribution digest
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          FORCE: ${{ github.event.inputs.force }}
+          KIND: ${{ github.event.inputs.kind }}
+        run: |
+          # Apex moondao.com 307s to www, and curl does not follow it (a
+          # cross-host -L would also drop Authorization), so post straight to www.
+          BASE="${SITE_URL:-https://www.moondao.com}"
+          BASE="${BASE%/}"
+          case "$BASE" in
+            http://moondao.com|https://moondao.com)
+              BASE="https://www.moondao.com"
+              ;;
+          esac
+          QUERY=""
+          if [ "$DRY_RUN" = "true" ]; then QUERY="${QUERY}&dryRun=1"; fi
+          if [ "$FORCE" = "true" ]; then QUERY="${QUERY}&force=1"; fi
+          if [ -n "$KIND" ]; then QUERY="${QUERY}&kind=${KIND}"; fi
+          URL="$BASE/api/cron/contribution-digest"
+          if [ -n "$QUERY" ]; then URL="$URL?${QUERY#&}"; fi
+          BODY="$(curl -sS -X POST "$URL" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -w '\n%{http_code}')"
+          HTTP="$(echo "$BODY" | tail -n 1)"
+          JSON="$(echo "$BODY" | sed '$d')"
+          echo "$JSON" | jq . || echo "$JSON"
+          if [ "$HTTP" -lt 200 ] || [ "$HTTP" -ge 300 ]; then
+            echo "contribution-digest HTTP $HTTP"
+            exit 1
+          fi
+          echo "$JSON" | jq -e '.ok == true'
