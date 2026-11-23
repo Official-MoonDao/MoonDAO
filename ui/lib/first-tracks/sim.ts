@@ -79,8 +79,8 @@ export const PRIZE_METRES = 10
  */
 export const EGRESS_LIMIT_STEPS = STEP_HZ * 180
 
-// Battery, in arbitrary units. A reasonable run uses about half.
-export const BATTERY = 450
+// Battery, in arbitrary units. A full window of steady driving uses most of it.
+export const BATTERY = 400
 export const E_IDLE = 0.6
 export const E_METRE = 1.0
 export const E_CLIMB = 4

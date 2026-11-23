@@ -14,7 +14,7 @@ import { MODES, PLAN_MODE, type ModeId } from '@/lib/first-tracks/modes'
 import { BATTERY_PER_LEG, ROUTE_PER_LEG, type RunResult } from '@/lib/first-tracks/scoring'
 import { canvasToBlob, challengeQuery, cleanNickname, composeCard, copyImage, SHARE_PATH, shareCard, shareText, stampPhoto, xIntentUrl, type Challenge } from '@/lib/first-tracks/share'
 import { PRIZE_METRES, windowSecondsFor } from '@/lib/first-tracks/sim'
-import { FINDS, N_TARGETS } from '@/lib/first-tracks/site'
+import { FINDS, N_TARGETS, RICH_FINDS } from '@/lib/first-tracks/site'
 import { bestKey, loadPrefs, savePrefs, type FirstTracksPrefs } from '@/lib/first-tracks/storage'
 import { bragLine, formatScore, isGoodOutcome, outcomeHeadline, verdictFor } from '@/lib/first-tracks/verdicts'
 import { missionDateLabel, missionNumberFor } from '@/lib/touchdown/mission'
@@ -821,6 +821,14 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
               ))}
             </div>
           )}
+          {result.off && (
+            <p className="px-2 pt-0.5 text-[11px] font-semibold text-amber-200">
+              {(() => {
+                const rich = result.jobs.filter((j) => j.find === 3).length
+                return rich >= RICH_FINDS ? `Both rich finds drilled. Now do it faster.` : `${rich} of ${RICH_FINDS} rich finds reached. The gold ${RICH_FINDS - rich === 1 ? 'beam marks the one' : 'beams mark the ones'} you missed: drive again?`
+              })()}
+            </p>
+          )}
           {result.imaged > 0 && (
             <p className="px-2 text-[11px] text-white/55">
               {result.done.image} regolith {result.done.image === 1 ? 'image' : 'images'} · {result.done.rock} boulder {result.done.rock === 1 ? 'spectrum' : 'spectra'} · {result.done.ice} ice {result.done.ice === 1 ? 'core' : 'cores'}
@@ -1222,7 +1230,7 @@ export default function FirstTracksGame({ challenge = null }: { challenge?: Chal
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
               {planOn
                 ? 'Prototype: plot the rover\u2019s path on the ground and send it. A waypoint inside a ring is a science stop. The rover drives it by itself, and loose regolith (the darker grey ground) carries it off your line. The clock starts with your first uplink and never stops, and there is not time for every site: what each one holds is hidden until you get there. Hitting a rock burns 8 s. New site every day.'
-                : 'Drive a rover off its lander and across the Moon. Every command arrives late, so you are always steering where the rover was. There are twelve science sites all round the lander and time for about half of them. What each one holds is hidden until you get there, and it is the same for everyone today. Hitting a rock burns 4 s. New site every day.'}
+                : 'Drive a rover off its lander and across the Moon. Every command arrives late, so you are always steering where the rover was. There are twelve science sites all round the lander and time for about half of them. What each one holds is hidden, the same for everyone today, and the rover reads a weak or strong signal once it is within 12 m. Hitting a rock burns 4 s. New site every day.'}
             </p>
             <div className="mt-3 flex items-stretch gap-2 sm:mt-4 sm:block">
               {modeToggle}

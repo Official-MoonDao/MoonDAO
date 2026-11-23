@@ -34,7 +34,8 @@ function fit(canvas: HTMLCanvasElement): { g: CanvasRenderingContext2D; w: numbe
   return { g, w, h }
 }
 
-export function drawMinimap(canvas: HTMLCanvasElement, site: Site, pose: MapPose, imaged: boolean[], trail: number[], range = 30): void {
+/** `marks` per target: 1 a weak signal read, 2 a strong one, 3 a rich find shown after the run. */
+export function drawMinimap(canvas: HTMLCanvasElement, site: Site, pose: MapPose, imaged: boolean[], trail: number[], marks: number[] = [], range = 30): void {
   const f = fit(canvas)
   if (!f) return
   const { g, w } = f
@@ -133,8 +134,17 @@ export function drawMinimap(canvas: HTMLCanvasElement, site: Site, pose: MapPose
     }
     const done = imaged[i]
     const col = KIND_CSS[t.kind]
+    const mark = marks[i] ?? 0
+    if (mark === 3 || (mark === 2 && !done)) {
+      // A strong signal, or a rich find after the run: a bright halo.
+      g.strokeStyle = mark === 3 ? '#ffd24a' : GOOD
+      g.lineWidth = 2
+      g.beginPath()
+      g.arc(x, y, out ? 5.5 : 9.5, 0, Math.PI * 2)
+      g.stroke()
+    }
     g.fillStyle = done ? GOOD : col
-    g.globalAlpha = done ? 0.55 : 1
+    g.globalAlpha = done ? 0.55 : mark === 1 ? 0.45 : 1
     g.beginPath()
     g.arc(x, y, done ? 2.5 : out ? 3 : 4, 0, Math.PI * 2)
     g.fill()

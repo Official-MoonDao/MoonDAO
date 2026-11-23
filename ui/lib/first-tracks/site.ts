@@ -110,6 +110,8 @@ export const FINDS: Find[] = [
 ]
 /** The day's twelve finds, dealt out over the targets: three poor, four fair, three good, two rich. */
 const FIND_DECK = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3]
+/** Rich finds a day. */
+export const RICH_FINDS = 2
 /** Rings round the lander the targets are spread over, m from it: four targets in each. */
 const BANDS: [number, number][] = [
   [10.5, 15],

@@ -76,6 +76,9 @@ export type PlanHud = {
 /** What each kind of target is, in the words the HUD and the photo use. */
 export const KIND_COLOR: Record<TargetKind, number> = { image: 0x8fd3ff, rock: 0xffbf5e, ice: 0xd9b8ff }
 const KIND_TAG: Record<TargetKind, string> = { image: 'IMAGE', rock: 'ROCK', ice: 'ICE' }
+const KIND_SITE: Record<TargetKind, string> = { image: 'imaging', rock: 'boulder', ice: 'ice' }
+/** How near the rover has to come to a target to read how strong its signal is, m. */
+const CLUE_RANGE = 12
 const KIND_DONE: Record<TargetKind, string> = { image: 'Regolith imaged', rock: 'Boulder spectrum taken', ice: 'Ice core drilled' }
 const KIND_HOLD: Record<TargetKind, string> = { image: 'Imaging · hold still', rock: 'Reading the boulder · hold still', ice: 'Drilling for ice · hold still' }
 const KIND_HINT: Record<TargetKind, string> = {
@@ -145,7 +148,12 @@ export class FirstTracksEngine {
   private rover!: RoverModel
   private ghost!: RoverModel
   private logo: THREE.Texture | null = null
-  private beacons: { group: THREE.Group; ring: THREE.Mesh; beam: THREE.Mesh; fill: THREE.Mesh; tag: THREE.Sprite; kind: TargetKind; shown: boolean }[] = []
+  private beacons: { group: THREE.Group; ring: THREE.Mesh; beam: THREE.Mesh; fill: THREE.Mesh; tag: THREE.Sprite; kind: TargetKind; shown: boolean; /** After the run: a rich find, called out for the next attempt. */ reveal: boolean }[] = []
+  /** What the rover's instruments have read of each target from a distance: 0 nothing yet, 1 a weak signal, 2 a strong one. */
+  private scanned: number[] = []
+  private tagTex: Record<TargetKind, THREE.Texture> | null = null
+  private clueTex: Record<TargetKind, THREE.Texture[]> | null = null
+  private richTex: THREE.Texture[] = []
   private ribbon: THREE.Mesh | null = null
   private ribbonMat: THREE.MeshBasicMaterial | null = null
   private decals: THREE.InstancedMesh | null = null
@@ -857,7 +865,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const beamGeo = this.track(new THREE.CylinderGeometry(0.07, 0.16, 12, 12, 1, true))
     beamGeo.translate(0, 6, 0)
     // A small tag over each beacon: what the job is and its base points. What the site holds is hidden until the job is done.
-    const tagTexture = (kind: TargetKind) => {
+    const tagTexture = (kind: TargetKind | null, right: string, rightCol = '#fff', left = '') => {
+      const edge = kind ? KIND_CSS[kind] : rightCol
       const c = document.createElement('canvas')
       c.width = 256
       c.height = 72
@@ -866,22 +875,29 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       g.beginPath()
       g.roundRect(2, 2, 252, 68, 14)
       g.fill()
-      g.strokeStyle = KIND_CSS[kind]
+      g.strokeStyle = edge
       g.lineWidth = 3
       g.stroke()
-      g.fillStyle = KIND_CSS[kind]
-      g.font = '800 34px "Archivo", "Lato", system-ui, sans-serif'
+      g.fillStyle = edge
+      g.font = `800 ${/\d/.test(right) ? 34 : 28}px "Archivo", "Lato", system-ui, sans-serif`
       g.textBaseline = 'middle'
-      g.fillText(KIND_TAG[kind], 18, 38)
-      g.fillStyle = '#fff'
+      g.fillText(kind ? KIND_TAG[kind] : left, 18, 38)
+      g.fillStyle = rightCol
       g.textAlign = 'right'
-      g.font = '700 30px "Lato", system-ui, sans-serif'
-      g.fillText(`${KIND_POINTS[kind]} × ?`, 238, 38)
+      g.font = `800 ${/\d/.test(right) ? 30 : 23}px "Lato", system-ui, sans-serif`
+      g.fillText(right, 238, 38)
       const t = this.track(new THREE.CanvasTexture(c))
       t.colorSpace = THREE.SRGBColorSpace
       return t
     }
-    const tags: Record<TargetKind, THREE.Texture> = { image: tagTexture('image'), rock: tagTexture('rock'), ice: tagTexture('ice') }
+    const each = <T,>(make: (kind: TargetKind) => T) => ({ image: make('image'), rock: make('rock'), ice: make('ice') })
+    // Far off: the job and its base points. What the site holds is hidden.
+    const tags = each((kind) => tagTexture(kind, `${KIND_POINTS[kind]} \u00d7 ?`))
+    // Within instrument range: a weak or a strong signal. Poor and fair finds read weak, good and rich read strong.
+    this.clueTex = each((kind) => [tagTexture(kind, 'WEAK', '#ff9c8f'), tagTexture(kind, 'STRONG', '#86e3a8')])
+    // After the run: where the rich finds were.
+    this.richTex = [tagTexture(null, 'MISSED', '#ffd24a', 'RICH'), tagTexture(null, 'FOUND', '#86e3a8', 'RICH')]
+    this.tagTex = tags
     site.targets.forEach((t) => {
       const group = new THREE.Group()
       group.position.set(t.x, site.ground(t.x, t.z), t.z)
@@ -899,7 +915,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       beam.renderOrder = 2
       group.add(ring, fill, beam, tag)
       this.scene.add(group)
-      this.beacons.push({ group, ring, beam, fill, tag, kind: t.kind, shown: false })
+      this.beacons.push({ group, ring, beam, fill, tag, kind: t.kind, shown: false, reveal: false })
     })
   }
 
@@ -1058,12 +1074,18 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.record(0)
     this.samplePose(0)
     for (const b of this.beacons) this.setBeacon(b, false)
+    this.scanned = this.site.targets.map(() => 0)
     this.ghost.group.visible = false
   }
 
   private setBeacon(b: FirstTracksEngine['beacons'][number], done: boolean) {
     b.shown = done
     b.tag.visible = !done
+    if (!done) {
+      b.reveal = false
+      if (this.tagTex) (b.tag.material as THREE.SpriteMaterial).map = this.tagTex[b.kind]
+      ;(b.beam.material as THREE.MeshBasicMaterial).color.set(KIND_COLOR[b.kind])
+    }
     const col = done ? 0x86e3a8 : KIND_COLOR[b.kind]
     ;(b.ring.material as THREE.MeshBasicMaterial).color.set(col)
     ;(b.ring.material as THREE.MeshBasicMaterial).opacity = done ? 0.45 : 0.85
@@ -1669,14 +1691,27 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const t = this.idleT + this.wall + this.endT
     const pulse = 0.75 + 0.25 * Math.sin(t * 3)
     const cam = this.camera.position
-    this.beacons.forEach((b) => {
+    this.beacons.forEach((b, i) => {
+      if (b.reveal) {
+        // A rich find, shown after the run: a steady gold beam and its tag.
+        ;(b.beam.material as THREE.MeshBasicMaterial).opacity = 0.3 + 0.15 * pulse
+        ;(b.tag.material as THREE.SpriteMaterial).opacity = 1
+        return
+      }
       if (b.shown) return
+      // Instrument range: the first time the rover comes this near, it reads how strong the signal is.
+      if (this.phase === 'play' && this.pose.off && !this.scanned[i] && Math.hypot(this.pose.x - b.group.position.x, this.pose.z - b.group.position.z) < CLUE_RANGE) {
+        const strong = this.site.targets[i].find >= 2
+        this.scanned[i] = strong ? 2 : 1
+        if (this.clueTex) (b.tag.material as THREE.SpriteMaterial).map = this.clueTex[b.kind][strong ? 1 : 0]
+        if (strong) this.cb.onCallout({ text: `Strong signal from the ${KIND_SITE[b.kind]} site nearby`, tone: 'info' })
+      }
       ;(b.ring.material as THREE.MeshBasicMaterial).opacity = 0.6 + 0.3 * pulse
       // A beam the camera is standing next to would fill the screen: thin it out up close.
       const d = Math.hypot(cam.x - b.group.position.x, cam.z - b.group.position.z)
       // And one the rover is standing in would be drawn across it: fade it out as the rover arrives.
       const near = Math.hypot(this.pose.x - b.group.position.x, this.pose.z - b.group.position.z)
-      ;(b.beam.material as THREE.MeshBasicMaterial).opacity = 0.22 * smooth(4.5, 13, d) * smooth(1.2, 3.5, near)
+      ;(b.beam.material as THREE.MeshBasicMaterial).opacity = (this.scanned[i] === 2 ? 0.4 : this.scanned[i] === 1 ? 0.12 : 0.22) * smooth(4.5, 13, d) * smooth(1.2, 3.5, near)
       ;(b.tag.material as THREE.SpriteMaterial).opacity = this.phase === 'play' ? smooth(3, 7, d) * (1 - smooth(48, 70, d)) : 0
     })
   }
@@ -1985,7 +2020,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
   private drawInstruments() {
     if (this.phase !== 'play') return
     const sim = this.sim!
-    if (this.minimap) drawMinimap(this.minimap, this.site, this.pose, this.shownImaged, this.trail)
+    if (this.minimap) drawMinimap(this.minimap, this.site, this.pose, this.shownImaged, this.trail, this.scanned)
     if (this.link) {
       const frac = Math.min(1, Math.max(0, (this.wall - sim.steps * DT) / DT))
       drawLink(this.link, { commands: this.commands, step: sim.steps, frac, delaySteps: sim.delay, downSteps: Math.round(this.mode.downlink * STEP_HZ), live: !sim.outcome })
@@ -1997,6 +2032,16 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.phase = 'done'
     this.ghost.group.visible = false
     this.result = scoreRun(sim)
+    // Show where the rich finds were, found or not: the reason to drive the site again.
+    this.site.targets.forEach((t, i) => {
+      if (t.find !== 3) return
+      const b = this.beacons[i]
+      b.reveal = true
+      b.tag.visible = true
+      ;(b.tag.material as THREE.SpriteMaterial).map = this.richTex[sim.imaged[i] ? 1 : 0]
+      b.beam.visible = true
+      ;(b.beam.material as THREE.MeshBasicMaterial).color.set(sim.imaged[i] ? 0x86e3a8 : 0xffd24a)
+    })
     if (this.mode.plan) {
       // A run can end mid-plan (the last job, the window closing): bank that uplink too.
       if (this.planRun) {
@@ -2263,7 +2308,36 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     }
     call(0, LANDER_CENTER_Z + 1.2, 'LANDER', '#ffffff', Math.max(20, 3.6 * ppm))
     this.site.targets.forEach((t, i) => {
-      if (sim.imaged[i]) call(t.x, t.z, KIND_TAG[t.kind], '#86e3a8', 14)
+      const rich = t.find === 3
+      if (sim.imaged[i]) call(t.x, t.z, rich ? `${KIND_TAG[t.kind]} \u00b7 RICH \u00d72.5` : KIND_TAG[t.kind], '#86e3a8', 14)
+      else if (rich) {
+        // A rich find the rover never reached: marked where it is, or on the frame's edge with how far off it lies.
+        const [u, v] = px(t.x, t.z)
+        const m = 34 * k
+        if (u >= m && u <= S - m && v >= 60 * k && v <= S - m) call(t.x, t.z, 'RICH FIND \u00b7 MISSED', '#ffd24a', 14)
+        else {
+          const eu = Math.max(m, Math.min(S - m, u))
+          const ev = Math.max(64 * k, Math.min(S - 70 * k, v))
+          const off = Math.round(Math.hypot(u - eu, v - ev) / ppm)
+          const a = Math.atan2(v - ev, u - eu)
+          g.fillStyle = '#ffd24a'
+          g.beginPath()
+          g.moveTo(eu + Math.cos(a) * 14 * k, ev + Math.sin(a) * 14 * k)
+          g.lineTo(eu + Math.cos(a + 2.5) * 10 * k, ev + Math.sin(a + 2.5) * 10 * k)
+          g.lineTo(eu + Math.cos(a - 2.5) * 10 * k, ev + Math.sin(a - 2.5) * 10 * k)
+          g.closePath()
+          g.fill()
+          const label = `RICH FIND ${off} m`
+          g.font = `600 ${Math.round(17 * k)}px ${mono}`
+          const w = g.measureText(label).width
+          const lx = Math.max(8 * k, Math.min(S - w - 8 * k, eu - Math.cos(a) * (20 * k + w / 2) - w / 2))
+          const ly = Math.max(64 * k, Math.min(S - 70 * k, ev - Math.sin(a) * 26 * k + 6 * k))
+          g.fillStyle = 'rgba(0,0,0,0.6)'
+          g.fillRect(lx - 3 * k, ly - 15 * k, w + 6 * k, 19 * k)
+          g.fillStyle = '#ffd24a'
+          g.fillText(label, lx, ly)
+        }
+      }
     })
     if (sim.tenAt) call(sim.tenAt[0], sim.tenAt[1], '10 m', '#ffbf5e', 12)
     if (sim.off) call(sim.x, sim.z, 'ROVER', '#8fd3ff', 16)
