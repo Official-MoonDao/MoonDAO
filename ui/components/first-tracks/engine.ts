@@ -2041,6 +2041,9 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       ;(b.tag.material as THREE.SpriteMaterial).map = this.richTex[sim.imaged[i] ? 1 : 0]
       b.beam.visible = true
       ;(b.beam.material as THREE.MeshBasicMaterial).color.set(sim.imaged[i] ? 0x86e3a8 : 0xffd24a)
+      // Set here as well as in the frame loop: the share image is rendered before the next frame.
+      ;(b.beam.material as THREE.MeshBasicMaterial).opacity = 0.45
+      ;(b.tag.material as THREE.SpriteMaterial).opacity = 1
     })
     if (this.mode.plan) {
       // A run can end mid-plan (the last job, the window closing): bank that uplink too.
@@ -2152,6 +2155,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const keep = { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov, aspect: cam.aspect }
     const hide: THREE.Object3D[] = [this.ghost.group]
     for (const b of this.beacons) {
+      // The rich finds stay in the picture, found or missed: they are the reason to drive it again.
+      if (b.reveal) continue
       hide.push(b.tag)
       if (!b.shown) hide.push(b.group)
     }
