@@ -106,16 +106,18 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/moonbase/touchdown',
     '/touchdown',
     '/starship',
+    '/rover',
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
   const isHomepage = router.pathname === '/' || router.pathname === '/moonbase/tour'
-  // The games (Touchdown, Catch) own the whole viewport: no nav, search button or
-  // campaign banners over the canvas. Only the cookie banner (consent) stays.
+  // The games (Touchdown, Catch, First Tracks) own the whole viewport: no nav, search
+  // button or campaign banners over the canvas. Only the cookie banner (consent) stays.
   const isChromeless =
     router.pathname === '/touchdown' ||
     router.pathname === '/moonbase/touchdown' ||
     router.pathname === '/starship' ||
+    router.pathname === '/rover' ||
     // Paid-traffic landing page: one action, no site navigation.
     router.pathname === '/citizenship/[[...angle]]'
 

@@ -720,6 +720,27 @@ export function trackCatch(
   sendEvent(name, { ...params, ...gaDebugParam() }, false)
 }
 
+export type FirstTracksEventName =
+  | 'first_tracks_start'
+  | 'first_tracks_end'
+  | 'first_tracks_share'
+  | 'first_tracks_odds_click'
+  | 'first_tracks_moonbase_click'
+  | 'first_tracks_game_click'
+  | 'first_tracks_retry'
+
+/**
+ * Lunar Rover: First Tracks game events (/rover), mirroring Touchdown's and Catch's. Params are
+ * game telemetry only: mode, outcome, score, targets, metres, share method. Never a nickname.
+ */
+export function trackFirstTracks(
+  name: FirstTracksEventName,
+  params: Record<string, string | number | boolean | undefined> = {}
+) {
+  if (typeof window === 'undefined') return
+  sendEvent(name, { ...params, ...gaDebugParam() }, false)
+}
+
 /**
  * After a prediction write confirms. entry_path is the tab's first pathname.
  * Repeating a prediction sends again; reports that count people dedupe them.
