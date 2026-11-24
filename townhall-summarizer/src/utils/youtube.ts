@@ -8,10 +8,16 @@ export interface YouTubeVideoMetadata {
   channelId: string;
   channelTitle: string;
   liveBroadcastContent?: string;
+  /** Length of the video, or null while YouTube has not reported one yet. */
+  durationSeconds: number | null;
+  /** Set only for videos that were streamed live. */
+  actualStartTime?: string;
+  actualEndTime?: string;
 }
 
 interface YouTubeVideoResponse {
   items?: Array<{
+    id?: string;
     snippet?: {
       title?: string;
       description?: string;
@@ -31,6 +37,10 @@ interface YouTubeVideoResponse {
     };
     status?: {
       liveBroadcastContent?: string;
+    };
+    liveStreamingDetails?: {
+      actualStartTime?: string;
+      actualEndTime?: string;
     };
   }>;
 }
@@ -57,50 +67,96 @@ export function extractVideoId(urlOrId: string): string | null {
   return null;
 }
 
-export async function getVideoMetadata(
-  videoId: string,
-  apiKey: string
-): Promise<YouTubeVideoMetadata | null> {
-  try {
-    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status&id=${videoId}&key=${apiKey}`;
+/**
+ * Parses the ISO 8601 duration the Data API returns (`PT1H2M3S`, `P1DT2H`).
+ * Returns null for anything unparseable. A stream that is still live or still
+ * being processed reports `P0D`, which parses to 0.
+ */
+export function parseIsoDurationSeconds(
+  iso: string | undefined | null
+): number | null {
+  if (!iso) return null;
+  const match = iso.match(
+    /^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/
+  );
+  if (!match) return null;
+  const [, weeks, days, hours, minutes, seconds] = match;
+  return Math.round(
+    Number(weeks || 0) * 604800 +
+      Number(days || 0) * 86400 +
+      Number(hours || 0) * 3600 +
+      Number(minutes || 0) * 60 +
+      Number(seconds || 0)
+  );
+}
 
-    const response = await fetch(videoUrl);
+const VIDEOS_PER_REQUEST = 50;
+
+/**
+ * Looks up several videos at once (one quota unit per 50 ids). Ids the API
+ * does not return — deleted or private videos — are absent from the map.
+ */
+export async function getVideosMetadata(
+  videoIds: string[],
+  apiKey: string
+): Promise<Map<string, YouTubeVideoMetadata>> {
+  const result = new Map<string, YouTubeVideoMetadata>();
+  const unique = [...new Set(videoIds)];
+
+  for (let i = 0; i < unique.length; i += VIDEOS_PER_REQUEST) {
+    const batch = unique.slice(i, i + VIDEOS_PER_REQUEST);
+    const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+    url.searchParams.set(
+      "part",
+      "snippet,contentDetails,status,liveStreamingDetails"
+    );
+    url.searchParams.set("id", batch.join(","));
+    url.searchParams.set("key", apiKey);
+
+    const response = await fetch(url.toString());
     if (!response.ok) {
       throw new Error(`YouTube API error: ${response.status}`);
     }
 
     const data = (await response.json()) as YouTubeVideoResponse;
 
-    if (!data.items || data.items.length === 0) {
-      return null;
+    for (const video of data.items || []) {
+      const snippet = video.snippet;
+      if (!video.id || !snippet) continue;
+
+      result.set(video.id, {
+        id: video.id,
+        title: snippet.title || "",
+        description: snippet.description || "",
+        thumbnail:
+          snippet.thumbnails?.maxres?.url ||
+          snippet.thumbnails?.high?.url ||
+          snippet.thumbnails?.medium?.url ||
+          snippet.thumbnails?.default?.url ||
+          "",
+        publishedAt: snippet.publishedAt || "",
+        duration: video.contentDetails?.duration || "",
+        channelId: snippet.channelId || "",
+        channelTitle: snippet.channelTitle || "",
+        liveBroadcastContent:
+          snippet.liveBroadcastContent || video.status?.liveBroadcastContent,
+        durationSeconds: parseIsoDurationSeconds(video.contentDetails?.duration),
+        actualStartTime: video.liveStreamingDetails?.actualStartTime,
+        actualEndTime: video.liveStreamingDetails?.actualEndTime,
+      });
     }
+  }
 
-    const video = data.items[0];
-    const snippet = video.snippet;
-    const contentDetails = video.contentDetails;
-    const status = video.status;
+  return result;
+}
 
-    if (!snippet) {
-      return null;
-    }
-
-    return {
-      id: videoId,
-      title: snippet.title || "",
-      description: snippet.description || "",
-      thumbnail:
-        snippet.thumbnails?.maxres?.url ||
-        snippet.thumbnails?.high?.url ||
-        snippet.thumbnails?.medium?.url ||
-        snippet.thumbnails?.default?.url ||
-        "",
-      publishedAt: snippet.publishedAt || "",
-      duration: contentDetails?.duration || "",
-      channelId: snippet.channelId || "",
-      channelTitle: snippet.channelTitle || "",
-      liveBroadcastContent:
-        snippet.liveBroadcastContent || status?.liveBroadcastContent,
-    };
+export async function getVideoMetadata(
+  videoId: string,
+  apiKey: string
+): Promise<YouTubeVideoMetadata | null> {
+  try {
+    const videos = await getVideosMetadata([videoId], apiKey);
+    return videos.get(videoId) ?? null;
   } catch (error) {
     console.error("Error fetching video metadata:", error);
     throw error;

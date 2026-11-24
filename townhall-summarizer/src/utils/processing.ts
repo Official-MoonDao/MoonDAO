@@ -58,8 +58,9 @@ export async function getTranscript(
   }
 
   // 1. Owner-authenticated captions.
+  let ownerError: Error | null = null;
+  let ownerHint = "";
   if (source === "owner" || source === "auto") {
-    let ownerError: Error | null = null;
     try {
       const owned = await fetchOwnerCaptionsTranscript(videoId);
       if (owned) {
@@ -72,13 +73,13 @@ export async function getTranscript(
       }
     } catch (error) {
       ownerError = error instanceof Error ? error : new Error(String(error));
-      const hint = error instanceof OwnerCaptionsError && error.hint ? ` ${error.hint}` : "";
-      console.warn(`Owner caption fetch failed: ${ownerError.message}.${hint}`);
+      ownerHint = error instanceof OwnerCaptionsError && error.hint ? ` ${error.hint}` : "";
+      console.warn(`Owner caption fetch failed: ${ownerError.message}.${ownerHint}`);
     }
 
     if (source === "owner") {
       if (ownerError) throw ownerError;
-      throw new Error(
+      throw new TranscriptNotReadyError(
         `No owner caption track available for video ${videoId} and TRANSCRIPT_SOURCE=owner. ` +
           `Auto-captions usually appear a few hours after a live stream ends.`
       );
@@ -120,13 +121,55 @@ export async function getTranscript(
   try {
     return await transcribeAudio(videoId, groq, whisperModel);
   } catch (error: any) {
-    if (/confirm you[’']re not a bot/.test(String(error?.message))) {
+    const audioMessage = String(error?.message ?? error);
+    const audioBlocked = /confirm you[’']re not a bot/.test(audioMessage);
+    const audioFailure = audioBlocked
+      ? "YouTube blocked the audio download from this machine"
+      : `the audio fallback failed (${mainErrorLine(audioMessage)})`;
+    const manualFallback = `Run it from a residential connection with an up-to-date yt-dlp instead: TRANSCRIPT_SOURCE=audio yarn retro ${videoId}`;
+
+    // The owner path is the one that is supposed to work. When it broke, that
+    // is the thing to fix; reporting "no captions" here hid an expired OAuth
+    // token behind a message about yt-dlp.
+    if (ownerError) {
       throw new Error(
-        `Video ${videoId} has no usable caption track, and YouTube blocked the audio download from this machine. ` +
-          `Run it from a residential connection with an up-to-date yt-dlp instead: TRANSCRIPT_SOURCE=audio yarn retro ${videoId}`
+        `Could not read the captions for ${videoId} as the channel owner: ${ownerError.message.replace(/\.$/, "")}.${ownerHint} ` +
+          `Also, ${audioFailure}.`
+      );
+    }
+
+    if (source === "auto") {
+      throw new TranscriptNotReadyError(
+        `Video ${videoId} has no usable caption track, and ${audioFailure}. ${manualFallback}`
+      );
+    }
+
+    if (audioBlocked) {
+      throw new Error(
+        `Video ${videoId} has no usable caption track, and ${audioFailure}. ${manualFallback}`
       );
     }
     throw error;
+  }
+}
+
+/** yt-dlp's own `ERROR:` line when there is one, otherwise the first line. */
+function mainErrorLine(text: string): string {
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  const line = lines.find((l) => l.startsWith("ERROR:")) ?? lines[0] ?? "";
+  return line.length > 300 ? `${line.slice(0, 297)}...` : line;
+}
+
+/**
+ * YouTube holds no caption text for the video (yet), and the audio fallback
+ * could not stand in for it. For a stream that ended recently this is expected
+ * and clears on its own once auto-captions finish, so callers treat it as
+ * "try again later" rather than as a breakage.
+ */
+export class TranscriptNotReadyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TranscriptNotReadyError";
   }
 }
 
@@ -584,7 +627,8 @@ export function getTownHallSummaryPrompt(transcript: string): string {
 async function retryGroqCall<T>(
   apiCall: () => Promise<T>,
   operation: string,
-  maxRetries: number = LLM_CONFIG.retry.maxRetries
+  maxRetries: number = LLM_CONFIG.retry.maxRetries,
+  baseWaitTimeSeconds: number = LLM_CONFIG.retry.baseWaitTimeSeconds
 ): Promise<T> {
   let lastError;
 
@@ -594,7 +638,7 @@ async function retryGroqCall<T>(
     } catch (error: any) {
       lastError = error;
       if (attempt < maxRetries) {
-        const waitTime = attempt * LLM_CONFIG.retry.baseWaitTimeSeconds;
+        const waitTime = attempt * baseWaitTimeSeconds;
         console.log(
           `⚠️  ${operation} attempt ${attempt} failed (${error.message}). Retrying in ${waitTime} seconds...`
         );
@@ -609,10 +653,65 @@ async function retryGroqCall<T>(
   throw lastError;
 }
 
+/**
+ * One summarization request that only returns a complete answer.
+ *
+ * The default model reasons before it answers, and its reasoning is billed
+ * against the same `max_tokens` budget as the answer. With the old cap of 2000
+ * a long answer was cut off mid-sentence: the published summary for
+ * m5nA2Bv6qa4 ends "…upcoming events (Ron". Replies also came back empty,
+ * which was reported as "No summary generated from GROQ" and never retried.
+ * Both are rejected here so they get retried, and the error says which it was.
+ */
+async function requestSummary(
+  groq: Groq,
+  model: string,
+  systemMessage: string,
+  prompt: string,
+  operation: string,
+  retryWaitSeconds: number = LLM_CONFIG.retry.baseWaitTimeSeconds
+): Promise<string> {
+  return retryGroqCall(
+    async () => {
+      const response = await groq.chat.completions.create({
+        model: model,
+        messages: [
+          { role: "system", content: systemMessage },
+          { role: "user", content: prompt },
+        ],
+        temperature: LLM_CONFIG.temperature,
+        max_tokens: LLM_CONFIG.maxTokens,
+      });
+
+      const choice = response.choices[0];
+      const content = choice?.message?.content?.trim();
+      const finishReason = choice?.finish_reason ?? "unknown";
+      const completionTokens = response.usage?.completion_tokens ?? "unknown";
+
+      if (!content) {
+        throw new Error(
+          `GROQ returned an empty summary (finish_reason=${finishReason}, completion_tokens=${completionTokens}, max_tokens=${LLM_CONFIG.maxTokens})`
+        );
+      }
+      if (finishReason === "length") {
+        throw new Error(
+          `GROQ cut the summary off at max_tokens=${LLM_CONFIG.maxTokens} (completion_tokens=${completionTokens})`
+        );
+      }
+
+      return content;
+    },
+    operation,
+    LLM_CONFIG.retry.maxRetries,
+    retryWaitSeconds
+  );
+}
+
 export async function summarizeTranscript(
   transcript: string,
   groq: Groq,
-  model: string = DEFAULT_MODELS.llm
+  model: string = DEFAULT_MODELS.llm,
+  options: { retryWaitSeconds?: number } = {}
 ): Promise<string> {
   console.log("Generating summary with GROQ...");
 
@@ -674,30 +773,14 @@ export async function summarizeTranscript(
         TOKEN_CONFIG.reservedTokensBuffer;
       await rateLimiter.checkAndWaitLLM(chunkTokens);
 
-      const response = await retryGroqCall(
-        () =>
-          groq.chat.completions.create({
-            model: model,
-            messages: [
-              {
-                role: "system",
-                content: systemMessage,
-              },
-              {
-                role: "user",
-                content: chunkPrompt,
-              },
-            ],
-            temperature: LLM_CONFIG.temperature,
-            max_tokens: LLM_CONFIG.maxTokens,
-          }),
-        `Chunk ${i + 1}/${chunks.length} summarization`
+      const chunkSummary = await requestSummary(
+        groq,
+        model,
+        systemMessage,
+        chunkPrompt,
+        `Chunk ${i + 1}/${chunks.length} summarization`,
+        options.retryWaitSeconds
       );
-
-      const chunkSummary = response.choices[0]?.message?.content;
-      if (!chunkSummary) {
-        throw new Error(`No summary generated for chunk ${i + 1}`);
-      }
 
       // Record token usage for rate limiting
       const responseTokens = estimateTokens(chunkSummary);
@@ -726,30 +809,14 @@ export async function summarizeTranscript(
       TOKEN_CONFIG.reservedTokensBuffer;
     await rateLimiter.checkAndWaitLLM(finalPromptTokens);
 
-    const finalResponse = await retryGroqCall(
-      () =>
-        groq.chat.completions.create({
-          model: model,
-          messages: [
-            {
-              role: "system",
-              content: systemMessage,
-            },
-            {
-              role: "user",
-              content: finalPrompt,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-      "Final summary consolidation"
+    const finalSummary = await requestSummary(
+      groq,
+      model,
+      systemMessage,
+      finalPrompt,
+      "Final summary consolidation",
+      options.retryWaitSeconds
     );
-
-    const finalSummary = finalResponse.choices[0]?.message?.content;
-    if (!finalSummary) {
-      throw new Error("No final summary generated");
-    }
 
     // Record token usage for rate limiting
     const finalResponseTokens = estimateTokens(finalSummary);
@@ -763,30 +830,14 @@ export async function summarizeTranscript(
     // Single request - no chunking needed
     const prompt = getTownHallSummaryPrompt(transcript);
 
-    const response = await retryGroqCall(
-      () =>
-        groq.chat.completions.create({
-          model: model,
-          messages: [
-            {
-              role: "system",
-              content: systemMessage,
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-      "Summary generation"
+    const summary = await requestSummary(
+      groq,
+      model,
+      systemMessage,
+      prompt,
+      "Summary generation",
+      options.retryWaitSeconds
     );
-
-    const summary = response.choices[0]?.message?.content;
-    if (!summary) {
-      throw new Error("No summary generated from GROQ");
-    }
 
     // Record token usage for rate limiting
     const responseTokens = estimateTokens(summary);

@@ -210,19 +210,56 @@ yarn missing --days=180 --max=100
 ```
 
 The script:
-1. Queries the configured YouTube channel for recent completed live streams + "town hall" uploads
-2. For each candidate video, checks ConvertKit for an existing broadcast tagged with `TOWNHALL_VIDEO_ID:<id>`
-3. Prints a clean list of missing video IDs and a ready-to-paste `yarn retro …` command (sorted oldest → newest so summaries are processed in chronological order)
+1. Queries the configured YouTube channel for recent completed live streams + anything matching "town hall"
+2. Keeps only the videos that are town halls (see [What counts as a town hall](#what-counts-as-a-town-hall)) and lists the rest with the reason each was ignored
+3. Checks ConvertKit for an existing broadcast tagged with `TOWNHALL_VIDEO_ID:<id>`
+4. Prints a clean list of missing video IDs and a ready-to-paste `yarn retro …` command (sorted oldest → newest so summaries are processed in chronological order)
+
+With `--auto-run` it summarizes the missing ones itself. That is the command the scheduled workflow runs.
 
 Required env vars: `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID` (or `ALLOWED_YOUTUBE_CHANNEL_ID`), and `CONVERT_KIT_API_KEY` / `CONVERT_KIT_V4_API_KEY`.
 
 ### Scheduling
 
-`.github/workflows/townhall-summarizer.yml` runs every Friday at 12:00 UTC (after the Thursday town hall) and is the **sole** scheduler. The Vercel cron that used to do this was removed in May 2026 to avoid two schedulers racing to create the same broadcast; the root `vercel.json` keeps an empty `"crons": []` for that reason. Don't re-add it.
+`.github/workflows/townhall-summarizer.yml` runs every day at 12:17 UTC and is the **sole** scheduler. Friday's run normally publishes Thursday's town hall; the other days retry anything that was not ready and take about a minute when there is nothing to do. The Vercel cron that used to do this was removed in May 2026 to avoid two schedulers racing to create the same broadcast; the root `vercel.json` keeps an empty `"crons": []` for that reason. Don't re-add it.
 
 The `/api/townhall/process` Vercel handler still exists for manual triggering, and calls the Cloud Run `/process` endpoint, which returns 202 immediately and continues in the background.
 
-If the scheduled run fails, the workflow posts to `DISCORD_WEBHOOK_URL`. That alert exists because the job failed silently every week from May to September 2026 — a stale `/townhall` page is indistinguishable from a quiet one, so nothing surfaced the breakage.
+Each scheduled run ends in one of three ways:
+
+| Outcome | Run | Discord alert |
+|---|---|---|
+| Every town hall in the last 14 days has a summary, or one was just published | green | none |
+| A town hall has no captions yet and its stream ended less than 36 hours ago | green | none — the next run retries it |
+| A town hall could not be summarized: captions still missing after 36 hours, or anything else broke (OAuth token, GROQ, ConvertKit, YouTube API) | red | names the video, the error and the fix |
+
+The alert exists because the job failed silently every week from May to September 2026 — a stale `/townhall` page is indistinguishable from a quiet one, so nothing surfaced the breakage. It is only sent for town halls. A run with nothing to publish, a video that already has a summary, and channel videos that are not town halls never turn the run red.
+
+The run's summary page in GitHub Actions lists what was published, what is waiting and what failed.
+
+### What counts as a town hall
+
+The channel also publishes short clips, several a day, and many are titled "… | MoonDAO Town Hall". From the run of 2026-10-30 the scheduled job treated each one as a town hall: it published a "Town Hall Summary" on `/townhall` for every clip it managed to summarize, and the whole run went red whenever one of them failed, with an alert saying no summary had been published even though the real one had. Titles cannot separate the two, because streams get renamed afterwards. Length can.
+
+A video is summarized by the scheduled job when all of these hold (`src/utils/townhall.ts`):
+
+- it is at least 20 minutes long
+- it was streamed live, or its title contains "Town Hall"
+- it is not still live, upcoming, or being processed by YouTube
+
+To summarize something that does not qualify, name it explicitly: `yarn retro <videoId>`, or the workflow's `video_ids` input. Explicit ids are never filtered.
+
+Optional settings, as environment variables locally or repository variables for the workflow:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `TOWNHALL_MIN_DURATION_MINUTES` | `20` | Shortest video treated as a town hall |
+| `TOWNHALL_CAPTION_GRACE_HOURS` | `36` | How long after a stream ends missing captions are waited for before the run fails |
+| `TOWNHALL_SKIP_VIDEO_IDS` | empty | Space- or comma-separated ids the scheduled job should leave alone |
+
+### Removing summaries of clips
+
+`yarn prune-clips` lists the town hall broadcasts in ConvertKit whose video is shorter than the minimum, and `yarn prune-clips --delete` deletes them. A broadcast whose video cannot be looked up is kept. The workflow's `prune_clips` input runs the same thing with the repository's secrets: choose `dry-run` first, read the list in the log, then `delete`.
 
 ### Transcript sources
 

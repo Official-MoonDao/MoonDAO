@@ -111,6 +111,11 @@ module.exports = withBundleAnalyzer(
             './public/first-tracks/og.jpg',
             './public/first-tracks/og-base.jpg',
           ],
+          '/api/og/moonbase': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+          ],
         },
         optimizePackageImports: [
           '@heroicons/react',

@@ -64,7 +64,9 @@ export const AUDIO_CONFIG = {
 
 export const LLM_CONFIG = {
   temperature: 0.7,
-  maxTokens: 2000,
+  // Covers the model's reasoning as well as the summary itself; see
+  // `requestSummary` for what 2000 did.
+  maxTokens: 8000,
   retry: {
     maxRetries: 3,
     baseWaitTimeSeconds: 2,
@@ -75,7 +77,8 @@ export const LLM_CONFIG = {
 
 export const TOKEN_CONFIG = {
   charsPerToken: 4,
-  reservedTokensBuffer: 2000,
+  // Room left in the context window for the reply; tracks LLM_CONFIG.maxTokens.
+  reservedTokensBuffer: 8000,
   contextWindowWarningThreshold: 80,
 } as const;
 

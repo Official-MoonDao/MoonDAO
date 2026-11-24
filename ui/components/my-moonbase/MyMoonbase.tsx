@@ -1,6 +1,10 @@
-import { ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import { useLogin } from '@privy-io/react-auth'
-import dynamic from 'next/dynamic'
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronUpIcon,
+  ShareIcon,
+} from '@heroicons/react/24/outline'
+import { getAccessToken, useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -33,11 +37,15 @@ import {
 } from '@/lib/my-moonbase/grid'
 import { useMoonbaseLayout } from '@/lib/my-moonbase/useMoonbaseLayout'
 import { useMoonbasePicks } from '@/lib/my-moonbase/useMoonbasePicks'
+import { useMoonbaseSync } from '@/lib/my-moonbase/useMoonbaseSync'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import ForecastPredictModal from '@/components/deprize/ForecastPredictModal'
 import BuildBar, { type SelectedSummary } from './BuildBar'
+import type { FrameCapture } from './BuilderScene'
 import InventoryPanel, { type InventoryRace } from './InventoryPanel'
+import BuilderScene, { SceneFallback } from './LazyBuilderScene'
+import ShareBaseModal from './ShareBaseModal'
 import {
   buildAssetCatalog,
   type AssetInfo,
@@ -45,23 +53,6 @@ import {
   type CameraFocus,
   type PendingPlacement,
 } from './assets'
-
-function SceneFallback() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-black">
-      <div className="flex flex-col items-center gap-3 text-white/50">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
-        <span className="text-sm">Grading the plot…</span>
-      </div>
-    </div>
-  )
-}
-
-// three.js cannot server-render, and the scene module carries every atlas model.
-const BuilderScene = dynamic(() => import('./BuilderScene'), {
-  ssr: false,
-  loading: () => <SceneFallback />,
-})
 
 const TOAST_ID = 'my-moonbase'
 
@@ -98,10 +89,24 @@ export default function MyMoonbase() {
     betsPending,
     races: predictRaces,
     market,
+    address,
+    identityReady,
     refresh,
   } = useMoonbasePicks(chain, dataset.sharedGoals, nameOf)
-  const { layout, loaded, saveFailed, edit, undo, redo, canUndo, canRedo } =
+  const { layout, loaded, saveFailed, edit, replace, undo, redo, canUndo, canRedo } =
     useMoonbaseLayout(spanFor)
+  const sync = useMoonbaseSync({
+    layout,
+    loaded,
+    address,
+    identityReady,
+    getToken: getAccessToken,
+    spanFor,
+    replace,
+  })
+  const [sharing, setSharing] = useState(false)
+  const captureRef = useRef<FrameCapture | null>(null)
+  const capture = useCallback(() => captureRef.current?.() ?? null, [])
 
   const [tool, setTool] = useState<BuilderTool>('select')
   const [pending, setPending] = useState<PendingPlacement | null>(null)
@@ -445,6 +450,31 @@ export default function MyMoonbase() {
       ? 'Drag to move around · two fingers to turn and zoom'
       : 'Drag to move around · right-drag to turn · scroll to zoom'
 
+  const openShare = () => {
+    // The picture is of the base, not of a tool in mid-use.
+    resetTool()
+    setSelectedId(null)
+    setSharing(true)
+  }
+
+  const saveNote: { text: string; warn?: boolean } = !loaded
+    ? { text: 'Loading your base…' }
+    : sync.status === 'checking'
+    ? { text: 'Checking your account for a saved base…' }
+    : sync.status === 'saving'
+    ? { text: 'Saving…' }
+    : sync.status === 'saved'
+    ? { text: sync.shareId ? 'Saved to your account.' : 'Saves to your account as you build.' }
+    : sync.status === 'conflict'
+    ? { text: 'Not saving to your account yet.', warn: true }
+    : sync.status === 'error'
+    ? { text: 'Not saved to your account. It is kept in this browser.', warn: true }
+    : saveFailed
+    ? { text: 'Not saved: this browser is blocking storage.', warn: true }
+    : sync.status === 'local' && identityReady
+    ? { text: 'Saved in this browser only. Predict a race or sign in to keep it with your account.' }
+    : { text: 'Saved in this browser.' }
+
   const assetCount = placedRefs.size
   const sceneryCount = layout.items.length - assetCount
   const isEmpty = layout.items.length === 0 && layout.roads.length === 0
@@ -473,6 +503,7 @@ export default function MyMoonbase() {
             onBackgroundClick={() => {
               if (tool === 'select') setSelectedId(null)
             }}
+            captureRef={captureRef}
           />
         )}
       </div>
@@ -481,13 +512,23 @@ export default function MyMoonbase() {
         <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-5">
           <div className="flex min-h-0 w-full flex-col gap-3 sm:w-80">
             <div className="pointer-events-auto shrink-0 rounded-2xl border border-white/10 bg-black/50 px-4 py-3 backdrop-blur-md">
-              <Link
-                href="/moonbase"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 hover:text-cyan-200"
-              >
-                <ChevronLeftIcon className="h-3 w-3" />
-                Moon Base Zero
-              </Link>
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href="/moonbase"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 hover:text-cyan-200"
+                >
+                  <ChevronLeftIcon className="h-3 w-3" />
+                  Moon Base Zero
+                </Link>
+                <button
+                  type="button"
+                  onClick={openShare}
+                  className="inline-flex items-center gap-1 rounded-md bg-cyan-300 px-2 py-1 text-[11px] font-bold text-black transition hover:bg-cyan-200"
+                >
+                  <ShareIcon className="h-3 w-3" />
+                  Share
+                </button>
+              </div>
               <input
                 value={layout.name}
                 onChange={(e) => edit((current) => renameBase(current, e.target.value), 'name')}
@@ -516,13 +557,48 @@ export default function MyMoonbase() {
                   )}
                 </button>
               </div>
-              <p className={`mt-1 text-[11px] ${saveFailed ? 'text-amber-200/90' : 'text-white/35'}`}>
-                {saveFailed
-                  ? 'Not saved: this browser is blocking storage.'
-                  : loaded
-                  ? 'Saved in this browser.'
-                  : 'Loading your base…'}
+              <p
+                role="status"
+                className={`mt-1 text-[11px] ${saveNote.warn ? 'text-amber-200/90' : 'text-white/35'}`}
+              >
+                {saveNote.text}
+                {sync.status === 'error' && (
+                  <>
+                    {' '}
+                    <button type="button" onClick={sync.retry} className="font-semibold underline">
+                      Try again
+                    </button>
+                  </>
+                )}
               </p>
+              {sync.status === 'conflict' && (
+                <div className="mt-2 rounded-lg border border-amber-200/30 bg-amber-200/10 p-2">
+                  <p className="text-[11px] leading-relaxed text-amber-100">
+                    Your account already holds a different base, saved from somewhere else. Which
+                    one do you want to keep? The other is replaced.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={sync.keepMine}
+                      className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white/20"
+                    >
+                      Keep this one
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetTool()
+                        setSelectedId(null)
+                        sync.loadSaved()
+                      }}
+                      className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white/20"
+                    >
+                      Load the saved one
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {inventoryOpen && (
@@ -573,6 +649,20 @@ export default function MyMoonbase() {
           />
         </div>
       </div>
+
+      {sharing && (
+        <ShareBaseModal
+          name={layout.name}
+          predicted={races.filter((race) => race.assets.length > 0).length}
+          total={races.length}
+          status={sync.status}
+          touch={touch}
+          capture={capture}
+          saveNow={sync.saveNow}
+          onSignIn={login}
+          onClose={() => setSharing(false)}
+        />
+      )}
 
       {predictRace && (
         <ForecastPredictModal

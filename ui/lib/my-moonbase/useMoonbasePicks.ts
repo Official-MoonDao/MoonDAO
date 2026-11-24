@@ -45,6 +45,10 @@ export type MoonbasePicksState = {
   races: PredictableRace[]
   /** The DePrize-bound race's market, once read. Predicting it waits on a settled payout. */
   market: { goalId: string; resolved: boolean; payoutPending: boolean } | null
+  /** Wallet these predictions are saved from, lower case. The base is saved under it too. */
+  address: string | undefined
+  /** False while the session is resolving, when a missing `address` does not yet mean signed out. */
+  identityReady: boolean
   refresh: () => void
 }
 
@@ -225,6 +229,8 @@ export function useMoonbasePicks(
     betsPending: !!account && !!betBook && odds.loading,
     races,
     market,
+    address,
+    identityReady: ready && !(authenticated && !address),
     refresh,
   }
 }

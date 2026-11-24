@@ -54,8 +54,9 @@ function reducer(state: History, action: Action): History {
 }
 
 /**
- * The visitor's base, kept in this browser. `spanFor` is the current catalogue
- * footprint for an item, or undefined when the item no longer exists.
+ * The visitor's base as it stands in this browser, with its undo history.
+ * `spanFor` is the current catalogue footprint for an item, or undefined when
+ * the item no longer exists. Saving it to an account is `useMoonbaseSync`.
  */
 export function useMoonbaseLayout(
   spanFor: (kind: ItemKind, ref: string) => number | undefined
@@ -103,12 +104,15 @@ export function useMoonbaseLayout(
   )
   const undo = useCallback(() => dispatch({ type: 'undo' }), [])
   const redo = useCallback(() => dispatch({ type: 'redo' }), [])
+  /** Swaps in another copy of the base, such as the one saved to the account. Clears undo. */
+  const replace = useCallback((layout: MoonbaseLayout) => dispatch({ type: 'load', layout }), [])
 
   return {
     layout: state.present,
     loaded,
     saveFailed,
     edit,
+    replace,
     undo,
     redo,
     canUndo: state.past.length > 0,

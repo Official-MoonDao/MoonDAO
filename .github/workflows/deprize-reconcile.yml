@@ -16,7 +16,23 @@ jobs:
           SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          BASE="${SITE_URL:-https://moondao.com}"
-          curl -fsS -X POST "$BASE/api/cron/deprize-reconcile" \
+          # Apex moondao.com 307s to www.moondao.com, and curl does not follow it
+          # (a cross-host -L would also drop Authorization), so post straight to www.
+          BASE="${SITE_URL:-https://www.moondao.com}"
+          BASE="${BASE%/}"
+          case "$BASE" in
+            http://moondao.com|https://moondao.com)
+              BASE="https://www.moondao.com"
+              ;;
+          esac
+          # -f alone lets a 3xx through as success, which is how a redirect hid here.
+          BODY="$(curl -sS -X POST "$BASE/api/cron/deprize-reconcile" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json" \
+            -w '\n%{http_code}')"
+          HTTP="$(echo "$BODY" | tail -n 1)"
+          echo "$BODY" | sed '$d'
+          if [ "$HTTP" -lt 200 ] || [ "$HTTP" -ge 300 ]; then
+            echo "deprize-reconcile HTTP $HTTP"
+            exit 1
+          fi

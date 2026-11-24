@@ -15,6 +15,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type MutableRefObject,
   type ReactNode,
 } from 'react'
 import * as THREE from 'three'
@@ -73,7 +74,11 @@ export type BuilderSceneProps = {
   onCellClick: (cell: Cell) => void
   onItemClick: (id: string) => void
   onBackgroundClick: () => void
+  /** Filled with a function that returns the view as it stands, for the share image. */
+  captureRef?: MutableRefObject<FrameCapture | null>
 }
+
+export type FrameCapture = () => HTMLCanvasElement | null
 
 // Pointer travel beyond this between down and up is a camera drag, not a click.
 const CLICK_DRAG_TOLERANCE_PX = 6
@@ -756,6 +761,36 @@ function CameraRig({
   return null
 }
 
+// The drawing buffer is cleared once a frame has been shown, so a copy has to
+// be taken in the same task as a render. This draws one and copies it out.
+function CaptureHandle({ captureRef }: { captureRef: MutableRefObject<FrameCapture | null> }) {
+  const gl = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+  const camera = useThree((state) => state.camera)
+  useEffect(() => {
+    captureRef.current = () => {
+      try {
+        gl.render(scene, camera)
+        const source = gl.domElement
+        if (!source.width || !source.height) return null
+        const copy = document.createElement('canvas')
+        copy.width = source.width
+        copy.height = source.height
+        const g = copy.getContext('2d')
+        if (!g) return null
+        g.drawImage(source, 0, 0)
+        return copy
+      } catch {
+        return null
+      }
+    }
+    return () => {
+      captureRef.current = null
+    }
+  }, [gl, scene, camera, captureRef])
+  return null
+}
+
 function SceneContents({
   layout,
   tool,
@@ -768,6 +803,7 @@ function SceneContents({
   onCellClick,
   onItemClick,
   onBackgroundClick,
+  captureRef,
   onFlyingChange,
 }: BuilderSceneProps & { onFlyingChange: (flying: boolean) => void }) {
   // Kept in the scene, not the page: the pointer crosses a cell boundary many
@@ -857,6 +893,7 @@ function SceneContents({
       </mesh>
 
       <CameraRig focus={focus} onFlyingChange={onFlyingChange} />
+      {captureRef && <CaptureHandle captureRef={captureRef} />}
       {/* Map controls: drag slides the ground, right-drag turns the view, the
           wheel zooms. Every build action is a click, so dragging is always the
           camera's and the two never fight over the left button. */}

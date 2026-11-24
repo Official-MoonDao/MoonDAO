@@ -1,0 +1,37 @@
+name: Townhall Summarizer CI
+
+# The scheduled job runs the TypeScript sources through ts-node, so a type
+# error or a broken import on main is only discovered when the schedule fires.
+# Check both before merge instead.
+on:
+  pull_request:
+    paths:
+      - "townhall-summarizer/**"
+      - ".github/workflows/townhall-summarizer-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: townhall-summarizer
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: townhall-summarizer/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit

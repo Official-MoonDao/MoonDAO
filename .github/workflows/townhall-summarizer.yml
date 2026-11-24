@@ -2,21 +2,46 @@ name: Townhall Summarizer
 
 on:
   schedule:
-    # Run every Friday at 12:00 UTC (~14h after Thursday town halls)
-    - cron: '0 12 * * 5'
+    # Every day. Town halls air on Thursdays, so Friday's run normally
+    # publishes the summary. The other days are the retries: a stream whose
+    # captions were not ready is picked up by the next run without anyone
+    # doing anything. A run with nothing to do takes about a minute.
+    #
+    # Not on the hour: the old `0 12 * * 5` schedule started between one and
+    # ten hours late every week. GitHub delays scheduled jobs most at the
+    # start of an hour.
+    - cron: '17 12 * * *'
   workflow_dispatch:
     inputs:
       video_ids:
         description: 'Space-separated video IDs to process (leave empty for auto-detect)'
         required: false
         default: ''
+      prune_clips:
+        description: 'Instead of summarizing: list (dry-run) or delete summaries that were generated from short clips'
+        type: choice
+        required: false
+        default: 'no'
+        options:
+          - 'no'
+          - dry-run
+          - delete
+
+# Two runs at once would both see a town hall as unsummarized and publish it twice.
+concurrency:
+  group: townhall-summarizer
+  cancel-in-progress: false
 
 jobs:
   summarize:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: townhall-summarizer
+    env:
+      # The summarizer writes what went wrong here; the alert step sends it.
+      TOWNHALL_ALERT_FILE: ${{ github.workspace }}/.townhall-alert.txt
 
     steps:
       - uses: actions/checkout@v4
@@ -28,16 +53,34 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: townhall-summarizer/yarn.lock
 
+      # Only the audio fallback needs yt-dlp, and YouTube refuses audio
+      # downloads from GitHub's addresses anyway. A failed download of the
+      # binary must not stop the caption path, which is the one that works.
       - name: Install yt-dlp
+        continue-on-error: true
         run: |
-          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo curl -fL --retry 3 https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
           yt-dlp --version
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Remove summaries of clips
+        if: github.event_name == 'workflow_dispatch' && inputs.prune_clips != 'no'
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          CONVERT_KIT_V4_API_KEY: ${{ secrets.CONVERT_KIT_V4_API_KEY }}
+          PRUNE_MODE: ${{ inputs.prune_clips }}
+        run: |
+          if [ "$PRUNE_MODE" = "delete" ]; then
+            yarn ts-node src/prune-clips.ts --delete
+          else
+            yarn ts-node src/prune-clips.ts
+          fi
+
       - name: Run summarizer
+        if: github.event_name != 'workflow_dispatch' || inputs.prune_clips == 'no'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
@@ -59,29 +102,45 @@ jobs:
           # `captions`, so the one path that cannot work here was also the only
           # one allowed to run.
           TRANSCRIPT_SOURCE: auto
+          # Optional repository variables. Unset means the defaults in
+          # townhall-summarizer/src/utils/townhall.ts.
+          TOWNHALL_MIN_DURATION_MINUTES: ${{ vars.TOWNHALL_MIN_DURATION_MINUTES }}
+          TOWNHALL_CAPTION_GRACE_HOURS: ${{ vars.TOWNHALL_CAPTION_GRACE_HOURS }}
+          TOWNHALL_SKIP_VIDEO_IDS: ${{ vars.TOWNHALL_SKIP_VIDEO_IDS }}
+          VIDEO_IDS: ${{ github.event.inputs.video_ids }}
         run: |
-          if [ -n "${{ github.event.inputs.video_ids }}" ]; then
-            echo "Processing specified video(s): ${{ github.event.inputs.video_ids }}"
-            yarn ts-node src/retro.ts ${{ github.event.inputs.video_ids }}
+          if [ -n "$VIDEO_IDS" ]; then
+            echo "Processing specified video(s): $VIDEO_IDS"
+            # Unquoted on purpose: one argument per id.
+            yarn ts-node src/retro.ts $VIDEO_IDS
           else
-            echo "Auto-detecting latest unprocessed town hall..."
+            echo "Looking for town halls without a summary..."
             yarn ts-node src/find-missing.ts --days=14 --auto-run
           fi
 
       # This job failed every Friday from May to September without anyone
       # noticing, because a stale /townhall page looks the same as a quiet one.
-      # Shout when it breaks.
+      # Shout when it breaks — and say what broke. The step only goes red when
+      # a town hall could not be summarized, so this is not sent for clips,
+      # for videos that already have a summary, or for a stream whose captions
+      # are simply not ready yet.
       - name: Alert Discord on failure
         if: failure()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$DISCORD_WEBHOOK_URL" ]; then
             echo "No DISCORD_WEBHOOK_URL configured; skipping alert."
             exit 0
           fi
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          curl -sS -X POST "$DISCORD_WEBHOOK_URL" \
-            -H 'Content-Type: application/json' \
-            -d "{\"content\": \"Town hall summarizer failed — no new summary was published this week. Logs: $RUN_URL\"}" \
+          if [ -s "$TOWNHALL_ALERT_FILE" ]; then
+            MESSAGE="$(cat "$TOWNHALL_ALERT_FILE")"
+          else
+            MESSAGE="Town hall summarizer run failed before it could report what happened (a setup step, or a crash). It runs daily and will try again on its next run."
+          fi
+          jq -n --arg message "$MESSAGE" --arg url "$RUN_URL" \
+            '{content: ($message + "\nLogs: <" + $url + ">"), allowed_mentions: {parse: []}}' \
+            | curl -sS --fail-with-body -X POST "$DISCORD_WEBHOOK_URL" \
+                -H 'Content-Type: application/json' --data-binary @- \
             || echo "Discord alert failed to send."

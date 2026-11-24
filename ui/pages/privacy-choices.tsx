@@ -31,7 +31,7 @@ export default function PrivacyChoices() {
   return (
     <Container>
       <Head
-        title="Your Privacy Choices | MoonDAO"
+        title="Your Privacy Choices"
         description="Opt out of the sale or sharing of your personal information for advertising."
       />
       <div className="mx-auto max-w-2xl py-16 text-white">
