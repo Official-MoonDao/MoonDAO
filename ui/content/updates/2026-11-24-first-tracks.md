@@ -91,8 +91,6 @@ A few rules shape who can win:
 - **Uncrewed only.** No one may be aboard during the qualifying drive. This is not the race for the crewed Lunar Terrain Vehicle, which has its own place in Moon Base Zero.
 - **Rolling, not hopping.** Wheels, tracks or legs in contact with the ground. A hopper does not count, however far it hops.
 
-One disclosure: MoonDAO has funded a rover project, MDP-262, a proof of concept called FUTURA. It is not on the roster. A rover from that project could only win through the Open Field, under the same rules as anyone else.
-
 ## Two rovers, one lander
 
 The first chance to win rides on a single flight. Astrobotic's Griffin-1 is a 1,265 kg lander carrying more than 450 kg of payload to the Nobile crater region near the lunar south pole. Voyager Technologies, which bought Astrobotic this year, targets a January 2027 launch on a SpaceX Falcon Heavy. NASA has said it will not fly before January, partly because engine testing was still under way. Two rovers are on board.
