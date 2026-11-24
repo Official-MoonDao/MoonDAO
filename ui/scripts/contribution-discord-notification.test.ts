@@ -81,11 +81,11 @@ describe('contribution Discord link previews', () => {
     expect(suppressLinkPreviews('**https://a.com**')).to.equal('**<https://a.com>**')
   })
 
-  it('brackets every link in the announcement, including ours', () => {
+  it('brackets a link that lands in the summary, including ours', () => {
     const content = buildContent({
       name: 'Ada',
-      title: 'Lunar demo',
-      area: 'Media',
+      title: '',
+      area: '',
       description: 'Watch https://youtu.be/abc and read https://blog.example.com/post.',
       links: 'www.example.com/video',
       walletAddress: '0x1234567890abcdef1234567890abcdef12345678',
@@ -93,8 +93,90 @@ describe('contribution Discord link previews', () => {
     } as Contribution)
     expect(content).to.include('<https://youtu.be/abc>')
     expect(content).to.include('<https://blog.example.com/post>.')
-    expect(content).to.include('🔗 <https://www.example.com/video>')
-    expect(content).to.match(/View all contributions → <https?:\/\/[^\s>]+\/contributions>/)
+    expect(content).to.match(/Read it → <https?:\/\/[^\s>]+\/contributions>/)
+    expect(content).to.not.include('example.com/video')
     expect(content).to.not.match(/(^|[^<])https?:\/\//m)
+  })
+})
+
+describe('contribution Discord summary', () => {
+  const wallet = '0x1234567890abcdef1234567890abcdef12345678'
+
+  it('posts the title and area, and leaves the write-up off the message', () => {
+    const content = buildContent({
+      name: 'Ada',
+      title: 'Lunar demo',
+      area: 'Content Creation & Marketing (e.g., articles, social media)',
+      description: 'A long write-up that belongs on the contributions page, not in general.',
+      links: 'www.example.com/video',
+      walletAddress: wallet,
+      timestamp: '10/6/2026 15:44:02',
+    } as Contribution)
+    const [heading, summary, link] = content.split('\n')
+    expect(heading).to.equal('## New contribution from **Ada**')
+    expect(summary).to.equal('**Lunar demo** · Content Creation & Marketing')
+    expect(link).to.match(/^Read it → <https?:\/\/[^\s>]+\/contributions>$/)
+    expect(content.split('\n')).to.have.length(3)
+    expect(content).to.not.include('long write-up')
+    expect(content).to.not.include('example.com/video')
+    expect(content).to.not.include('articles, social media')
+  })
+
+  it('uses the first sentence when a form row has no title', () => {
+    const content = buildContent({
+      name: 'Anonymous',
+      area: 'community',
+      description:
+        'Hosted the weekly call and wrote the notes. Then I moderated for three hours and rewrote the onboarding guide.',
+      links: 'https://example.com/notes',
+      walletAddress: wallet,
+      timestamp: '10/6/2026 15:44:02',
+    } as Contribution)
+    expect(content).to.include('## New contribution from **0x1234…5678**')
+    expect(content).to.include(
+      '**Hosted the weekly call and wrote the notes.** · Community Growth & Engagement'
+    )
+    expect(content).to.not.include('onboarding guide')
+    expect(content).to.not.include('example.com/notes')
+  })
+
+  it('skips a short abbreviation and still caps a run-on description', () => {
+    const notes = buildContent({
+      name: 'Ada',
+      area: '',
+      description:
+        'Dr. Ada hosted the weekly call and wrote the notes. The rest stays on the site.',
+      links: '',
+      walletAddress: wallet,
+      timestamp: '10/6/2026 15:44:02',
+    } as Contribution)
+    expect(notes).to.include('**Dr. Ada hosted the weekly call and wrote the notes.**')
+    expect(notes).to.not.include('stays on the site')
+
+    const runOn = `shipped the payload integration ${'and more '.repeat(40)}`.trim()
+    const content = buildContent({
+      name: 'Ada',
+      area: 'space',
+      description: runOn,
+      links: '',
+      walletAddress: wallet,
+      timestamp: '10/6/2026 15:44:02',
+    } as Contribution)
+    expect(content).to.include('**shipped the payload integration')
+    expect(content).to.include('…** · Space Exploration & Research')
+    expect(content).to.not.include(runOn)
+    expect(content.length).to.be.lessThan(400)
+  })
+
+  it('falls back to Someone when the row has no name or wallet', () => {
+    const content = buildContent({
+      name: '',
+      area: '',
+      description: '',
+      links: '',
+      walletAddress: '',
+      timestamp: '',
+    } as Contribution)
+    expect(content.startsWith('## New contribution from **Someone**\nRead it → ')).to.equal(true)
   })
 })

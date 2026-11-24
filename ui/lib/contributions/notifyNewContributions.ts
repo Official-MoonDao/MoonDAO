@@ -7,8 +7,9 @@
 //   `getSheetContributions`), so there is no server-side hook we can fire on
 //   submit. Instead this module is polled on a schedule (a GitHub Actions cron
 //   hits `/api/cron/contribution-notifications`), diffs the sheet against the
-//   set of rows we've already announced, and posts the new ones to the same
-//   Discord "network notifications" channel used for citizens/teams/jobs.
+//   set of rows we've already announced, and posts a short summary of each new
+//   one to #general, the same channel used for citizens, teams, and jobs. The
+//   full write-up stays on /contributions.
 //
 //   Dedup + first-run seeding live in Upstash Redis (the same store used for
 //   citizen invites and rate limiting):
@@ -23,6 +24,7 @@ import { Redis } from '@upstash/redis'
 import { DEPLOYED_ORIGIN, GENERAL_CHANNEL_ID, TEST_CHANNEL_ID } from 'const/config'
 import crypto from 'crypto'
 import { getSheetContributions, type Contribution } from '@/lib/contributions/getSheetContributions'
+import { areaLabel } from '@/lib/contributions/onchain'
 
 const NOTIFIED_SET_KEY = 'contributions:notified'
 const SEEDED_FLAG_KEY = 'contributions:notified:seeded'
@@ -55,7 +57,7 @@ const MAX_CONTENT_LENGTH = 1900
 // past its function time limit.
 const DISCORD_FETCH_TIMEOUT_MS = 10_000
 
-// Same channel selection the rest of the network notifications use.
+// #general on mainnet. Other chains post to the test channel.
 const NOTIFICATION_CHANNEL_ID =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? GENERAL_CHANNEL_ID : TEST_CHANNEL_ID
 
@@ -145,7 +147,60 @@ export function isWithinAnnounceWindow(
 
 function truncate(text: string, max: number): string {
   const t = text.trim()
-  return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t
+  if (t.length <= max) return t
+  const slice = t.slice(0, max - 1).trimEnd()
+  const space = slice.lastIndexOf(' ')
+  const cut = space > max * 0.6 ? slice.slice(0, space) : slice
+  return `${cut.trimEnd()}…`
+}
+
+// One Discord line. Strip the characters that would break the bold wrapper.
+function oneLine(text: string): string {
+  return text.replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+// A one-line headline. Titled submissions use the title. Older form rows have
+// no title, so use the first real sentence of the description and leave the
+// rest on the contributions page. A tiny first fragment such as "Dr." is not
+// the sentence.
+const SUMMARY_MAX = 160
+const MIN_SENTENCE = 16
+
+function firstSentence(text: string): string {
+  const clean = oneLine(text)
+  if (!clean) return ''
+  const re = /[.!?](?=\s|$)/g
+  let match: RegExpExecArray | null
+  while ((match = re.exec(clean))) {
+    const end = match.index + 1
+    if (end >= MIN_SENTENCE || end === clean.length) {
+      return truncate(clean.slice(0, end), SUMMARY_MAX)
+    }
+  }
+  return truncate(clean, SUMMARY_MAX)
+}
+
+function contributorLabel(c: Contribution): string {
+  const name = oneLine(c.name || '')
+  if (name && name !== 'Anonymous') return truncate(name, 80)
+  if (c.walletAddress) return `${c.walletAddress.slice(0, 6)}…${c.walletAddress.slice(-4)}`
+  return 'Someone'
+}
+
+// Sheet rows store "Label (e.g., examples)". Onchain rows store a short code.
+function summaryArea(area: string): string {
+  const label = areaLabel(area.trim()).replace(/\s*\(e\.g\.[^)]*\)/gi, '')
+  return truncate(oneLine(label), 120)
+}
+
+function summaryLine(c: Contribution): string {
+  const headline = c.title?.trim()
+    ? truncate(oneLine(c.title), SUMMARY_MAX)
+    : firstSentence(c.description)
+  const area = summaryArea(c.area || '')
+  if (headline && area) return `**${headline}** · ${area}`
+  if (headline) return `**${headline}**`
+  return area
 }
 
 // Discord unfurls every bare http(s) URL into a preview card, which turns a
@@ -187,26 +242,14 @@ export function suppressLinkPreviews(text: string): string {
 }
 
 export function buildContent(c: Contribution): string {
-  const who =
-    c.name && c.name !== 'Anonymous'
-      ? `**${c.name}**`
-      : c.walletAddress
-      ? `**${c.walletAddress.slice(0, 6)}…${c.walletAddress.slice(-4)}**`
-      : '**Someone**'
-
-  const lines = [`## 🚀 New Contribution from ${who}`]
-  if (c.title) lines.push(`**${truncate(c.title, 200)}**`)
-  if (c.area) lines.push(`**Area:** ${c.area}`)
-  if (c.description) lines.push(truncate(c.description, 1500))
-  if (c.links) {
-    const url = c.links.startsWith('http') ? c.links : `https://${c.links}`
-    lines.push(`🔗 ${url}`)
-  }
-  lines.push(`\nView all contributions → ${DEPLOYED_ORIGIN}/contributions`)
+  const lines = [`## New contribution from **${contributorLabel(c)}**`]
+  const summary = summaryLine(c)
+  if (summary) lines.push(summary)
+  lines.push(`Read it → ${DEPLOYED_ORIGIN}/contributions`)
   const content = suppressLinkPreviews(lines.join('\n'))
-  // Final guard: even with a capped description, `area`/`name`/`links` can push
-  // the total past Discord's 2000-char limit, which would make this row fail
-  // forever and block the queue. Hard-cap the whole message instead.
+  // Discord rejects content over 2000 characters. A summary is capped well under
+  // that; this last guard keeps one bad row from failing forever and stalling
+  // the queue.
   return content.length > MAX_CONTENT_LENGTH
     ? `${content.slice(0, MAX_CONTENT_LENGTH - 1).trimEnd()}…`
     : content
