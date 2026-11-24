@@ -1,13 +1,13 @@
 ---
 title: "First Tracks: a prize for the first company to drive on the Moon"
-description: "No company has ever driven a rover on the Moon. First Tracks is MoonDAO's second open prize: the first commercial rover to leave its lander and drive 10 metres wins."
+description: "No company has ever driven a rover on the Moon. First Tracks is MoonDAO's second open prize: the first commercial rover to leave its lander and drive 10 meters wins."
 date: 2026-11-24
 author: MoonDAO
 authorRole: Executive Branch
 category: Update
 image: /assets/updates/first-tracks/hero.jpg
-imageAlt: An orbital view of grey, cratered lunar ground. A gold-and-white lander stands at the left with a ramp down to the surface. Two rovers have driven off it, one large and one tiny, each trailing glowing wheel tracks with metre marks toward a dashed line labelled 10 m.
-imageCaption: "Two rovers, one lander, 10 metres to go. An illustration, not mission imagery."
+imageAlt: An orbital view of gray, cratered lunar ground. A gold-and-white lander stands at the left with a ramp down to the surface. Two rovers have driven off it, one large and one tiny, each trailing glowing wheel tracks with meter marks toward a dashed line labeled 10 m.
+imageCaption: "Two rovers, one lander, 10 meters to go. An illustration, not mission imagery."
 tags:
   - deprize
   - first-tracks
@@ -20,7 +20,7 @@ Rovers have been driving on the Moon since 1970. Every one of them was run by a 
 
 It is not for lack of trying. The last three commercial rovers to fly never left their landers. Peregrine never attempted a landing, Hakuto-R Mission 2 was lost on its way down, and IM‑2 came down on its side.
 
-Today we are launching **[First Tracks](/deprize/shared-first-tracks)**, MoonDAO's second open prize. It asks one question: **which commercial rover will be first to leave its lander and drive at least 10 metres across the lunar surface?** Ten metres is about 33 feet, or two car lengths. Nobody has done it yet.
+Today we are launching **[First Tracks](/deprize/shared-first-tracks)**, MoonDAO's second open prize. It asks one question: **which commercial rover will be first to leave its lander and drive at least 10 meters across the lunar surface?** Ten meters is about 33 feet, or two car lengths. Nobody has done it yet.
 
 Predicting is free. You can make your pick on the [prize page](/deprize/shared-first-tracks) or in [Moon Base Zero](/moonbase?race=shared-first-tracks), where every competitor is parked in its own corner of the base.
 
@@ -37,10 +37,10 @@ Predicting is free. You can make your pick on the [prize page](/deprize/shared-f
 
 <aside data-title="First Tracks in brief">
 
-- **The question.** Which commercial rover is first to leave its lander and drive 10 metres on the Moon?
+- **The question.** Which commercial rover is first to leave its lander and drive 10 meters on the Moon?
 - **The field.** Astrolab (FLIP), Astrobotic (CubeRover), Lunar Outpost (MAPP), ispace (Tenacious) and Carnegie Mellon (Iris-class), plus an Open Field for any other company or university.
 - **First up.** FLIP and CubeRover ride the same lander, Griffin-1, to the lunar south pole. It targets a January 2027 launch.
-- **What counts.** Five public tests: after the prize opens, fully off the lander, 10 metres under its own power, evidence of the distance, and independent confirmation.
+- **What counts.** Five public tests: after the prize opens, fully off the lander, 10 meters under its own power, evidence of the distance, and independent confirmation.
 - **How to play.** Predict for free. Citizens' predictions are weighted by voting power and combine into the DAO forecast. Where eligible, you can back your pick with ETH, and about 5% of every bet grows the prize.
 
 </aside>
@@ -51,7 +51,7 @@ Predicting is free. You can make your pick on the [prize page](/deprize/shared-f
 
 That makes rovers one of the core technologies of a Moon base, and the commercial ones are the least proven part of it. Upright commercial landing has been done once, by Firefly's Blue Ghost in March 2025. A commercial drive has not been done at all. Prizes are most useful where a capability is close but not yet demonstrated, and that is exactly where commercial rovers are.
 
-## Three tries, zero metres
+## Three tries, zero meters
 
 The last three commercial rovers each launched, and none of them got off its lander.
 
@@ -97,10 +97,10 @@ One disclosure: MoonDAO has funded a rover project, MDP-262, a proof of concept 
 
 The first chance to win rides on a single flight. Astrobotic's Griffin-1 is a 1,265 kg lander carrying more than 450 kg of payload to the Nobile crater region near the lunar south pole. Voyager Technologies, which bought Astrobotic this year, targets a January 2027 launch on a SpaceX Falcon Heavy. NASA has said it will not fly before January, partly because engine testing was still under way. Two rovers are on board.
 
-- **FLIP**, from Venturi Astrolab, is a 450 to 500 kg rover, similar in size to NASA's VIPER. Astrolab built it in about 18 months after NASA took VIPER off this flight. It is a smaller cousin of the vehicle Astrolab is building for NASA's crewed rover programme.
+- **FLIP**, from Venturi Astrolab, is a 450 to 500 kg rover, similar in size to NASA's VIPER. Astrolab built it in about 18 months after NASA took VIPER off this flight. It is a smaller cousin of the vehicle Astrolab is building for NASA's crewed rover program.
 - **CubeRover**, from Astrobotic itself, is about 5 kg: a hull of roughly 30 by 20 by 10 cm on four wheels. It is the smallest vehicle in the race by a wide margin.
 
-The two are scored separately. If both roll off Griffin, the first to complete 10 metres wins. A small rover that drives straight out could beat a large one that spends its first days on checkout, or the other way round.
+The two are scored separately. If both roll off Griffin, the first to complete 10 meters wins. A small rover that drives straight out could beat a large one that spends its first days on checkout, or the other way round.
 
 Griffin-1 is also Astrobotic's first landing attempt, at one of the hardest places on the Moon to land. If it does not land upright, the race moves on: to Lunar Outpost's MAPP on Intuitive Machines' IM-3, aimed at Reiner Gamma on the near side in March or April, then to ispace in 2028. So the first two rovers in line are not guaranteed to be the first to drive. It might not be either of them.
 
@@ -111,7 +111,7 @@ Griffin-1 is also Astrobotic's first landing attempt, at one of the hardest plac
  "subtitle": "Launch targets for the rides that carry a rostered rover. Every date depends on the lander before it and is likely to move.",
  "items": [
   {"date": "Nov 12, 2026", "title": "Touchdown opens", "body": "MoonDAO's first open prize asks who makes the next qualifying landing on the Moon. Griffin-1 is first in that queue too.", "status": "done"},
-  {"date": "Today", "title": "First Tracks opens", "body": "Predictions are open. Any distance driven before today does not count toward the 10 metres.", "status": "now"},
+  {"date": "Today", "title": "First Tracks opens", "body": "Predictions are open. Any distance driven before today does not count toward the 10 meters.", "status": "now"},
   {"date": "Jan 2027", "title": "Griffin-1 · FLIP and CubeRover", "body": "Astrobotic's lander to the Nobile crater region at the south pole on a Falcon Heavy. Two rostered rovers on one lander.", "status": "next"},
   {"date": "Mar–Apr 2027", "title": "IM-3 · MAPP", "body": "Intuitive Machines' third Nova-C lander, to Reiner Gamma on the near side. Lunar Outpost's second try after IM-2.", "status": "next"},
   {"date": "2028", "title": "ispace Mission 3 · Tenacious-class", "body": "ispace's next rover, after Tenacious was lost with Hakuto-R Mission 2.", "status": "next"},
@@ -132,29 +132,29 @@ A qualifying drive has to pass five tests, all of them public and all of them ye
  "subtitle": "A drive wins only if all five are met. The numbers match the list below. If any test fails, the operator can try again with the same rover or a later one.",
  "src": "/assets/updates/first-tracks/five-tests.jpg",
  "narrow": "/assets/updates/first-tracks/five-tests-narrow.jpg",
- "alt": "Side view of a lander with a ramp and a rover that has driven 10 metres along a ruler to a flag. Numbered markers show the five tests listed below the figure: 1 at a Prize Open tag at the start of the ruler, 2 at a dashed rover outline at the foot of the ramp, 3 along the ruler, 4 at the 10 m mark, and 5 at an orbiter photographing the rover, with the lander's camera watching and a telemetry link to Earth.",
+ "alt": "Side view of a lander with a ramp and a rover that has driven 10 meters along a ruler to a flag. Numbered markers show the five tests listed below the figure: 1 at a Prize Open tag at the start of the ruler, 2 at a dashed rover outline at the foot of the ramp, 3 along the ruler, 4 at the 10 m mark, and 5 at an orbiter photographing the rover, with the lander's camera watching and a telemetry link to Earth.",
  "source": "First Tracks rules of record. Drawing not to scale."
 }
 ```
 
-1. **After open.** The whole 10 metres is driven after the prize opens. A rover already in transit or on the surface today is eligible, but distance it drove before today does not count.
+1. **After open.** The whole 10 meters is driven after the prize opens. A rover already in transit or on the surface today is eligible, but distance it drove before today does not count.
 2. **Egress.** The whole rover has left the lander and rests on the lunar surface. A ramp, crane or release is fine. A rover still attached to its lander has not left it.
-3. **Drive.** The rover covers at least 10 metres of ground under its own power, added up across one or more drives.
-4. **Distance evidence.** A traverse map, image sequence or distance statement, published by the rover operator, the lander operator or a sponsoring agency, shows the 10 metres.
+3. **Drive.** The rover covers at least 10 meters of ground under its own power, added up across one or more drives.
+4. **Distance evidence.** A traverse map, image sequence or distance statement, published by the rover operator, the lander operator or a sponsoring agency, shows the 10 meters.
 5. **Independent confirmation.** At least one of: a statement from a national space agency that flew or sponsored the rover, imagery of the rover off its lander from a camera the operator does not control, such as an orbiter or another company's lander camera, or surface telemetry received by a third party.
 
 A few cases, straight from the rules:
 
 | Case | Result |
 |---|---|
-| FLIP and CubeRover both leave Griffin-1 | Each is scored on its own. The first to complete 10 metres wins |
-| A rover leaves its lander, drives 4 metres and stops responding | Does not qualify. The operator's slot stays live |
-| A rover drives 12 metres, and the only evidence is the operator's own video | Not yet. Independent confirmation is missing |
-| A rover is lowered to the surface by a crane, then drives 10 metres | Qualifies. Deployment by the lander is allowed |
-| A government agency's rover drives 10 metres | Does not qualify. It is not commercial |
-| A hopper lands and hops 30 metres | Does not qualify. Hopping is not driving |
+| FLIP and CubeRover both leave Griffin-1 | Each is scored on its own. The first to complete 10 meters wins |
+| A rover leaves its lander, drives 4 meters and stops responding | Does not qualify. The operator's slot stays live |
+| A rover drives 12 meters, and the only evidence is the operator's own video | Not yet. Independent confirmation is missing |
+| A rover is lowered to the surface by a crane, then drives 10 meters | Qualifies. Deployment by the lander is allowed |
+| A government agency's rover drives 10 meters | Does not qualify. It is not commercial |
+| A hopper lands and hops 30 meters | Does not qualify. Hopping is not driving |
 
-The 10 metres can be added up over several drives, but it has to be ground actually covered. Wheels spinning in place do not count, and neither does being pushed, towed or carried. The winning time is when the rover completes its 10th metre, in UTC. If two rovers are too close to call, the one that left its lander first wins.
+The 10 meters can be added up over several drives, but it has to be ground actually covered. Wheels spinning in place do not count, and neither does being pushed, towed or carried. The winning time is when the rover completes its 10th meter, in UTC. If two rovers are too close to call, the one that left its lander first wins.
 
 ## How it resolves
 
@@ -209,7 +209,7 @@ Your pick also counts in [My Moonbase](/moonbase/mine), where you build a base o
 {
  "eyebrow": "First Tracks · live on Arbitrum",
  "title": "Who draws first tracks on the Moon?",
- "body": "Pick the commercial rover you think drives 10 metres first. Predicting is free, and Citizens' predictions are weighted by voting power and combine into the DAO forecast.",
+ "body": "Pick the commercial rover you think drives 10 meters first. Predicting is free, and Citizens' predictions are weighted by voting power and combine into the DAO forecast.",
  "points": [
   "Tap a competitor to predict them as the winner. It costs nothing.",
   "Accurate predictions climb the leaderboard when the race ends.",
