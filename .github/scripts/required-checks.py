@@ -541,6 +541,7 @@ def self_test() -> None:
         ".github/workflows/deprize-unit.yml",
         ".github/workflows/feehook.yml",
         ".github/workflows/subscription-contracts.yml",
+        ".github/workflows/townhall-summarizer-ci.yml",
         ".github/workflows/xp.yml",
     }, found
     always_on = [
@@ -565,6 +566,11 @@ def self_test() -> None:
         ),
         (["xp/src/A.sol"], {".github/workflows/xp.yml"}),
         (["fee-hook/src/Hook.sol"], {".github/workflows/feehook.yml"}),
+        (
+            ["townhall-summarizer/src/retro.ts"],
+            {".github/workflows/townhall-summarizer-ci.yml"},
+        ),
+        ([".github/workflows/townhall-summarizer.yml"], set()),
         (["README.md"], set()),
         ([".github/workflows/ci.yml"], {".github/workflows/ci.yml"}),
         (
