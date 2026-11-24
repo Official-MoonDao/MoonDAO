@@ -5,10 +5,12 @@ import {
   decorateRouterUrl,
   getAttribution,
   getPassthroughParams,
+  getSessionCampaignAttribution,
+  readAnalyticsConsent,
   withAttribution,
   type DecoratableUrl,
 } from '@/lib/analytics/attribution'
-import { setAttributionGetter } from '@/lib/analytics/ga4'
+import { analyticsConsentGate, setAttributionGetter } from '@/lib/analytics/ga4'
 
 /**
  * Records the landing touch and keeps campaign params on later funnel
@@ -24,7 +26,15 @@ export default function AttributionCapture() {
     // mint_error. The stored record stays empty until analytics consent.
     setAttributionGetter(() => {
       const params: Record<string, string> = {}
-      for (const [key, value] of Object.entries(getAttribution())) {
+      // When the country lookup failed ('passthrough'), nothing is stored, so
+      // getAttribution() is empty even though the tag runs on its regional
+      // default. Fall back to this visit's campaign tags (utm_* only) so a
+      // purchase from an ad still carries utm_medium.
+      const source =
+        readAnalyticsConsent() === null && analyticsConsentGate() === 'passthrough'
+          ? getSessionCampaignAttribution()
+          : getAttribution()
+      for (const [key, value] of Object.entries(source)) {
         if (value) params[key] = value
       }
       return params

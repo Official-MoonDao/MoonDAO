@@ -628,6 +628,11 @@ function armConsentHoldFallback() {
  * 'passthrough' is a failed lookup: send and let the regional default decide.
  * An explicit denial is forwarded once and never upgraded to granted.
  */
+/** The banner's last consent signal for this page load ('unknown' before any). */
+export function analyticsConsentGate(): typeof consentGate {
+  return consentGate
+}
+
 export function reportAnalyticsConsent(signal: 'granted' | 'denied' | 'prompt' | 'passthrough') {
   consentGate = signal
   if (signal === 'prompt') {

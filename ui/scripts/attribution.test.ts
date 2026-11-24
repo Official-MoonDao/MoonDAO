@@ -12,6 +12,7 @@ import {
   extractAttributionParams,
   buildKitSignupFields,
   getAttribution,
+  getSessionCampaignAttribution,
   kitFieldsFromAttribution,
   kitSignupFields,
   mergeAttributionQuery,
@@ -498,6 +499,35 @@ describe('browser persistence', () => {
     expect(browser.values.has(ATTRIBUTION_STORAGE_KEY)).to.equal(false)
     expect(browser.cookieSets[browser.cookieSets.length - 1]).to.include('Max-Age=0')
     expect(getAttribution()).to.deep.equal({})
+  })
+
+  it('keeps the visit campaign tags in memory before any consent is stored', () => {
+    resetAttributionForTests()
+    const browser = installBrowser()
+    browser.state.consent = null
+    browser.state.search = '?utm_source=meta&utm_medium=paid&utm_campaign=test&fbclid=fb1&gclid=g1'
+    captureClientAttribution(1_700_000_000_000)
+    // Nothing is persisted without consent, so the stored getter stays empty.
+    expect(getAttribution()).to.deep.equal({})
+    const session = getSessionCampaignAttribution()
+    expect(session).to.include({ utm_source: 'meta', utm_medium: 'paid', utm_campaign: 'test' })
+    expect(session).to.include({ first_utm_medium: 'paid' })
+    // Click ids and referrers never leave through the fallback.
+    for (const key of Object.keys(session)) {
+      expect(key).to.match(/^(first_)?utm_/)
+    }
+  })
+
+  it('returns no session campaign tags once consent is stored either way', () => {
+    resetAttributionForTests()
+    const browser = installBrowser()
+    browser.state.search = '?utm_medium=paid'
+    browser.state.consent = 'false'
+    captureClientAttribution(1_700_000_000_000)
+    expect(getSessionCampaignAttribution()).to.deep.equal({})
+    browser.state.consent = 'true'
+    captureClientAttribution(1_700_000_001_000)
+    expect(getSessionCampaignAttribution()).to.deep.equal({})
   })
 })
 

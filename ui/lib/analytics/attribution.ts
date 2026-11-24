@@ -627,6 +627,25 @@ export function getAttribution(): FlatAttribution {
   return toFlatAttribution(record)
 }
 
+const CAMPAIGN_KEY = /^(first_)?utm_(source|medium|campaign|term|content)$/
+
+/**
+ * Campaign tags from this visit's in-memory touch, for when no consent value
+ * has been stored yet. Only `utm_*` and `first_utm_*` keys: click ids and
+ * referrers stay out. Returns nothing after an explicit decline or once a
+ * stored grant exists (use getAttribution then).
+ */
+export function getSessionCampaignAttribution(): FlatAttribution {
+  if (typeof window === 'undefined') return {}
+  if (readAnalyticsConsent() !== null) return {}
+  const flat = toFlatAttribution(memoryRecord)
+  const out: FlatAttribution = {}
+  for (const [key, value] of Object.entries(flat)) {
+    if (CAMPAIGN_KEY.test(key) && value) (out as Record<string, string>)[key] = value as string
+  }
+  return out
+}
+
 export function getPassthroughParams(): Partial<Record<AttributionParamKey, string>> {
   if (typeof window === 'undefined') return {}
   const consent = readAnalyticsConsent()
