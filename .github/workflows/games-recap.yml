@@ -20,7 +20,15 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           MISSION: ${{ github.event.inputs.mission }}
         run: |
-          BASE="${SITE_URL:-https://moondao.com}"
+          # Apex moondao.com 307s to www.moondao.com, and curl does not follow it
+          # (a cross-host -L would also drop Authorization), so post straight to www.
+          BASE="${SITE_URL:-https://www.moondao.com}"
+          BASE="${BASE%/}"
+          case "$BASE" in
+            http://moondao.com|https://moondao.com)
+              BASE="https://www.moondao.com"
+              ;;
+          esac
           URL="$BASE/api/cron/games-recap"
           if [ -n "$MISSION" ]; then URL="$URL?mission=$MISSION"; fi
           BODY="$(curl -sS -X POST "$URL" \
