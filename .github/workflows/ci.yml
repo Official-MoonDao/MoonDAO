@@ -433,6 +433,11 @@ jobs:
           NEXT_PUBLIC_TEST_ENV: "true"
         run: yarn test:feature-logic
 
+      - name: Lint
+        if: success() || failure()
+        working-directory: ui
+        run: yarn lint
+
   # Component tests - split into 4 parallel jobs using cypress-split.
   # timeout-minutes is the backstop: a wedged Cypress process does not exit,
   # and the default job limit is 6 hours.
