@@ -22,8 +22,38 @@ export const TRACKED_EVENTS: { name: string; label: string; description: string 
   },
   {
     name: 'begin_checkout',
-    label: 'Checkouts started',
-    description: 'Opened the Citizen or Team mint checkout',
+    label: 'Sign-up pages opened',
+    description: 'Opened the Citizen or Team sign-up page (fires once the price loads)',
+  },
+  {
+    name: 'citizen_signup_profile_step',
+    label: 'Citizen profile step',
+    description: 'Finished the photo step and reached the profile form',
+  },
+  {
+    name: 'citizen_signup_signin_prompt',
+    label: 'Asked to sign in',
+    description: 'Submitted the profile while signed out and got the sign-in prompt',
+  },
+  {
+    name: 'citizen_signup_review_step',
+    label: 'Citizen review step',
+    description: 'Reached the review and pay step',
+  },
+  {
+    name: 'citizen_signup_mint_clicked',
+    label: 'Mint clicked',
+    description: 'Pressed the mint button on the review step',
+  },
+  {
+    name: 'citizen_signup_needs_funds',
+    label: 'Not enough ETH',
+    description: 'Wallet balance was short, so the card purchase opened',
+  },
+  {
+    name: 'citizen_signup_mint_submitted',
+    label: 'Mint sent',
+    description: 'Passed the checks and sent the mint',
   },
   { name: 'purchase', label: 'Purchases', description: 'Completed Citizen or Team mints' },
   { name: 'citizen_mint_success', label: 'Citizens minted', description: 'New Citizenship NFTs' },

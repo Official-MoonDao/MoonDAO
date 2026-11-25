@@ -242,6 +242,23 @@ export function trackBeginCheckout(params: {
   )
 }
 
+export const CITIZEN_SIGNUP_STEPS = [
+  'profile_step',
+  'signin_prompt',
+  'review_step',
+  'mint_clicked',
+  'needs_funds',
+  'mint_submitted',
+] as const
+export type CitizenSignupStep = (typeof CITIZEN_SIGNUP_STEPS)[number]
+
+// One event name per step, so the funnel reads in GA4 without registering a
+// custom dimension for a `step` parameter.
+export function trackCitizenSignupStep(step: CitizenSignupStep) {
+  if (!CITIZEN_SIGNUP_STEPS.includes(step)) return
+  sendEvent(`citizen_signup_${step}`, { plan: 'citizen' }, false)
+}
+
 export function normalizeWalletType(raw: string | null | undefined): string {
   const compact = (raw || '').toLowerCase().replace(/[\s-]+/g, '_')
   if (!compact) return 'unknown'
