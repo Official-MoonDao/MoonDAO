@@ -38,6 +38,8 @@ import {
   classifyMintError,
   setIsCitizen,
   trackBeginCheckout,
+  trackCitizenSignupStep,
+  type CitizenSignupStep,
   trackMintError,
   trackMintSuccess,
   transactionIdFromReceipt,
@@ -542,6 +544,12 @@ export default function CreateCitizen({
   const hasRestoredFormDataRef = useRef(false)
   const paidWithCardRef = useRef(false)
   const citizenCheckoutTracked = useRef(false)
+  const signupStepsTracked = useRef(new Set<CitizenSignupStep>())
+  const trackSignupStep = useCallback((step: CitizenSignupStep) => {
+    if (signupStepsTracked.current.has(step)) return
+    signupStepsTracked.current.add(step)
+    trackCitizenSignupStep(step)
+  }, [])
   const imagesRestoredRef = useRef(false)
   const agreedToConditionRef = useRef(agreedToCondition)
   const citizenDataRef = useRef(citizenData)
@@ -729,6 +737,11 @@ export default function CreateCitizen({
       paidWithCardRef.current = true
     }
   }, [router.isReady, router.query.onrampSuccess])
+
+  useEffect(() => {
+    if (stage === 1) trackSignupStep('profile_step')
+    if (stage === 2) trackSignupStep('review_step')
+  }, [stage, trackSignupStep])
 
   useEffect(() => {
     if (citizenCheckoutTracked.current) return
@@ -1594,6 +1607,7 @@ export default function CreateCitizen({
 
   // Mint Handler
   const callMint = useCallback(async () => {
+    trackSignupStep('mint_clicked')
     // Validation
     const imageToUse = hasAiPortrait && citizenImage ? citizenImage : croppedInputImage
     if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
@@ -1659,6 +1673,7 @@ export default function CreateCitizen({
         const needed = due + transferGas
         if ((nativeBalanceWei ?? BigInt(0)) < needed) {
           const shortfall = needed - (nativeBalanceWei ?? BigInt(0))
+          trackSignupStep('needs_funds')
           paidWithCardRef.current = true
           setRequiredEthAmount((Number(shortfall) / 1e18) * 1.15)
           setOnrampModalOpen(true)
@@ -1677,6 +1692,7 @@ export default function CreateCitizen({
           const shortfall = totalCost - +(nativeBalance ?? '0')
           const requiredAmount = shortfall * 1.15
 
+          trackSignupStep('needs_funds')
           paidWithCardRef.current = true
           setRequiredEthAmount(requiredAmount)
           setOnrampModalOpen(true)
@@ -1700,6 +1716,7 @@ export default function CreateCitizen({
       // cache seed so they can never drift apart.
       const profile = await buildCitizenProfileMintFields(citizenData)
 
+      trackSignupStep('mint_submitted')
       // Execute mint based on type
       let receipt: any
       if (discountQuote) {
@@ -1805,6 +1822,7 @@ export default function CreateCitizen({
       setIsLoadingMint(false)
     }
   }, [
+    trackSignupStep,
     hasAiPortrait,
     citizenImage,
     croppedInputImage,
@@ -1868,6 +1886,7 @@ export default function CreateCitizen({
         const payload = { formId, responseId }
         setPendingTypeform(payload)
         writePendingTypeformToSession(payload)
+        trackSignupStep('signin_prompt')
         login()
         return
       }
@@ -1904,7 +1923,7 @@ export default function CreateCitizen({
         setIsSubmittingTypeform(false)
       }
     },
-    [subscribeToNetworkSignup, authenticated, login]
+    [subscribeToNetworkSignup, authenticated, login, trackSignupStep]
   )
 
   const retryTypeformProcessing = useCallback(() => {

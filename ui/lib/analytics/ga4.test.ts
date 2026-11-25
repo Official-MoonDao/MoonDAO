@@ -9,6 +9,8 @@ import {
   buildGtagInitScript,
   buildPiiStripScript,
   buildPagePath,
+  CITIZEN_SIGNUP_STEPS,
+  type CitizenSignupStep,
   classifyMintError,
   ctaLocationFromContext,
   flushPendingGa4,
@@ -21,6 +23,7 @@ import {
   setAttributionGetter,
   setIsCitizen,
   trackBeginCheckout,
+  trackCitizenSignupStep,
   trackExtendCitizenshipError,
   trackExtendCitizenshipOpen,
   trackExtendCitizenshipSubmit,
@@ -276,6 +279,22 @@ describe('ga4 events', () => {
         },
       ],
     ])
+  })
+
+  it('sends one event name per citizen sign-up step', () => {
+    const calls = installGtag()
+    for (const step of CITIZEN_SIGNUP_STEPS) trackCitizenSignupStep(step)
+    trackCitizenSignupStep('not_a_step' as CitizenSignupStep)
+    assert.deepStrictEqual(
+      calls,
+      CITIZEN_SIGNUP_STEPS.map((step) => ['event', `citizen_signup_${step}`, { plan: 'citizen' }])
+    )
+  })
+
+  it('keeps citizen sign-up event names within the GA4 limit', () => {
+    for (const step of CITIZEN_SIGNUP_STEPS) {
+      assert.ok(`citizen_signup_${step}`.length <= 40, step)
+    }
   })
 
   it('fires citizen_mint_success and purchase with the tx hash', () => {
