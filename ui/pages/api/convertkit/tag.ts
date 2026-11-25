@@ -1,12 +1,8 @@
-import { CK_NETWORK_SIGNUP_TAG_ID } from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import { secureHeaders } from 'middleware/secureHeaders'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-
-// The tag ID is interpolated into the ConvertKit URL, so only known IDs may pass.
-const ALLOWED_TAG_IDS = new Set([CK_NETWORK_SIGNUP_TAG_ID])
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { isAllowedTagRequest } from '@/lib/convert-kit/tagRequest'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   secureHeaders(res)
@@ -16,12 +12,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     case 'POST':
       try {
         const { email, tagId } = req.body
-        if (
-          typeof email !== 'string' ||
-          !EMAIL_RE.test(email) ||
-          typeof tagId !== 'string' ||
-          !ALLOWED_TAG_IDS.has(tagId)
-        ) {
+        if (!isAllowedTagRequest(email, tagId)) {
           return res.status(400).json({ success: false })
         }
         const formResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`

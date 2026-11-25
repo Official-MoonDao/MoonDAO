@@ -11,6 +11,7 @@ import {
   computeMemberProposalTally,
   MEMBER_VOTE_SUPER_MAJORITY,
 } from '@/lib/proposals/computeMemberProposalTally'
+import { isSnapshotVoteRow } from '@/lib/proposals/memberVoteSnapshotRetry'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -24,19 +25,6 @@ export const MEMBER_VOTE_WINDOW_SECONDS = 60 * 60 * 24 * 5
 
 type HSMAccount = Awaited<ReturnType<typeof createHSMWallet>>
 type MemberProposalTally = ReturnType<typeof computeMemberProposalTally>
-
-export function isSnapshotVoteRow(row: any): boolean {
-  let parsed: any = row?.vote
-  if (typeof parsed === 'string') {
-    try {
-      parsed = JSON.parse(parsed)
-    } catch {
-      // Unparseable but present: a real voter row, not the snapshot sentinel.
-      return false
-    }
-  }
-  return !!(parsed && typeof parsed === 'object' && parsed.kind === 'snapshot')
-}
 
 export async function tallyMemberVote(mdp: number, voteCloseTimestamp: number) {
   const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`

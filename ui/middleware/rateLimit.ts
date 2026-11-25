@@ -99,13 +99,19 @@ export async function rateLimit(req: NextApiRequest, res: NextApiResponse, next:
 }
 
 type Window = Parameters<typeof Ratelimit.slidingWindow>[1]
+type Limiter = { limit(key: string): Promise<{ success: boolean; reset: number }> }
 
 // A much tighter cap than `rateLimit`, for expensive or guessable POSTs. Keys
 // on IP alone: the user agent in the general limiter's key is
 // client-controlled. Other methods (e.g. status polls) are left to `rateLimit`.
 export function ipRateLimit(name: string, limit: number, window: Window) {
-  const limiter = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(limit, window) })
+  return createIpRateLimit(
+    name,
+    new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(limit, window) })
+  )
+}
 
+export function createIpRateLimit(name: string, limiter: Limiter) {
   return async function (req: NextApiRequest, res: NextApiResponse, next: () => void) {
     if (process.env.NEXT_PUBLIC_ENV !== 'prod' || req.method !== 'POST') return next()
 
