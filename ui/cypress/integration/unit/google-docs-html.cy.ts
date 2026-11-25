@@ -1,4 +1,4 @@
-import { htmlToMarkdown } from '@/pages/api/google/docs/fetch'
+import { htmlToMarkdown } from '@/lib/google/htmlToMarkdown'
 
 describe('htmlToMarkdown ordered lists', () => {
   it('keeps Google Docs numbered-list item text', () => {

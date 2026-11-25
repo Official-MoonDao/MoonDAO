@@ -1,20 +1,24 @@
+import { rateLimit } from 'middleware/rateLimit'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 const GUILD_ID = '914720248140279868'
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
     const username = req.query.username
-    if (!username || username === '') {
+    if (typeof username !== 'string' || username === '') {
       return res
         .status(400)
         .json({ success: false, error: 'Username is required' })
     }
     const response = await fetch(
-      `https://discord.com/api/v10/guilds/${GUILD_ID}/members/search?query=${username}&limit=10`,
+      `https://discord.com/api/v10/guilds/${GUILD_ID}/members/search?query=${encodeURIComponent(
+        username
+      )}&limit=10`,
       {
         headers: {
           Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
@@ -27,10 +31,23 @@ export default async function handler(
       throw new Error('Failed to search username')
     }
 
-    const ret = await response.json()
-    res.status(200).json(ret)
+    // Public route: return only the public profile fields, not the full
+    // member record (roles, join date, nickname, ...).
+    const members = await response.json()
+    res.status(200).json(
+      (Array.isArray(members) ? members : []).map((member: any) => ({
+        user: {
+          id: member?.user?.id,
+          username: member?.user?.username,
+          global_name: member?.user?.global_name ?? null,
+          avatar: member?.user?.avatar,
+        },
+      }))
+    )
   } catch (error: any) {
     console.error('Error searching username:', error)
-    res.status(500).json({ success: false, error: error.toString() })
+    res.status(500).json({ success: false, error: 'Failed to search username' })
   }
 }
+
+export default withMiddleware(handler, rateLimit)

@@ -1,3 +1,5 @@
+import { ipRateLimit, rateLimit } from 'middleware/rateLimit'
+import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import {
   GATE_COOKIE,
@@ -11,7 +13,7 @@ import {
 //
 // This is the only place a submitted password is ever compared, and it runs on
 // the server, so neither the password nor the comparison reaches the client.
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return res.status(405).json({ message: 'Method not allowed' })
@@ -49,3 +51,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   )
   return res.status(200).json({ ok: true })
 }
+
+// One shared password, so cap guesses per IP.
+export default withMiddleware(handler, rateLimit, ipRateLimit('gate', 10, '15 m'))
