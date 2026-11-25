@@ -72,6 +72,12 @@ export default function CloseAndTallyButton({
         data?.passed ? 'Vote tallied — proposal passed.' : 'Vote tallied — proposal did not pass.',
         { style: toastStyle }
       )
+      if (data?.snapshot?.written === false) {
+        toast.error('The vote snapshot could not be saved. Use "Write vote snapshot" to retry.', {
+          style: toastStyle,
+          duration: 8000,
+        })
+      }
       router.replace(router.asPath)
     } catch (err: any) {
       console.error('Close & tally failed:', err)

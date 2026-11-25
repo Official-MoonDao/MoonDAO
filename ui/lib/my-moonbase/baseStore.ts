@@ -1,9 +1,10 @@
 /**
  * Saved bases, on the site's existing Upstash Redis.
  *
- *   <prefix>:a:<wallet>   JSON   { id, layout, updatedAt }   the base saved under a wallet
- *   <prefix>:i:<id>       string wallet                      which wallet a share id belongs to
- *   <prefix>:p:<wallet>   JSON   picks read for visitors     short-lived cache
+ *   <prefix>:a:<wallet>        JSON   { id, layout, updatedAt }   the base saved under a wallet
+ *   <prefix>:a:<wallet>:lock   string held while a save is writing
+ *   <prefix>:i:<id>            string wallet                      which wallet a share id belongs to
+ *   <prefix>:p:<wallet>        JSON   picks read for visitors     short-lived cache
  *
  * Bases do not expire. Only the production deployment uses the live prefix
  * (isLiveBoard, shared with the game leaderboards), so local and preview
@@ -22,6 +23,10 @@ import type { SavedBase } from './sync'
 export { leaderboardRedis as baseRedis }
 
 const ID_ATTEMPTS = 5
+/** Long enough for the read and the write, short enough that a crashed save does not stick. */
+const LOCK_TTL_SECONDS = 5
+const LOCK_ATTEMPTS = 20
+const LOCK_WAIT_MS = 50
 
 function prefix(env: Record<string, string | undefined> = process.env): string {
   return `moonbase:base:${isLiveBoard(env) ? 'prod' : 'dev'}`
@@ -98,6 +103,41 @@ async function claimId(redis: Redis, wallet: string): Promise<string> {
   throw new Error('could not allocate a base id')
 }
 
+function lockKey(wallet: string): string {
+  return `${ownerKey(wallet)}:lock`
+}
+
+/**
+ * One save at a time for a wallet. The version check is only meaningful if
+ * nothing else writes between the read and the write: two devices both
+ * autosave a couple of seconds after an edit, both read the same copy, and
+ * both writes would succeed. The one that lands second is the only copy
+ * stored, while both browsers believe theirs was saved and will not ask.
+ */
+async function withBaseLock<T>(redis: Redis, wallet: string, body: () => Promise<T>): Promise<T> {
+  const key = lockKey(wallet)
+  const token = `lock:${randomBytes(8).toString('hex')}`
+  for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt++) {
+    const got = await redis.set(key, token, { nx: true, ex: LOCK_TTL_SECONDS })
+    if (got) {
+      try {
+        return await body()
+      } finally {
+        try {
+          const held = await redis.get(key)
+          if (held === token) await redis.del(key)
+        } catch {
+          // The lock expires on its own. The save already happened.
+        }
+      }
+    }
+    if (attempt < LOCK_ATTEMPTS - 1) {
+      await new Promise((resolve) => setTimeout(resolve, LOCK_WAIT_MS))
+    }
+  }
+  throw new Error('could not save the base; another save is in progress')
+}
+
 export type WriteResult =
   | { ok: true; base: SavedBase }
   /** The account copy is not the one the browser last saw. */
@@ -115,16 +155,18 @@ export async function writeBase(
   expected: number | null,
   options: { force?: boolean; now?: number } = {}
 ): Promise<WriteResult> {
-  const current = await readBaseByOwner(redis, wallet)
-  if (!options.force && (current?.updatedAt ?? null) !== expected) {
-    if (current) return { ok: false, base: current }
-    // The browser remembers a save this store has no record of. Take the layout.
-  }
-  const id = current?.id ?? (await claimId(redis, wallet))
-  const now = options.now ?? Date.now()
-  // Strictly later than the copy it replaces, whatever the clock says.
-  const updatedAt = current ? Math.max(now, current.updatedAt + 1) : now
-  const base: SavedBase = { id, layout, updatedAt }
-  await redis.set(ownerKey(wallet), JSON.stringify(base))
-  return { ok: true, base }
+  return withBaseLock(redis, wallet, async () => {
+    const current = await readBaseByOwner(redis, wallet)
+    if (!options.force && (current?.updatedAt ?? null) !== expected) {
+      if (current) return { ok: false, base: current }
+      // The browser remembers a save this store has no record of. Take the layout.
+    }
+    const id = current?.id ?? (await claimId(redis, wallet))
+    const now = options.now ?? Date.now()
+    // Strictly later than the copy it replaces, whatever the clock says.
+    const updatedAt = current ? Math.max(now, current.updatedAt + 1) : now
+    const base: SavedBase = { id, layout, updatedAt }
+    await redis.set(ownerKey(wallet), JSON.stringify(base))
+    return { ok: true, base }
+  })
 }

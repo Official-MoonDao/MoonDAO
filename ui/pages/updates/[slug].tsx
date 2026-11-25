@@ -49,13 +49,15 @@ export default function UpdatePage({ update, prev, next }: UpdatePageProps) {
         <meta property="article:section" content={update.category} />
       </WebsiteHead>
       <ScrollProgress />
-      <section className="mt-5 flex w-[90vw] animate-fadeIn flex-col items-start justify-start px-5 md:w-full">
+      <section className="mt-3 flex w-full animate-fadeIn flex-col items-start justify-start px-3 sm:px-5 md:mt-5">
         <Container>
-          <UpdatesPanel className="px-5 py-10 md:px-12 md:py-14">
+          <UpdatesPanel className="px-4 py-7 sm:px-8 md:px-12 md:py-14">
             <UpdateHeader update={update} />
             <div
               className={
-                hasToc ? 'mt-12 xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-14' : 'mt-12'
+                hasToc
+                  ? 'mt-8 md:mt-12 xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-14'
+                  : 'mt-8 md:mt-12'
               }
             >
               {hasToc && (

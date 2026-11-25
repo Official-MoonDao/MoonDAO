@@ -57,14 +57,17 @@ describe('capability ladder', () => {
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('keeps First Tracks, Water Ice, and Night Shift planned on the new Sepolia registry', () => {
+  it('marks Sepolia First Tracks live and leaves Water Ice and Night Shift planned', () => {
     const result = getLadderForCompetition('sepolia', 1)
     const byKey = Object.fromEntries(result.rungs.map((rung) => [rung.key, rung]))
-    for (const key of ['first-tracks', 'ice', 'night-shift'] as const) {
+    expect(byKey['first-tracks']?.status).to.equal('live')
+    expect(byKey['first-tracks']?.deprizeId).to.equal(2)
+    expect(byKey['first-tracks']?.current).to.equal(false)
+    expect(byKey['first-tracks']?.href).to.equal('/deprize/2')
+    for (const key of ['ice', 'night-shift'] as const) {
       expect(byKey[key]?.status, key).to.equal('planned')
       expect(byKey[key]?.deprizeId, key).to.equal(undefined)
     }
-    expect(byKey['first-tracks']?.href).to.include('DEPRIZE_FIRST_TRACKS.md')
     expect(byKey['ice']?.href).to.include('DEPRIZE_WATER_ICE.md')
     expect(byKey['night-shift']?.href).to.equal(undefined)
   })
@@ -129,12 +132,12 @@ describe('LADDER_GOAL_IDS — which races the Moonbase calls real', () => {
 
   // The Moonbase legend must not split its race list on "has a DePrize on
   // the connected chain". These ids are the races we run, on every chain.
-  // A market binding is per registry. Both public registries currently bind
-  // only Touchdown.
+  // A market binding is per registry. Sepolia binds Touchdown and First
+  // Tracks. Arbitrum binds Touchdown.
   it('lists the same races on Sepolia and on Arbitrum', () => {
     const bound = (chain: string) =>
       LADDER_GOAL_IDS.filter((id) => findDePrizeIdForGoal(chain, id) !== undefined)
-    expect(bound('sepolia')).to.deep.equal(['shared-next-landing'])
+    expect(bound('sepolia')).to.deep.equal(['shared-next-landing', 'shared-first-tracks'])
     expect(bound('arbitrum')).to.deep.equal(['shared-next-landing'])
     for (const id of LADDER_GOAL_IDS) {
       expect(isLadderGoal(id), id).to.equal(true)

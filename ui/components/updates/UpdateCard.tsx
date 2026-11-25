@@ -6,9 +6,14 @@ export default function UpdateCard({ update }: { update: UpdateMeta }) {
   return (
     <UpdateEntryLink
       update={update}
-      className="group block border-b border-white/10 py-6 last:border-b-0"
+      className="group block border-b border-white/10 py-5 last:border-b-0 md:py-6"
     >
-      <div className="flex items-start justify-between gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        {update.image && (
+          <div className="aspect-[1200/630] w-full overflow-hidden rounded-lg bg-black/30 sm:hidden">
+            <img src={update.image} alt="" loading="lazy" className="h-full w-full object-cover" />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <UpdateMetaLine
             category={update.category}

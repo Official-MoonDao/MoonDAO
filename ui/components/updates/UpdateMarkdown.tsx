@@ -45,13 +45,13 @@ const COMPONENTS: Components = {
   ),
   h2: ({ node: _n, ...props }) => (
     <h2
-      className="mb-5 mt-16 scroll-mt-24 border-t border-white/10 pt-10 font-heading text-[26px] font-semibold leading-tight tracking-tight text-white md:text-[30px]"
+      className="mb-4 mt-12 scroll-mt-24 border-t border-white/10 pt-8 font-heading text-[24px] md:mb-5 md:mt-16 md:pt-10 md:text-[30px] font-semibold leading-tight tracking-tight text-white"
       {...props}
     />
   ),
   h3: ({ node: _n, ...props }) => (
     <h3
-      className="mb-3 mt-10 scroll-mt-24 font-heading text-[20px] font-semibold leading-snug text-white md:text-[22px]"
+      className="mb-3 mt-8 scroll-mt-24 font-heading text-[19px] md:mt-10 font-semibold leading-snug text-white md:text-[22px]"
       {...props}
     />
   ),
@@ -64,7 +64,7 @@ const COMPONENTS: Components = {
       {...props}
     />
   ),
-  p: ({ node: _n, ...props }) => <p className="mb-6 text-slate-200" {...props} />,
+  p: ({ node: _n, ...props }) => <p className="mb-5 md:mb-6 text-slate-200" {...props} />,
   strong: ({ node: _n, ...props }) => <strong className="font-semibold text-white" {...props} />,
   a: ({ node, href, children, ...props }) => {
     // Newsletter issues mark their call-to-action links as buttons.
@@ -102,9 +102,11 @@ const COMPONENTS: Components = {
       </a>
     )
   },
-  img: ({ node: _n, ...props }) => <img className="my-8 h-auto w-full rounded-xl" {...props} />,
+  img: ({ node: _n, ...props }) => (
+    <img className="my-6 h-auto w-full rounded-xl md:my-8" {...props} />
+  ),
   figure: ({ node: _n, ...props }) => (
-    <figure className="my-8 [&_img]:my-0 [&_iframe]:my-0 [&_p]:mb-0" {...props} />
+    <figure className="my-6 md:my-8 [&_img]:my-0 [&_iframe]:my-0 [&_p]:mb-0" {...props} />
   ),
   figcaption: ({ node: _n, ...props }) => (
     <figcaption
@@ -113,13 +115,13 @@ const COMPONENTS: Components = {
     />
   ),
   video: ({ node: _n, ...props }) => (
-    <video className="my-8 h-auto w-full rounded-xl bg-black" {...props} />
+    <video className="my-6 h-auto w-full rounded-xl bg-black md:my-8" {...props} />
   ),
   iframe: ({ node: _n, title, src }) => (
     <iframe
       src={src}
       title={title || 'Video'}
-      className="my-8 aspect-video w-full rounded-xl"
+      className="my-6 aspect-video md:my-8 w-full rounded-xl"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
       loading="lazy"
@@ -141,14 +143,14 @@ const COMPONENTS: Components = {
   li: ({ node: _n, ...props }) => <li className="pl-1 text-slate-200" {...props} />,
   blockquote: ({ node: _n, ...props }) => (
     <blockquote
-      className="my-12 border-l-[3px] border-blue-400 pl-6 font-heading text-[22px] font-medium leading-[1.45] text-white md:pl-8 md:text-[26px] [&_p]:mb-0 [&_p]:text-white"
+      className="my-9 border-l-[3px] border-blue-400 pl-4 font-heading text-[19px] font-medium leading-[1.45] text-white sm:pl-6 md:my-12 md:pl-8 md:text-[26px] [&_p]:mb-0 [&_p]:text-white"
       {...props}
     />
   ),
   aside: ({ node, children }) => {
     const title = (node?.properties?.dataTitle as string) || undefined
     return (
-      <aside className="relative my-10 overflow-hidden rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/[0.08] via-indigo-500/[0.05] to-purple-500/[0.08] px-6 py-6 md:px-8 md:py-7 [&_li]:text-[17px] [&_li]:text-slate-100 [&_p:last-child]:mb-0 [&_ul]:mb-0">
+      <aside className="relative my-8 overflow-hidden rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/[0.08] via-indigo-500/[0.05] to-purple-500/[0.08] px-5 py-5 pl-6 md:px-8 md:py-7 [&_li]:text-[16px] md:[&_li]:text-[17px] [&_li]:text-slate-100 [&_p:last-child]:mb-0 [&_ul]:mb-0">
         <span
           aria-hidden
           className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-400 to-purple-400"
@@ -205,7 +207,7 @@ const COMPONENTS: Components = {
     )
   },
   table: ({ node: _n, ...props }) => (
-    <div className="my-8 overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
+    <div className="my-6 overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
       <table
         className="w-full min-w-[520px] border-collapse text-left text-[15px] tabular-nums"
         {...props}
@@ -233,7 +235,7 @@ const COMPONENTS: Components = {
  */
 export default function UpdateMarkdown({ body }: { body: string }) {
   return (
-    <article className="w-full overflow-x-hidden font-[Lato,ui-sans-serif,system-ui,-apple-system,'Segoe_UI',Roboto,sans-serif] break-words text-[18px] leading-[1.75] text-white md:text-[19px] [&>p:first-of-type]:text-[20px] [&>p:first-of-type]:leading-[1.65] [&>p:first-of-type]:text-slate-100 md:[&>p:first-of-type]:text-[22px]">
+    <article className="w-full overflow-x-hidden font-[Lato,ui-sans-serif,system-ui,-apple-system,'Segoe_UI',Roboto,sans-serif] break-words text-[17px] leading-[1.7] text-white md:text-[19px] md:leading-[1.75] [&>p:first-of-type]:text-[19px] [&>p:first-of-type]:leading-[1.65] [&>p:first-of-type]:text-slate-100 md:[&>p:first-of-type]:text-[22px]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSlug, rehypeRaw]}

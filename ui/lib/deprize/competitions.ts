@@ -258,16 +258,25 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: 'spacex-starship-hls', teamId: 24, vehicleLabel: 'Starship HLS' },
       ],
     },
-    // Historical copy from the previous Sepolia registry. Unlisted so they
-    // cannot steal the shared-next-landing tip after the pointer cutover.
+    // Public First Tracks on the 2026-10-27 registry. Id 2 is this prize.
+    // The previous registry's Touchdown generation 2 is not this id.
     2: {
-      title: 'Touchdown',
+      title: 'First Tracks',
       tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
+        'Which commercial rover leaves its lander and drives at least 10 metres first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
-        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
-      questionId: '0x6498f99ba51f63aa7576860e9aff4a7afbc1e805e6c2aef9d4601840249c5898',
-      unlisted: true,
+        'Sepolia public First Tracks. Astrolab FLIP, Voyager CubeRover, Lunar Outpost MAPP, ispace Tenacious, Carnegie Mellon Iris, and the Open Field.',
+      questionId: '0x5708489e20ecc5649f450d793652ce2367dbeb4f985c526e228d27b3f52d1e6a',
+      sharedGoalId: 'shared-first-tracks',
+      raceLabel: 'First Tracks',
+      outcomes: [
+        { projectId: 'astrolab-flip', teamId: 631, vehicleLabel: 'FLIP' },
+        { projectId: 'voyager-cuberover', teamId: 632, vehicleLabel: 'CubeRover' },
+        { projectId: 'lunar-outpost-mapp', teamId: 633, vehicleLabel: 'MAPP' },
+        { projectId: 'ispace-tenacious', teamId: 634, vehicleLabel: 'Tenacious' },
+        { projectId: 'cmu-iris', teamId: 635, vehicleLabel: 'Iris' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
     },
     7: {
       title: 'Touchdown v2',
@@ -279,9 +288,9 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       unlisted: true,
     },
     // Historical copy from the previous Sepolia registry (0x7208…). The
-    // 2026-10-27 registry only registered Touchdown as id 1. Register assigns
-    // ids in order, so 3, 5, and 6 cannot exist there. Unlisted and unbound so
-    // the index and ladder do not treat them as live markets.
+    // 2026-10-27 registry has Touchdown as id 1 and First Tracks as id 2.
+    // Register assigns ids in order, so 3, 5, and 6 cannot exist there.
+    // Unlisted and unbound so the index and ladder do not treat them as live.
     3: {
       title: 'Night Shift',
       tagline:

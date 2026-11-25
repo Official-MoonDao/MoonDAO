@@ -1,15 +1,20 @@
+import { rateLimit } from 'middleware/rateLimit'
+import { secureHeaders } from 'middleware/secureHeaders'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { isAllowedTagRequest } from '@/lib/convert-kit/tagRequest'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  secureHeaders(res)
   const { method } = req
 
   switch (method) {
     case 'POST':
       try {
         const { email, tagId } = req.body
+        if (!isAllowedTagRequest(email, tagId)) {
+          return res.status(400).json({ success: false })
+        }
         const formResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`
         const response = await fetch(formResultEndpoint, {
           method: 'POST',
@@ -32,3 +37,5 @@ export default async function handler(
       break
   }
 }
+
+export default withMiddleware(handler, rateLimit)

@@ -104,7 +104,7 @@ function Kpi({
         </span>
         <ChangeBadge value={delta} />
       </div>
-      <p className="mt-2 text-3xl font-GoodTimes text-white">{value}</p>
+      <p className="mt-2 text-3xl font-heading text-white">{value}</p>
       <p className="mt-1 text-xs text-slate-400">{help}</p>
     </div>
   )
@@ -164,7 +164,11 @@ function Funnel({ report }: { report: AnalyticsReport }) {
   const byName = Object.fromEntries(report.events.map((e) => [e.name, e]))
   const steps = [
     { label: 'Clicked a Join button', users: byName.join_cta_click?.users ?? 0 },
-    { label: 'Started checkout', users: byName.begin_checkout?.users ?? 0 },
+    { label: 'Opened a sign-up page', users: byName.begin_checkout?.users ?? 0 },
+    { label: 'Reached the profile step', users: byName.citizen_signup_profile_step?.users ?? 0 },
+    { label: 'Reached review and pay', users: byName.citizen_signup_review_step?.users ?? 0 },
+    { label: 'Clicked mint', users: byName.citizen_signup_mint_clicked?.users ?? 0 },
+    { label: 'Mint sent', users: byName.citizen_signup_mint_submitted?.users ?? 0 },
     { label: 'Completed purchase', users: byName.purchase?.users ?? 0 },
   ]
   // A later step can outnumber the one before it (checkout can start
@@ -174,8 +178,8 @@ function Funnel({ report }: { report: AnalyticsReport }) {
     <div className={PANEL}>
       <h3 className="text-white font-semibold">Join funnel</h3>
       <p className="text-xs text-slate-400 mt-0.5">
-        Unique people at each step of becoming a Citizen or Team. The percentage shows how many made
-        it from the previous step.
+        Unique people at each step of becoming a Citizen. The first two steps and the purchase also
+        count Teams. The percentage shows how many made it from the previous step.
       </p>
       <div className="mt-5 space-y-4">
         {steps.map((step, i) => {

@@ -167,9 +167,25 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
     () => liveRaces.filter((race) => race.goal.id !== 'shared-next-landing'),
     [liveRaces]
   )
-  const plannedRaces = useMemo(
-    () => filteredRaces.filter((r) => !isDePrizeGoalMarketBound(chainSlug, r.goal.id)),
+  // On a chain where First Tracks is already open it sits in the Live row.
+  // Until that market is registered it would otherwise land in the long
+  // Planned grid, under races that are not prizes.
+  const firstTracksRace = useMemo(
+    () =>
+      filteredRaces.find(
+        (race) =>
+          race.goal.id === 'shared-first-tracks' &&
+          !isDePrizeGoalMarketBound(chainSlug, race.goal.id)
+      ),
     [filteredRaces, chainSlug]
+  )
+  const plannedRaces = useMemo(
+    () =>
+      filteredRaces.filter(
+        (r) =>
+          !isDePrizeGoalMarketBound(chainSlug, r.goal.id) && r.goal.id !== firstTracksRace?.goal.id
+      ),
+    [filteredRaces, chainSlug, firstTracksRace]
   )
 
   // Touchdown is the headliner. Unlisted competitions stay off this page.
@@ -405,6 +421,19 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                             />
                           </div>
                         ))}
+                      </ScrollRow>
+                    )}
+
+                    {firstTracksRace && (
+                      <ScrollRow heading="First Tracks" headingId="deprize-first-tracks-heading">
+                        <div className="w-[min(320px,85vw)] shrink-0 snap-start">
+                          <RaceMarketCard
+                            goal={firstTracksRace.goal}
+                            competitors={firstTracksRace.competitors}
+                            {...raceCardProps}
+                            variant="grid"
+                          />
+                        </div>
                       </ScrollRow>
                     )}
 

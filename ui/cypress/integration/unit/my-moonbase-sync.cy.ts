@@ -318,6 +318,44 @@ describe('my moonbase base store', () => {
     expect(updated.base.updatedAt).to.be.greaterThan(created.base.updatedAt)
   })
 
+  it('keeps one of two saves that were both made against the same copy', async () => {
+    const redis = fakeRedis()
+    const created = await writeBase(redis, WALLET, first, null, { now: 1000 })
+    expect(created.ok).to.equal(true)
+
+    const [left, right] = await Promise.all([
+      writeBase(redis, WALLET, first, created.base.updatedAt, { now: 2000 }),
+      writeBase(redis, WALLET, second, created.base.updatedAt, { now: 2000 }),
+    ])
+    const winner = left.ok ? left : right
+    const loser = left.ok ? right : left
+    expect(winner.ok).to.equal(true)
+    expect(loser.ok).to.equal(false)
+    const stored = await readBaseByOwner(redis, WALLET)
+    expect(stored?.updatedAt).to.equal(winner.base.updatedAt)
+    expect(sameLayout(stored?.layout as MoonbaseLayout, winner.base.layout)).to.equal(true)
+    expect(loser.base.updatedAt).to.equal(stored?.updatedAt)
+    expect(sameLayout(loser.base.layout, winner.base.layout)).to.equal(true)
+  })
+
+  it('keeps one of two first saves instead of dropping a base both browsers think was stored', async () => {
+    const redis = fakeRedis()
+    const [left, right] = await Promise.all([
+      writeBase(redis, WALLET, first, null, { now: 1000 }),
+      writeBase(redis, WALLET, second, null, { now: 1000 }),
+    ])
+    const winner = left.ok ? left : right
+    const loser = left.ok ? right : left
+    expect(winner.ok).to.equal(true)
+    expect(loser.ok).to.equal(false)
+    const stored = await readBaseByOwner(redis, WALLET)
+    expect(stored?.id).to.equal(winner.base.id)
+    expect(sameLayout(stored?.layout as MoonbaseLayout, winner.base.layout)).to.equal(true)
+    expect(sameLayout(loser.base.layout, winner.base.layout)).to.equal(true)
+    const found = await readBaseById(redis, winner.base.id)
+    expect(found?.owner).to.equal(WALLET)
+  })
+
   it('keeps each wallet to its own base', async () => {
     const redis = fakeRedis()
     const mine = await writeBase(redis, WALLET, first, null)

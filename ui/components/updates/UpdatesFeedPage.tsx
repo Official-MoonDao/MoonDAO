@@ -75,7 +75,7 @@ export default function UpdatesFeedPage({
           href="/updates/rss.xml"
         />
       </WebsiteHead>
-      <section className="mt-5 flex w-[90vw] animate-fadeIn flex-col items-start justify-start px-5 md:w-full">
+      <section className="mt-3 flex w-full animate-fadeIn flex-col items-start justify-start px-3 sm:px-5 md:mt-5">
         <Container>
           <ContentLayout
             header={page.title}
@@ -84,8 +84,9 @@ export default function UpdatesFeedPage({
             mainPadding
             mode="compact"
             isProfile={true}
+            frameClassName="px-0 sm:px-5"
           >
-            <UpdatesPanel className="flex flex-col gap-10 p-6 md:p-8">
+            <UpdatesPanel className="flex flex-col gap-8 p-4 sm:p-6 md:gap-10 md:p-8">
               {entries.length === 0 ? (
                 <p className="text-slate-300">Nothing published yet. Check back soon.</p>
               ) : (
