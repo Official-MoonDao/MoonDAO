@@ -19,6 +19,10 @@ const rateLimitHour = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(2000, '1 h'),
 })
+const rateLimitImageJobs = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '1 h'),
+})
 
 function normalizeIp(ip?: string | null): string {
   if (!ip) return '0.0.0.0'
@@ -95,6 +99,29 @@ export async function rateLimit(req: NextApiRequest, res: NextApiResponse, next:
   res.setHeader('X-RateLimit-Limit-Hour', String(hour.limit))
   res.setHeader('X-RateLimit-Remaining-Hour', String(hour.remaining))
   res.setHeader('X-RateLimit-Reset-Hour', String(hour.reset))
+
+  return next()
+}
+
+// Each POST starts a paid GPU run and needs no sign-in, so this keys on IP
+// alone: the user agent in the general limiter's key is client-controlled.
+// GET status polls are left to `rateLimit`.
+export async function imageJobRateLimit(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  next: () => void
+) {
+  if (process.env.NEXT_PUBLIC_ENV !== 'prod' || req.method !== 'POST') return next()
+
+  const result = await rateLimitImageJobs.limit(`imgjob:${getTrustedClientIp(req)}`)
+  if (!result.success) {
+    const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))
+    res.setHeader('Retry-After', String(retryAfter))
+    res.setHeader('X-RateLimit-Reason', 'image-jobs-per-hour')
+    return res
+      .status(429)
+      .json({ message: 'Rate limit exceeded', detail: 'image-jobs-per-hour', retryAfter })
+  }
 
   return next()
 }

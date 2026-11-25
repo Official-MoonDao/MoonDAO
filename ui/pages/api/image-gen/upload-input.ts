@@ -1,5 +1,8 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
+import { rateLimit } from 'middleware/rateLimit'
+import { secureHeaders } from 'middleware/secureHeaders'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
 
@@ -37,6 +40,8 @@ try {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
+  secureHeaders(res)
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -91,4 +96,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default handler
+export default withMiddleware(handler, rateLimit)
