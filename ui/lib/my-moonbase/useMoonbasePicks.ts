@@ -44,8 +44,8 @@ export type MoonbasePicksState = {
   betsPending: boolean
   /** Every race that can be predicted here, with what its predict window needs. */
   races: PredictableRace[]
-  /** The DePrize-bound race's market, once read. Predicting it waits on a settled payout. */
-  market: { goalId: string; resolved: boolean; payoutPending: boolean } | null
+  /** Each DePrize-bound race's market, once read. Predicting one waits on its settled payout. */
+  markets: { goalId: string; resolved: boolean; payoutPending: boolean }[]
   /** Wallet these predictions are saved from, lower case. The base is saved under it too. */
   address: string | undefined
   /** False while the session is resolving, when a missing `address` does not yet mean signed out. */
@@ -59,6 +59,9 @@ export type PredictableRace = RaceBook & {
 }
 
 const REFOCUS_MIN_MS = 5_000
+
+/** Live markets read at once. A fixed count keeps the hook calls stable across renders. */
+const MAX_BET_BOOKS = 2
 
 async function fetchForecastRows(
   chainId: number,
@@ -114,10 +117,14 @@ export function useMoonbasePicks(
     [books]
   )
 
-  // One live market at most. Bets come from the signed-in account; a guest
-  // wallet cannot hold one.
-  const betBook = useMemo(() => books.find((book) => book.deprizeId !== undefined), [books])
-  const odds = useDePrizeGoalOdds(chain, betBook?.goalId, account?.address)
+  // Bets come from the signed-in account; a guest wallet cannot hold one.
+  const betBooks = useMemo(
+    () => books.filter((book) => book.deprizeId !== undefined).slice(0, MAX_BET_BOOKS),
+    [books]
+  )
+  const oddsFirst = useDePrizeGoalOdds(chain, betBooks[0]?.goalId, account?.address)
+  const oddsSecond = useDePrizeGoalOdds(chain, betBooks[1]?.goalId, account?.address)
+  const betOdds = useMemo(() => [oddsFirst, oddsSecond], [oddsFirst, oddsSecond])
 
   const [rows, setRows] = useState<ForecastRow[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -200,22 +207,20 @@ export function useMoonbasePicks(
     const mine = overlays.filter((o) => o.address === address)
     return mergePicks([
       ...picksFromForecastRows(overlayForecastRows([...(rows ?? []), ...handoffs], mine, books), books),
-      ...picksFromBets(betBook, account ? odds.outcomes : []),
+      ...betBooks.flatMap((book, i) => picksFromBets(book, account ? betOdds[i].outcomes : [])),
     ])
     // `nonce` re-reads the handoff store, which is not React state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, overlays, address, books, betBook, account, odds.outcomes, chainSlug, nonce])
+  }, [rows, overlays, address, books, betBooks, account, betOdds, chainSlug, nonce])
 
-  const market = useMemo(
+  const markets = useMemo(
     () =>
-      betBook
-        ? {
-            goalId: betBook.goalId,
-            resolved: odds.resolved,
-            payoutPending: odds.market.marketConfigured && !odds.market.payoutSettled,
-          }
-        : null,
-    [betBook, odds.resolved, odds.market.marketConfigured, odds.market.payoutSettled]
+      betBooks.map((book, i) => ({
+        goalId: book.goalId,
+        resolved: betOdds[i].resolved,
+        payoutPending: betOdds[i].market.marketConfigured && !betOdds[i].market.payoutSettled,
+      })),
+    [betBooks, betOdds]
   )
 
   let status: MoonbasePicksStatus
@@ -228,9 +233,9 @@ export function useMoonbasePicks(
   return {
     status,
     picks,
-    betsPending: !!account && !!betBook && odds.loading,
+    betsPending: !!account && betBooks.some((_, i) => betOdds[i].loading),
     races,
-    market,
+    markets,
     address,
     identityReady: ready && !(authenticated && !address),
     refresh,
