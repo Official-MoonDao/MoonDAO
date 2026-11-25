@@ -1,3 +1,6 @@
+import { imageJobRateLimit, rateLimit } from 'middleware/rateLimit'
+import { secureHeaders } from 'middleware/secureHeaders'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { v4 } from 'uuid'
 import { enforceRegionNotRestricted } from '@/lib/geo'
@@ -46,10 +49,12 @@ async function fetchComfy(
   }
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  secureHeaders(res)
+
   if (!process.env.COMFYICU_API_KEY) {
     console.error('COMFYICU_API_KEY is not configured')
     return res.status(500).json({ error: 'Image generation is not configured' })
@@ -217,3 +222,5 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 }
+
+export default withMiddleware(handler, rateLimit, imageJobRateLimit)

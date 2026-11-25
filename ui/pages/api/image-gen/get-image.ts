@@ -1,4 +1,7 @@
 // Inside your Next.js API route
+import { rateLimit } from 'middleware/rateLimit'
+import { secureHeaders } from 'middleware/secureHeaders'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 const ALLOWED_HOSTNAMES = ['r2.comfy.icu']
@@ -25,10 +28,12 @@ function isAllowedUrl(input: string): boolean {
   return ALLOWED_HOSTNAMES.includes(parsed.hostname)
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  secureHeaders(res)
+
   if (req.method === 'POST') {
     try {
       if (!req.body || typeof req.body !== 'object') {
@@ -60,3 +65,5 @@ export default async function handler(
     res.status(405).json('Method not allowed')
   }
 }
+
+export default withMiddleware(handler, rateLimit)

@@ -21,7 +21,7 @@ import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { PROJECT_PENDING } from '@/lib/nance/types'
+import { PROJECT_ACTIVE, PROJECT_PENDING, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 import {
   getProposalStatus,
   STATUS_CONFIG,
@@ -60,6 +60,7 @@ import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import VotingResults from '@/components/nance/VotingResults'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import CloseAndTallyButton from '@/components/project/CloseAndTallyButton'
+import WriteVoteSnapshotButton from '@/components/project/WriteVoteSnapshotButton'
 import MemberVoteSidebar from '@/components/project/MemberVoteSidebar'
 import ProjectJobsAndMarketplace from '@/components/project/ProjectJobsAndMarketplace'
 import SenateVote from '@/components/project/SenateVote'
@@ -688,6 +689,10 @@ export default function ProjectProfile({
                         mdp={project.MDP}
                         tempCheckApprovedTimestamp={tempCheckApprovedTimestamp}
                       />
+                    ) : (project.active === PROJECT_ACTIVE ||
+                        project.active === PROJECT_VOTE_FAILED) &&
+                      voteSnapshotMeta?.source === 'live' ? (
+                      <WriteVoteSnapshotButton mdp={project.MDP} />
                     ) : null
                   }
                 />
