@@ -23,19 +23,27 @@ export const FEED_REVALIDATE_SECONDS = 3600
  */
 export async function loadNewsletterPosts(): Promise<NewsletterPost[]> {
   if (!readsLiveArchive()) return snapshot as NewsletterPost[]
+  // An issue page rendered on demand reads the archive too. One read serves a
+  // few minutes of those, so a burst of unknown slugs cannot fan out requests.
+  if (liveCache && Date.now() - liveCache.at < LIVE_CACHE_MS) return liveCache.posts
   try {
-    return await fetchNewsletterPosts()
+    const posts = await fetchNewsletterPosts()
+    liveCache = { at: Date.now(), posts }
+    return posts
   } catch (error) {
     console.warn('[updates] newsletter archive unavailable, using snapshot:', error)
     return snapshot as NewsletterPost[]
   }
 }
 
+const LIVE_CACHE_MS = 5 * 60 * 1000
+let liveCache: { at: number; posts: NewsletterPost[] } | null = null
+
 /** The one list behind both `/news` and `/updates`. */
 export async function loadFeedProps(): Promise<FeedProps> {
   const updates = listUpdates()
   const entries = mergeFeed(updates, await loadNewsletterPosts())
   // The featured slot is for a long-form Updates post, never a newsletter issue.
-  const featured = entries.find((entry) => entry.featured && !entry.externalUrl) ?? null
+  const featured = entries.find((entry) => entry.featured && entry.source !== 'newsletter') ?? null
   return { entries, featured }
 }

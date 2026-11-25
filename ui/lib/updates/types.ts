@@ -17,6 +17,8 @@ export type UpdateFrontmatter = {
   tags: string[]
   featured: boolean
   draft: boolean
+  /** Slug of a newsletter issue that sent this same post; the feed lists only the post. */
+  newsletter?: string
 }
 
 export type UpdateMeta = {
@@ -36,10 +38,14 @@ export type UpdateMeta = {
   draft: boolean
   readingMinutes: number
   /**
-   * Set on entries that live elsewhere (newsletter issues at news.moondao.com).
-   * Cards link to it instead of `/updates/<slug>`.
+   * Set on entries that live elsewhere. Cards link to it instead of
+   * `/updates/<slug>`.
    */
   externalUrl?: string | null
+  /** `newsletter` for an issue from the Kit archive, rendered at `/updates/<slug>`. */
+  source?: 'newsletter' | null
+  /** On an Updates post: the newsletter issue that sent the same post. */
+  newsletter?: string | null
 }
 
 export type Update = UpdateMeta & { body: string }

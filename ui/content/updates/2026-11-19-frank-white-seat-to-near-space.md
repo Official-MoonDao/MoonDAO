@@ -14,6 +14,7 @@ tags:
   - zephalto
 featured: true
 draft: false
+newsletter: we-secured-frank-white-s-seat-to-near-space
 ---
 
 Frank White gave the Overview Effect its name. It describes the shift astronauts report when they see the whole Earth from above: a planet without borders, held in a layer of atmosphere thinner than seems possible. Frank predicted that shift before he had heard anyone describe it, then spent nearly 40 years interviewing the people who felt it.

@@ -7,6 +7,9 @@ import { parseUpdateBlock } from '@/lib/updates/blocks'
 import DocsLink from '@/components/docs/DocsLink'
 import UpdateBlock from './blocks/UpdateBlock'
 
+const BUTTON_CLASS =
+  'inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 text-[16px] font-semibold text-white no-underline shadow-lg transition-opacity hover:opacity-90'
+
 const LINK_CLASS =
   'text-blue-300 underline decoration-blue-300/40 underline-offset-4 transition-colors hover:text-blue-200 hover:decoration-blue-200'
 
@@ -63,7 +66,22 @@ const COMPONENTS: Components = {
   ),
   p: ({ node: _n, ...props }) => <p className="mb-6 text-slate-200" {...props} />,
   strong: ({ node: _n, ...props }) => <strong className="font-semibold text-white" {...props} />,
-  a: ({ node: _n, href, children, ...props }) => {
+  a: ({ node, href, children, ...props }) => {
+    // Newsletter issues mark their call-to-action links as buttons.
+    if (node?.properties?.dataButton) {
+      const external = !isRoute(href)
+      return (
+        <span className="my-2 flex justify-center">
+          <a
+            href={href}
+            className={BUTTON_CLASS}
+            {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
+            {children}
+          </a>
+        </span>
+      )
+    }
     if (isAnchor(href)) {
       return (
         <a href={href} className={LINK_CLASS} {...props}>
@@ -85,6 +103,28 @@ const COMPONENTS: Components = {
     )
   },
   img: ({ node: _n, ...props }) => <img className="my-8 h-auto w-full rounded-xl" {...props} />,
+  figure: ({ node: _n, ...props }) => (
+    <figure className="my-8 [&_img]:my-0 [&_iframe]:my-0 [&_p]:mb-0" {...props} />
+  ),
+  figcaption: ({ node: _n, ...props }) => (
+    <figcaption
+      className="mt-3 text-center text-[15px] leading-relaxed text-slate-400"
+      {...props}
+    />
+  ),
+  video: ({ node: _n, ...props }) => (
+    <video className="my-8 h-auto w-full rounded-xl bg-black" {...props} />
+  ),
+  iframe: ({ node: _n, title, src }) => (
+    <iframe
+      src={src}
+      title={title || 'Video'}
+      className="my-8 aspect-video w-full rounded-xl"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+      loading="lazy"
+    />
+  ),
   hr: () => <hr className="my-12 border-white/10" />,
   ul: ({ node: _n, ...props }) => (
     <ul
@@ -187,7 +227,9 @@ const COMPONENTS: Components = {
 
 /**
  * Long-form renderer. `rehypeRaw` is safe here because updates arrive only via
- * reviewed commits to this repo, never from user-submitted content.
+ * reviewed commits to this repo, never from user-submitted content. Newsletter
+ * issues are MoonDAO's own Kit broadcasts, and `kitHtmlToMarkdown` escapes all
+ * of their text and writes the only raw HTML they contain.
  */
 export default function UpdateMarkdown({ body }: { body: string }) {
   return (

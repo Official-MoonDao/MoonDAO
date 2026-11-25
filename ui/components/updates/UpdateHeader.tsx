@@ -51,9 +51,12 @@ export default function UpdateHeader({ update }: { update: UpdateMeta }) {
         <h1 className="mt-5 font-heading text-[34px] font-semibold leading-[1.08] tracking-tight text-white md:text-[52px]">
           {update.title}
         </h1>
-        <p className="mt-5 max-w-[760px] text-lg leading-relaxed text-slate-300 md:text-xl">
-          {update.description}
-        </p>
+        {/* A newsletter issue's description is its opening lines, already in the body. */}
+        {update.source !== 'newsletter' && (
+          <p className="mt-5 max-w-[760px] text-lg leading-relaxed text-slate-300 md:text-xl">
+            {update.description}
+          </p>
+        )}
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-white/10 py-4">

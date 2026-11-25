@@ -8,12 +8,19 @@ describe('MoonDAO App | Updates', () => {
     cy.contains('Essay').should('exist')
   })
 
-  it('should list newsletter issues that open at news.moondao.com', () => {
+  it('should list newsletter issues that open on-site', () => {
     cy.visit('/updates', { timeout: 60000 })
     cy.contains('h3', 'Static Fire and UFOs', { timeout: 60000 })
       .closest('a')
       .should('have.attr', 'href')
-      .and('match', /^https:\/\/news\.moondao\.com\/posts\//)
+      .and('match', /^\/updates\/[a-z0-9-]+$/)
+  })
+
+  it('should render a newsletter issue on-site', () => {
+    cy.visit('/updates/who-builds-the-first-moonbase', { timeout: 60000 })
+    cy.contains('h1', 'Who builds the first Moonbase?', { timeout: 60000 }).should('be.visible')
+    cy.contains('Newsletter').should('exist')
+    cy.get('#update-body article p').should('have.length.greaterThan', 1)
   })
 
   it('should list the same entries on /news and /updates', () => {
