@@ -11,8 +11,10 @@ permissions:
 
 jobs:
   autofix:
-    # Only run on PR comments (not issue comments)
-    if: github.event.issue.pull_request != null
+    # Only run on PR comments (not issue comments) from people with write access
+    if: >-
+      github.event.issue.pull_request != null &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
 
     steps:
@@ -60,9 +62,9 @@ jobs:
               return;
             }
 
-            const data = await response.json();
             let result;
             try {
+              const data = JSON.parse(await response.text());
               // Strip markdown code fences if present
               const raw = data.choices[0].message.content
                 .replace(/```json\s*/gi, '')
@@ -70,6 +72,7 @@ jobs:
                 .trim();
               result = JSON.parse(raw);
             } catch (e) {
+              core.warning(`Could not parse Models API response: ${e.message}`);
               core.setOutput('should_fix', 'false');
               core.setOutput('reason', 'Failed to parse AI response');
               return;
