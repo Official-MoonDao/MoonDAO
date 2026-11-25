@@ -70,10 +70,26 @@ describe('deprize competitions registry', () => {
     expect(binding!.outcomes.some((o) => o.field)).to.equal(false)
   })
 
-  it('keeps prior Sepolia Touchdown generations unlisted after the registry cutover', () => {
+  it('binds Sepolia DePrize 2 as the public First Tracks roster', () => {
     expect(isKnownDePrizeCompetition('sepolia', 2)).to.equal(true)
-    expect(getDePrizeCompetition('sepolia', 2).unlisted).to.equal(true)
-    expect(getDePrizeRaceBinding('sepolia', 2)).to.equal(undefined)
+    const c = getDePrizeCompetition('sepolia', 2)
+    expect(c.title).to.equal('First Tracks')
+    expect(c.unlisted).to.equal(undefined)
+    expect(c.sharedGoalId).to.equal('shared-first-tracks')
+    expect(c.questionId).to.equal(
+      '0x5708489e20ecc5649f450d793652ce2367dbeb4f985c526e228d27b3f52d1e6a'
+    )
+    const binding = getDePrizeRaceBinding('sepolia', 2)
+    expect(binding!.outcomes.map((o) => o.projectId)).to.deep.equal([
+      'astrolab-flip',
+      'voyager-cuberover',
+      'lunar-outpost-mapp',
+      'ispace-tenacious',
+      'cmu-iris',
+      '__open-field__',
+    ])
+    expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([631, 632, 633, 634, 635, 24])
+    expect(binding!.outcomes[5].field).to.equal(true)
     expect(getDePrizeCompetition('sepolia', 7).title).to.equal('Touchdown v2')
     expect(getDePrizeCompetition('sepolia', 7).unlisted).to.equal(true)
     expect(getDePrizeRaceBinding('sepolia', 7)).to.equal(undefined)
@@ -133,7 +149,7 @@ describe('deprize competitions registry', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-lunar-rover')).to.equal(undefined)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(2)
     expect(findDePrizeIdForGoal('sepolia', 'shared-ice')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-next-landing')).to.equal(1)
@@ -149,7 +165,7 @@ describe('deprize competitions registry', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-lunar-rover')).to.equal(false)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-first-tracks')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-first-tracks')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-next-landing')).to.equal(true)

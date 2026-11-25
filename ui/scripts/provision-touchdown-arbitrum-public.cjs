@@ -345,8 +345,13 @@ async function main() {
 
   row.conditionId = await ctf.getConditionId(spec.oracle, questionId, n)
   const balance = await provider.getBalance(wallet.address)
-  if (balance.lt(funding.add(ethers.utils.parseEther('0.05')))) {
-    throw new Error('deployer balance is short of the seed plus gas')
+  // 0.05 ETH is the default headroom. Arbitrum gas is far below that, so a
+  // broadcast can set DEPRIZE_GAS_BUFFER_ETH when the deployer is funded for
+  // the seed but not for the default buffer.
+  const bufferEth = process.env.DEPRIZE_GAS_BUFFER_ETH || '0.05'
+  const buffer = ethers.utils.parseEther(bufferEth)
+  if (balance.lt(funding.add(buffer))) {
+    throw new Error(`deployer balance is short of the seed plus ${bufferEth} ETH gas`)
   }
 
   const slots = await ctf.getOutcomeSlotCount(row.conditionId)

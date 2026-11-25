@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
-import { isLadderGoal } from '@/lib/deprize/capabilityLadder'
+import { CAPABILITY_LADDER, isLadderGoal } from '@/lib/deprize/capabilityLadder'
 import { findDePrizeIdForGoal, isCompetitiveRace } from '@/lib/deprize/competitions'
 import { UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
@@ -392,7 +392,18 @@ export default function MoonBaseZeroIndex() {
             venueChip: earthSideVenue(tree.goal?.id)?.chip,
           }
         })
-        .sort((a, b) => Number(b.onLadder) - Number(a.onLadder) || b.count - a.count),
+        .sort((a, b) => {
+          const ladder = Number(b.onLadder) - Number(a.onLadder)
+          if (ladder) return ladder
+          // Ladder rungs stay in prize order. Field size would put Night
+          // Shift above First Tracks.
+          if (a.onLadder && b.onLadder) {
+            const rank = (id: string) =>
+              CAPABILITY_LADDER.findIndex((rung) => rung.sharedGoalId === id)
+            return rank(a.raceId) - rank(b.raceId)
+          }
+          return b.count - a.count
+        }),
     [surfaceTrees, dataset, chainSlug]
   )
 
