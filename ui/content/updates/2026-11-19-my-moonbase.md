@@ -39,7 +39,7 @@ The result is a picture of your forecast. Two people who disagree about who land
 - **You predict without leaving your base.** Every race opens in the side panel with its competitors and a Predict button. The hardware unlocks as soon as you save.
 - **Roads and scenery are yours to arrange.** Two clicks draw a road. Eleven scenery pieces, from street lights to solar arrays, can be placed as often as you like.
 - **Changing your mind doesn't wreck the base.** Switch a pick and the old hardware leaves, but its lot stays marked on the ground until you decide what to do with it.
-- **The layout is saved in your browser.** Your predictions follow your wallet. The arrangement of the base stays on the device you built it on, for now.
+- **Your base is saved to your account.** Sign in, or make a prediction, and the layout saves as you build. Open My Moonbase on another device and it is waiting, and Share gives you a link anyone can open.
 
 </aside>
 
@@ -163,9 +163,11 @@ From there you have three options. Predict that competitor again and it returns 
 ## How it's saved
 
 - **Predictions follow your wallet.** They are saved the same way as every other free forecast on MoonDAO, so they show up in Moon Base Zero, on the race pages and here.
-- **The layout stays in your browser.** Where you put things, your roads and the name of your base are stored on the device you built on. Open My Moonbase somewhere else and your hardware is there to place, but the arrangement is not.
-- **It saves as you go.** There is no save button. Every change is written straight away, and the header tells you if a save fails.
-- **Clearing site data clears the base.** Because the layout lives in the browser, wiping the browser's storage for moondao.com removes it. Your predictions are not affected.
+- **The layout is saved to your account too.** Where you put things, your roads and the name of your base are saved with the same account as your predictions. Open My Moonbase on another device, sign in, and the base is there as you left it.
+- **It saves as you go.** There is no save button. A couple of seconds after you stop editing, the change is sent. The header reads "Saved to your account" once it lands, and if a save fails it says so, keeps your work in the browser and offers Try again.
+- **You don't need to sign in first.** A base built while signed out is kept in this browser. Make a free prediction or sign in, and it moves to your account.
+- **If two copies disagree, you choose.** Edit the base on two devices and the builder notices. It asks whether to keep the one on screen or load the one saved to your account, and does not overwrite either until you answer.
+- **Share it with a link.** Press Share in the header to get a link to your base and a picture of it. Anyone with the link can look around and see which hardware you predicted, but only you can change it.
 
 ## Build yours
 
@@ -292,6 +294,6 @@ Start with the race you have the strongest view on. One prediction is enough to 
 
 ## Caveats
 
-This is a first version. Layouts are saved per browser, so a base does not yet follow you between devices and cannot be shared with a link. Some hardware does not have its own 3D model yet and is drawn with a stand-in, including every competitor in Night Shift. The models are illustrations of each team's hardware, not engineering drawings, and the plot is a generic patch of regolith rather than a real site.
+This is a first version. A base built while signed out stays in that browser until you sign in or make a prediction, and clearing the browser's storage before then removes it. Some hardware does not have its own 3D model yet and is drawn with a stand-in, including every competitor in Night Shift. The models are illustrations of each team's hardware, not engineering drawings, and the plot is a generic patch of regolith rather than a real site.
 
 Your base is a way to show what you think will happen. It has no effect on the odds, the leaderboard or any prize. Those come from the predictions themselves, which you can make here, in [Moon Base Zero](/moonbase) or on the [Touchdown page](/deprize/arb/1#deprize-forecast). Free predictions are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.
