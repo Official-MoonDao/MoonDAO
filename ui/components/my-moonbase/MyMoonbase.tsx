@@ -35,6 +35,7 @@ import {
   type ItemKind,
   type PlacedItem,
 } from '@/lib/my-moonbase/grid'
+import { compareRacesBySchedule } from '@/lib/my-moonbase/raceOrder'
 import { useMoonbaseLayout } from '@/lib/my-moonbase/useMoonbaseLayout'
 import { useMoonbasePicks } from '@/lib/my-moonbase/useMoonbasePicks'
 import { useMoonbaseSync } from '@/lib/my-moonbase/useMoonbaseSync'
@@ -149,7 +150,7 @@ export default function MyMoonbase() {
 
   const races = useMemo<InventoryRace[]>(() => {
     const goals = new Map(dataset.sharedGoals.map((goal) => [goal.id, goal]))
-    return predictRaces.flatMap((race) => {
+    const list = predictRaces.flatMap((race) => {
       const goal = goals.get(race.goalId)
       if (!goal) return []
       const field = race.outcomeIds.flatMap((projectId, index) => {
@@ -176,6 +177,7 @@ export default function MyMoonbase() {
         },
       ]
     })
+    return list.sort((a, b) => compareRacesBySchedule(a.goal, b.goal))
   }, [dataset.sharedGoals, predictRaces, market, picks, catalog])
 
   // The race whose predict window is mounted. It stays mounted after the
