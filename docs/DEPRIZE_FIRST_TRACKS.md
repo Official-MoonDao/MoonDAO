@@ -22,9 +22,12 @@ Predictions are open worldwide. Adding ETH to a prediction is unavailable in res
 
 ## Status
 
-This prize is not registered on the public Arbitrum registry. These rules take
-effect when it is registered and opened. Until then they are a draft and can
-change.
+This prize is not registered on the public Arbitrum registry. The market,
+condition, and Juicebox project are prepared. The executive Safe still has to
+execute the queued batch, which registers prize id 2 and opens it. These rules
+take effect when that batch is executed. Until then they are a draft and can
+change. A Sepolia rehearsal is open as public-registry id 2. That rehearsal does
+not freeze these rules.
 
 ## Resolution criteria
 
