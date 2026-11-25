@@ -12,6 +12,7 @@ import { buildActivityRssXml, feedItemsFromUpdates } from '../lib/activity-feed/
 import { parseUpdateBlock, stripNonProse } from '../lib/updates/blocks'
 import formatUpdateDate from '../lib/updates/formatUpdateDate'
 import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
+import { cleanHref, kitHtmlToMarkdown } from '../lib/updates/kitHtml'
 import {
   allUpdateStaticPaths,
   featuredUpdate,
@@ -30,6 +31,13 @@ import {
   summarize,
 } from '../lib/updates/newsletter'
 import type { NewsletterPost } from '../lib/updates/newsletter'
+import {
+  EDITED_MARKER,
+  isNewsletterSlug,
+  listNewsletterBodySlugs,
+  loadNewsletterIssue,
+  readNewsletterBody,
+} from '../lib/updates/newsletterIssues'
 import snapshot from '../lib/updates/newsletterSnapshot.json'
 import { readingMinutes } from '../lib/updates/readingTime'
 
@@ -636,6 +644,7 @@ function kitPost(overrides: Record<string, unknown> = {}) {
     thumbnailUrl: 'https://embed.filekitcdn.com/e/abc/def/email',
     url: 'https://news.moondao.com/posts/moon-base-zero-launches-tomorrow',
     introContent: 'Hey Reader, We have built the critical path tech tree for a Moonbase...',
+    campaignId: 26971020,
     ...overrides,
   }
 }
@@ -653,6 +662,7 @@ describe('newsletter issues', () => {
     expectEqual(post.date, '2026-11-12', 'date')
     expectEqual(post.readingMinutes, 2, 'reading minutes')
     expectEqual(post.image, 'https://embed.filekitcdn.com/e/abc/def', 'image drops /email')
+    expectEqual(post.kitId, 26971020, 'Kit broadcast id')
     expectEqual(
       post.description,
       'We have built the critical path tech tree for a Moonbase',
@@ -775,6 +785,7 @@ describe('merged news and updates feed', () => {
         image: null,
         url: 'https://news.moondao.com/posts/newer',
         readingMinutes: 1,
+        kitId: null,
       },
       {
         slug: 'same-day',
@@ -784,17 +795,19 @@ describe('merged news and updates feed', () => {
         image: null,
         url: 'https://news.moondao.com/posts/same-day',
         readingMinutes: 1,
+        kitId: null,
       },
     ]
     const feed = mergeFeed(listUpdates(dir), issues)
     expectEqual(
       feed.map((entry) => entry.slug).join(','),
-      'newsletter-newer,essay,newsletter-same-day',
+      'newer,essay,same-day',
       'order, with the update first on a same-day tie'
     )
-    expectEqual(feed[0].externalUrl, 'https://news.moondao.com/posts/newer', 'issue link')
+    expectEqual(feed[0].externalUrl, null, 'issues open on-site')
+    expectEqual(feed[0].source, 'newsletter', 'issue source')
     expectEqual(feed[0].category, 'Newsletter', 'issue category')
-    expectEqual(feed[1].externalUrl ?? null, null, 'updates stay on-site')
+    expectEqual(feed[1].source ?? null, null, 'updates are not issues')
   })
 
   it('keeps same-day newsletter issues in the order they were sent', () => {
@@ -807,6 +820,7 @@ describe('merged news and updates feed', () => {
         image: null,
         url: 'https://news.moondao.com/posts/later',
         readingMinutes: 1,
+        kitId: null,
       },
       {
         slug: 'earlier',
@@ -816,15 +830,36 @@ describe('merged news and updates feed', () => {
         image: null,
         url: 'https://news.moondao.com/posts/earlier',
         readingMinutes: 1,
+        kitId: null,
       },
     ]
     expectEqual(
       mergeFeed([], issues)
         .map((entry) => entry.slug)
         .join(','),
-      'newsletter-later,newsletter-earlier',
+      'later,earlier',
       'send order'
     )
+  })
+
+  it('leaves out an issue that an update was sent as, or that shares its slug', () => {
+    writeUpdate(dir, '2024-01-01-essay.md', 'newsletter: we-sent-the-essay')
+    writeUpdate(dir, '2024-01-02-clash.md', '')
+    const issue = (slug: string): NewsletterPost => ({
+      slug,
+      title: slug,
+      date: '2024-01-03',
+      description: 'd',
+      image: null,
+      url: `https://news.moondao.com/posts/${slug}`,
+      readingMinutes: 1,
+      kitId: null,
+    })
+    const updates = listUpdates(dir)
+    expectEqual(updates.find((u) => u.slug === 'essay')?.newsletter, 'we-sent-the-essay', 'field')
+    const feed = mergeFeed(updates, [issue('we-sent-the-essay'), issue('clash'), issue('kept')])
+    expectEqual(feed.map((entry) => entry.slug).join(','), 'kept,clash,essay', 'deduped')
+    expectEqual(feed[1].source ?? null, null, 'the update wins a slug clash')
   })
 
   it('serializes for getStaticProps (no undefined values)', () => {
@@ -839,12 +874,165 @@ describe('merged news and updates feed', () => {
           image: null,
           url: 'https://news.moondao.com/posts/a',
           readingMinutes: 1,
+          kitId: null,
         },
       ]
     )
     expectEqual(JSON.stringify(entry).includes('undefined'), false, 'json')
     for (const [key, value] of Object.entries(entry)) {
       if (value === undefined) throw new Error(`${key} is undefined`)
+    }
+  })
+})
+
+describe('newsletter issue bodies', () => {
+  const email = (body: string) =>
+    `<style>.ck-link{}</style><!--[if mso]><table><tr><td>Outlook only</td></tr></table><![endif]--><table cellPadding="0"><tbody><tr><td>${body}</td></tr></tbody></table>`
+
+  it('keeps headings, paragraphs, emphasis, lists and links', () => {
+    const md = kitHtmlToMarkdown(
+      email(
+        '<h1>The Title</h1><p>Hey {{ subscriber.first_name }},</p><h2>Section</h2>' +
+          '<p>Read <strong>this</strong> and <em>that</em> on <a href="https://www.moondao.com/base?utm_source=kit&amp;x=1">the base</a>.</p>' +
+          '<ul class="unordered_list"><li class="list_item"><p>One</p></li><li>Two <a href="https://example.com/a?utm_medium=email">link</a></li></ul>' +
+          '<ol><li>First</li><li>Second</li></ol>'
+      ),
+      { title: 'The title' }
+    )
+    expectEqual(
+      md,
+      [
+        '## Section',
+        'Read **this** and *that* on [the base](/base?x=1).',
+        '- One\n- Two [link](https://example.com/a)',
+        '1. First\n2. Second',
+      ].join('\n\n') + '\n',
+      'markdown'
+    )
+  })
+
+  it('drops what Kit hides from public posts and email-only markup', () => {
+    const md = kitHtmlToMarkdown(
+      email(
+        '<p>Kept</p><div class="ck-section ck-hide-in-public-posts"><p>Hidden</p></div>' +
+          '<table class="ck-poll"><tr><td>{% poll 1 %}Vote</td></tr></table>' +
+          '<span style="display:none">Preview text</span>' +
+          '<img src="https://functions-js.kit.com/countdown-timer?slug=x" alt="timer">'
+      )
+    )
+    expectEqual(md, 'Kept\n', 'only the visible paragraph')
+  })
+
+  it('escapes text so an email cannot inject markup', () => {
+    const md = kitHtmlToMarkdown(
+      email(
+        '<p>&lt;script&gt;alert(1)&lt;/script&gt; *stars* [x](y)</p><p><a href="javascript:alert(1)">bad</a></p>'
+      )
+    )
+    expectEqual(md.includes('<script'), false, 'no raw tag')
+    expectEqual(md.includes('javascript:'), false, 'no script link')
+    expectEqual(md.includes('\\*stars\\*'), true, 'markdown escaped')
+  })
+
+  it('turns images, buttons, videos and posts from X into page elements', () => {
+    const youtube = 'https://www.youtube.com/watch?v=K9TEI-Dhky0'
+    const md = kitHtmlToMarkdown(
+      email(
+        '<table class="email-image"><tr><td><figure><a class="kit-image-link" href="https://x.com/a/status/1"><img src="https://embed.filekitcdn.com/e/a/b" alt="Hero"></a><figcaption>A caption</figcaption></figure></td></tr></table>' +
+          '<table class="email-image"><tr><td><figure><img src="https://example.com/blocked.png" alt="Blocked"></figure></td></tr></table>' +
+          '<a class="email-button" href="https://moondao.com/join?utm_source=kit">Join now</a>' +
+          `<a href="${youtube}"><img src="https://functions-js.kit.com/playbutton?thumbnailof=${encodeURIComponent(
+            youtube
+          )}" alt="Watch"></a>` +
+          '<div data-video-container="true"><video poster="https://api.filekitcdn.com/e/a/v/thumbnail"><source src="https://api.filekitcdn.com/e/a/v"></video></div>' +
+          '<table width="450" style="max-width:450px"><tr><td><img src="https://pbs.twimg.com/profile_images/1/a.jpg" alt="twitter profile avatar"><div>MoonDAO</div><div>@OfficialMoonDAO</div>' +
+          '<a href="https://x.com/OfficialMoonDAO/status/123"><div style="white-space:pre-wrap">Line one\n\nLine two</div></a></td></tr></table>'
+      )
+    )
+    const expected = [
+      '<figure>\n\n[![Hero](https://embed.filekitcdn.com/e/a/b)](https://x.com/a/status/1)\n\n<figcaption>\n\nA caption\n\n</figcaption>\n\n</figure>',
+      '<a href="/join" data-button="true">Join now</a>',
+      '<iframe src="https://www.youtube.com/embed/K9TEI-Dhky0" title="Watch" allowfullscreen></iframe>',
+      '<video controls preload="none" poster="https://api.filekitcdn.com/e/a/v/thumbnail"><source src="https://api.filekitcdn.com/e/a/v" /></video>',
+      '<aside data-title="@OfficialMoonDAO on X">\n\nLine one\n\nLine two\n\n[View the post on X](https://x.com/OfficialMoonDAO/status/123)\n\n</aside>',
+    ]
+    expectEqual(md, `${expected.join('\n\n')}\n`, 'elements, with the blocked image left out')
+  })
+
+  it('drops a lead image that repeats the card image, and a greeting that lost its name', () => {
+    const md = kitHtmlToMarkdown(email('<p>Hey , welcome to the newsletter!</p>'))
+    expectEqual(md, 'Welcome to the newsletter!\n', 'greeting')
+    const lead = kitHtmlToMarkdown(
+      email(
+        '<table class="email-image"><tr><td><img src="https://embed.filekitcdn.com/e/a/hero"></td></tr></table><p>Body</p>'
+      ),
+      { heroImage: 'https://embed.filekitcdn.com/e/a/hero/email' }
+    )
+    expectEqual(lead, 'Body\n', 'hero image')
+  })
+
+  it('keeps only the MP4 of a Kit video, which every browser plays', () => {
+    const md = kitHtmlToMarkdown(
+      email(
+        '<video><source src="https://api.filekitcdn.com/e/a/v"><source src="https://api.filekitcdn.com/e/a/v?format=mp4" type="video/mp4"></video>'
+      )
+    )
+    expectEqual(
+      md,
+      '<video controls preload="none"><source src="https://api.filekitcdn.com/e/a/v?format=mp4" type="video/mp4" /></video>\n',
+      'mp4 only'
+    )
+  })
+
+  it('cleans link targets', () => {
+    expectEqual(cleanHref('https://moondao.com/?utm_campaign=x'), '/', 'site root')
+    expectEqual(cleanHref('http://example.com/a b'), 'http://example.com/a%20b', 'encoded')
+    expectEqual(cleanHref('ftp://example.com'), null, 'protocol')
+    expectEqual(cleanHref(''), null, 'empty')
+  })
+
+  it('accepts only Kit-style slugs', () => {
+    expectEqual(isNewsletterSlug('who-builds-the-first-moonbase'), true, 'slug')
+    expectEqual(isNewsletterSlug('../etc/passwd'), false, 'path')
+    expectEqual(isNewsletterSlug('Caps'), false, 'caps')
+  })
+
+  it('reads a committed body, keeping the edited marker out of the page', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'issues-'))
+    try {
+      fs.writeFileSync(path.join(dir, 'an-issue.md'), `${EDITED_MARKER}\nFixed by hand.\n`)
+      expectEqual(readNewsletterBody('an-issue', dir), 'Fixed by hand.', 'body')
+      expectEqual(readNewsletterBody('missing', dir), null, 'missing')
+      const post: NewsletterPost = {
+        slug: 'an-issue',
+        title: 'An issue',
+        date: '2024-01-01',
+        description: 'd',
+        image: null,
+        url: 'https://news.moondao.com/posts/an-issue',
+        readingMinutes: 1,
+        kitId: null,
+      }
+      const issue = await loadNewsletterIssue(post, { root: dir })
+      expectEqual(issue?.body, 'Fixed by hand.', 'issue body')
+      expectEqual(issue?.slug, 'an-issue', 'issue slug')
+      expectEqual(
+        await loadNewsletterIssue({ ...post, slug: 'missing' }, { root: dir }),
+        null,
+        'no body and no Kit id'
+      )
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('ships a body for every issue in the snapshot', () => {
+    const synced = listNewsletterBodySlugs()
+    const missing = (snapshot as NewsletterPost[]).filter((post) => !synced.has(post.slug))
+    if (missing.length) {
+      throw new Error(
+        `run yarn sync:newsletter; no body for ${missing.map((p) => p.slug).join(', ')}`
+      )
     }
   })
 })

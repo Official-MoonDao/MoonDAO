@@ -101,6 +101,7 @@ function loadCorpus(root: string = UPDATES_ROOT): Corpus {
       tags: frontmatter.tags,
       featured: frontmatter.featured,
       draft: frontmatter.draft,
+      newsletter: frontmatter.newsletter || null,
       readingMinutes: readingMinutes(body),
       body,
     }

@@ -14,9 +14,14 @@ Files that start with `_` and `README.md` are ignored by the loader, so `_templa
 
 ## Newsletter issues
 
-`/updates` and `/news` show the same list: the posts in this folder plus every public issue of the newsletter at [news.moondao.com](https://news.moondao.com). A production build uses the saved snapshot, and the live archive is read again at most once an hour, so a new send appears without another deploy. Issues open at news.moondao.com and are labelled `Newsletter`; nothing needs to be added here for them.
+`/updates` and `/news` show the same list: the posts in this folder plus every public issue of the newsletter at [news.moondao.com](https://news.moondao.com). Each issue has its own page at `/updates/<slug>`, using the slug Kit gave it, and is labeled `Newsletter`. Nothing needs to be added here for them.
 
-If the archive is unreachable, the pages fall back to `ui/lib/updates/newsletterSnapshot.json`. Refresh it with `yarn sync:newsletter` from `ui/` and commit the result. Newsletter issues are deliberately not in the RSS feed, because Kit reads that feed to send the newsletter and would send issues back out.
+- **The list.** A production build uses the saved snapshot, `ui/lib/updates/newsletterSnapshot.json`. Afterward the live archive is read again at most once an hour, so a new send appears without another deploy.
+- **The pages.** Each issue's body is read from the Kit API and converted from email HTML to the markdown these posts use (`ui/lib/updates/kitHtml.ts`). Synced bodies are committed to `ui/content/newsletter/<slug>.md`. An issue sent after the last sync is converted the first time someone opens it, which needs `CONVERT_KIT_V4_API_KEY` on the deploy. If that fails, the page sends readers to the issue on news.moondao.com.
+- **Refreshing.** Run `yarn sync:newsletter` from `ui/` (it reads the key from `.env.local`) and commit both the snapshot and `content/newsletter/`. To fix a body by hand, edit its file and make the first line `<!-- edited: keep this file when syncing -->` so the next sync leaves it alone.
+- **A post that was also sent as an issue.** Add `newsletter: <issue slug>` to the post's frontmatter. The list then shows only the post, and the issue's page redirects to it.
+
+Newsletter issues are deliberately not in the RSS feed, because Kit reads that feed to send the newsletter and would send issues back out.
 
 ## Frontmatter
 
@@ -34,6 +39,7 @@ If the archive is unreachable, the pages fall back to `ui/lib/updates/newsletter
 | `tags` | no | Labels only. No archive pages yet. |
 | `featured` | no | At most one featured item; the newest wins. |
 | `draft` | no | Hidden on the production deploy (`VERCEL_ENV=production`). Visible locally and on preview deploys. |
+| `newsletter` | no | Slug of the newsletter issue that sent this post, e.g. `we-secured-frank-white-s-seat-to-near-space`. Keeps the issue out of the list and redirects its page here. |
 
 `category` is free text and nothing branches on it, so one feed can carry a terse
 press release and a 40-minute essay without needing separate sections.

@@ -34,7 +34,8 @@ export function parseUpdateFrontmatter(raw: string): {
   if (raw.startsWith('---')) {
     const end = raw.indexOf('\n---', 3)
     if (end !== -1) {
-      for (const line of raw.slice(4, end).split('\n')) {
+      // A Windows checkout can have CRLF line endings.
+      for (const line of raw.slice(4, end).replace(/\r/g, '').split('\n')) {
         const kv = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/)
         if (!kv) continue
         extras[kv[1]] = kv[2] === '' ? '' : unquote(kv[2])
@@ -56,6 +57,7 @@ export function parseUpdateFrontmatter(raw: string): {
       category: optional(extras.category) || DEFAULT_CATEGORY,
       featured: asBoolean(extras.featured),
       draft: asBoolean(extras.draft),
+      newsletter: optional(extras.newsletter),
     },
     body,
   }

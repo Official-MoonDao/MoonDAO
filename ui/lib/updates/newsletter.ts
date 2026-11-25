@@ -2,10 +2,11 @@ import type { UpdateMeta } from './types'
 
 /**
  * The newsletter archive at news.moondao.com (a Kit creator profile) is the
- * source of truth for newsletter issues. These helpers read it so `/news` and
- * `/updates` list the same things. No filesystem access here: the committed
- * snapshot is passed in by the caller, so this module is safe to import from
- * tests and scripts.
+ * source of truth for which newsletter issues exist. These helpers read it so
+ * `/news` and `/updates` list the same things, and read each issue's body from
+ * the Kit API so it can be rendered on-site at `/updates/<slug>`. No
+ * filesystem access here: the committed snapshot is passed in by the caller,
+ * so this module is safe to import from tests and scripts.
  */
 
 export const NEWSLETTER_ORIGIN = 'https://news.moondao.com'
@@ -15,6 +16,7 @@ export const NEWSLETTER_CATEGORY = 'Newsletter'
 export const NEWSLETTER_AUTHOR = 'MoonDAO'
 
 const POSTS_ENDPOINT = `${NEWSLETTER_ORIGIN}/profile/fetch-posts`
+const KIT_API = 'https://api.kit.com/v4'
 const PAGE_SIZE = 10
 const MAX_PAGES = 60
 // One budget for the whole archive. A per-page timeout can add up past the
@@ -24,16 +26,29 @@ const REQUEST_TIMEOUT_MS = 12000
 const DESCRIPTION_MAX_CHARS = 220
 
 // Image hosts the site's Content-Security-Policy allows (see `img-src` in
-// next.config.js). A thumbnail anywhere else would be blocked in the browser
-// and leave an empty box, so those issues are listed without an image.
+// next.config.js). An image anywhere else would be blocked in the browser and
+// leave an empty box, so it is left out of the card or the issue body.
+// `api.filekitcdn.com` serves the videos Kit hosts and their poster frames.
 const IMAGE_HOSTS = new Set([
   'embed.filekitcdn.com',
+  'api.filekitcdn.com',
   'pbs.twimg.com',
   'img.youtube.com',
   'images.lumacdn.com',
   'cdn.discordapp.com',
   'media.discordapp.net',
+  'cdn.shopify.com',
 ])
+
+/** True for an https URL on a host the site's CSP allows images from. */
+export function isAllowedImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && IMAGE_HOSTS.has(url.hostname)
+  } catch {
+    return false
+  }
+}
 
 /** The fields of a Kit post this site uses. Everything else is dropped. */
 export type NewsletterPost = {
@@ -45,6 +60,8 @@ export type NewsletterPost = {
   image: string | null
   url: string
   readingMinutes: number
+  /** The Kit broadcast ID, used to read the issue's body from the Kit API. */
+  kitId: number | null
 }
 
 type KitPostResponse = {
@@ -117,6 +134,7 @@ export function normalizeKitPost(raw: unknown): NewsletterPost | null {
   if (post.status !== 'published' || post.isPaid === true) return null
 
   const reading = Number(post.readingTime)
+  const kitId = Number(post.campaignId)
   return {
     slug,
     title,
@@ -125,6 +143,7 @@ export function normalizeKitPost(raw: unknown): NewsletterPost | null {
     image: normalizeThumbnail(post.thumbnailUrl),
     url: asString(post.url) || `${NEWSLETTER_ORIGIN}/posts/${slug}`,
     readingMinutes: Number.isFinite(reading) && reading > 0 ? Math.round(reading) : 1,
+    kitId: Number.isInteger(kitId) && kitId > 0 ? kitId : null,
   }
 }
 
@@ -185,7 +204,7 @@ export async function fetchNewsletterPosts(
 /** Fits an issue into the shape the Updates cards already render. */
 export function newsletterToUpdateMeta(post: NewsletterPost): UpdateMeta {
   return {
-    slug: `newsletter-${post.slug}`,
+    slug: post.slug,
     filePath: `kit:${post.slug}`,
     title: post.title,
     description: post.description,
@@ -200,8 +219,27 @@ export function newsletterToUpdateMeta(post: NewsletterPost): UpdateMeta {
     featured: false,
     draft: false,
     readingMinutes: post.readingMinutes,
-    externalUrl: post.url,
+    externalUrl: null,
+    source: 'newsletter',
+    newsletter: null,
   }
+}
+
+/**
+ * The issues that get a page and a card of their own. An issue is left out
+ * when an Updates post has the same slug, or names the issue in its
+ * `newsletter:` frontmatter because it was sent as that issue.
+ */
+export function standaloneIssues(
+  updates: Pick<UpdateMeta, 'slug' | 'newsletter'>[],
+  newsletter: NewsletterPost[]
+): NewsletterPost[] {
+  const covered = new Set<string>()
+  for (const update of updates) {
+    covered.add(update.slug)
+    if (update.newsletter) covered.add(update.newsletter)
+  }
+  return newsletter.filter((post) => !covered.has(post.slug))
 }
 
 /**
@@ -209,8 +247,8 @@ export function newsletterToUpdateMeta(post: NewsletterPost): UpdateMeta {
  * post wins a same-day tie so the longer piece leads.
  */
 export function mergeFeed(updates: UpdateMeta[], newsletter: NewsletterPost[]): UpdateMeta[] {
-  const issues = newsletter.map(newsletterToUpdateMeta)
-  const rank = (entry: UpdateMeta) => (entry.externalUrl ? 1 : 0)
+  const issues = standaloneIssues(updates, newsletter).map(newsletterToUpdateMeta)
+  const rank = (entry: UpdateMeta) => (entry.source === 'newsletter' ? 1 : 0)
 
   // `sort` is stable, and `newsletter` arrives newest first, so two issues
   // from the same day keep the order they were sent.
@@ -218,4 +256,93 @@ export function mergeFeed(updates: UpdateMeta[], newsletter: NewsletterPost[]): 
     if (a.date !== b.date) return a.date < b.date ? 1 : -1
     return rank(a) - rank(b)
   })
+}
+
+/** The fields of a Kit broadcast this site reads. */
+export type KitBroadcast = {
+  id: number
+  subject: string
+  content: string
+  public: boolean
+  publicUrl: string | null
+  thumbnailUrl: string | null
+}
+
+function toKitBroadcast(raw: unknown): KitBroadcast | null {
+  if (!raw || typeof raw !== 'object') return null
+  const b = raw as Record<string, unknown>
+  const id = Number(b.id)
+  if (!Number.isInteger(id)) return null
+  return {
+    id,
+    subject: asString(b.subject),
+    content: asString(b.content),
+    public: b.public === true,
+    publicUrl: asString(b.public_url) || null,
+    thumbnailUrl: asString(b.thumbnail_url) || null,
+  }
+}
+
+/** The slug of an issue at news.moondao.com/posts/<slug>. */
+export function slugFromPublicUrl(publicUrl: string | null): string | null {
+  return publicUrl?.match(/\/posts\/([^/?#]+)/)?.[1] ?? null
+}
+
+async function kitGet(
+  pathAndQuery: string,
+  apiKey: string,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal
+): Promise<Record<string, unknown>> {
+  const response = await fetchImpl(`${KIT_API}${pathAndQuery}`, {
+    headers: { Accept: 'application/json', 'X-Kit-Api-Key': apiKey },
+    signal,
+  })
+  if (!response.ok) throw new Error(`Kit API returned ${response.status} for ${pathAndQuery}`)
+  return (await response.json()) as Record<string, unknown>
+}
+
+/** Reads one broadcast, body included. */
+export async function fetchKitBroadcast(
+  id: number,
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs: number = REQUEST_TIMEOUT_MS
+): Promise<KitBroadcast> {
+  const body = await kitGet(`/broadcasts/${id}`, apiKey, fetchImpl, AbortSignal.timeout(timeoutMs))
+  const broadcast = toKitBroadcast(body.broadcast)
+  if (!broadcast) throw new Error(`Kit API returned no broadcast ${id}`)
+  return broadcast
+}
+
+/** Reads every broadcast with its body, 100 per request. */
+export async function fetchKitBroadcasts(
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs: number = 60000
+): Promise<KitBroadcast[]> {
+  const signal = AbortSignal.timeout(timeoutMs)
+  const broadcasts: KitBroadcast[] = []
+  let after: string | null = null
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const query = `/broadcasts?per_page=100&include=content${
+      after ? `&after=${encodeURIComponent(after)}` : ''
+    }`
+    const body = await kitGet(query, apiKey, fetchImpl, signal)
+    const list = Array.isArray(body.broadcasts) ? body.broadcasts : []
+    for (const raw of list) {
+      const broadcast = toKitBroadcast(raw)
+      if (broadcast) broadcasts.push(broadcast)
+    }
+    const pagination = (body.pagination || {}) as Record<string, unknown>
+    after = pagination.has_next_page === true ? asString(pagination.end_cursor) || null : null
+    if (!after) break
+  }
+  return broadcasts
+}
+
+/** The Kit API key, if this environment has one. */
+export function kitApiKey(env: NodeJS.ProcessEnv = process.env): string | null {
+  // The older CONVERT_KIT_API_KEY is a v3 key, which the v4 API rejects.
+  return env.CONVERT_KIT_V4_API_KEY || null
 }

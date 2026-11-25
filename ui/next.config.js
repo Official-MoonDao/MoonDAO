@@ -14,7 +14,8 @@ const cspHeaderBase = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com https://pay.google.com https://challenges.cloudflare.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://connect.facebook.net;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
-    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://media.discordapp.net https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://* https://gray-main-toad-36.mypinata.cloud  https://safe-transaction-assets.safe.global https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://*.lumacdn.com https://images.lumacdn.com https://pbs.twimg.com https://img.youtube.com https://embed.filekitcdn.com https://www.facebook.com;
+    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://media.discordapp.net https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://* https://gray-main-toad-36.mypinata.cloud  https://safe-transaction-assets.safe.global https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://*.lumacdn.com https://images.lumacdn.com https://pbs.twimg.com https://img.youtube.com https://embed.filekitcdn.com https://api.filekitcdn.com https://image.mux.com https://www.facebook.com;
+    media-src 'self' https://api.filekitcdn.com https://stream.mux.com;
     font-src 'self' https://fonts.gstatic.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
     object-src 'none';
     base-uri 'self';
