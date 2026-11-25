@@ -129,6 +129,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // not listed separately here.
       { name: 'Send Frank to Space', href: '/mission/4' },
       { name: 'Moon Base Zero', href: '/moonbase' },
+      { name: 'My Moonbase', href: '/moonbase/mine' },
       { name: 'DePrize', href: '/deprize' },
     ],
     footerOnly: [{ name: 'Path Forward Vote', href: '/overview-path-vote' }],
