@@ -6,7 +6,8 @@
     "node": ">=18 <25"
   },
   "resolutions": {
-    "@noble/hashes": "1.8.0"
+    "@noble/hashes": "1.8.0",
+    "es-iterator-helpers": "1.2.1"
   },
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",

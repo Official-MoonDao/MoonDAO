@@ -104,7 +104,7 @@ function Kpi({
         </span>
         <ChangeBadge value={delta} />
       </div>
-      <p className="mt-2 text-3xl font-GoodTimes text-white">{value}</p>
+      <p className="mt-2 text-3xl font-heading text-white">{value}</p>
       <p className="mt-1 text-xs text-slate-400">{help}</p>
     </div>
   )
