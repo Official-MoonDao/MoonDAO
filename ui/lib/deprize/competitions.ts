@@ -18,6 +18,7 @@
  * (or made a per-chain map) rather than duplicated — agree with Miguel before
  * either side writes atlas seed data that conflicts.
  */
+import { ATLAS_FORECAST_VOTE_IDS } from '@/lib/forecasts/atlasBook'
 
 /**
  * Reserved MoonDAOTeam id for the Open Field outcome slot.
@@ -80,6 +81,13 @@ export type DePrizeCompetition = {
    * `teamId` is the alignment checksum; `consented` gates branding only.
    */
   outcomes?: DePrizeRaceOutcome[]
+  /**
+   * Forecasts vote id when it is not the prize id. A race that took free
+   * predictions under its atlas id before the market opened keeps that id, so
+   * those predictions stay counted and older rows under the prize id do not.
+   * The atlas slots must equal the leading `outcomes` slots.
+   */
+  forecastVoteId?: number
   /** Prior generation this entry superseded (off-chain lineage mirror). */
   supersedes?: number
   /** Next generation that superseded this entry (off-chain lineage mirror). */
@@ -195,17 +203,30 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: 'spacex-starship-hls', teamId: 24, vehicleLabel: 'Starship HLS' },
       ],
     },
+    // Public First Tracks on the same registry, opened by the executive Safe.
+    // Rows under vote id 2 predate it (the previous registry's Touchdown
+    // generation 2), so predictions stay on the atlas vote id.
+    2: {
+      title: 'First Tracks',
+      tagline:
+        'Which commercial rover leaves its lander and drives at least 10 metres first? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum public First Tracks. Astrolab FLIP, Voyager CubeRover, Lunar Outpost MAPP, ispace Tenacious, Carnegie Mellon Iris, and the Open Field.',
+      questionId: '0xee977158d810dfa023735162257bcf562903dbb800447b7c20f1cd01d8c2d0de',
+      sharedGoalId: 'shared-first-tracks',
+      raceLabel: 'First Tracks',
+      outcomes: [
+        { projectId: 'astrolab-flip', teamId: 631, vehicleLabel: 'FLIP' },
+        { projectId: 'voyager-cuberover', teamId: 632, vehicleLabel: 'CubeRover' },
+        { projectId: 'lunar-outpost-mapp', teamId: 633, vehicleLabel: 'MAPP' },
+        { projectId: 'ispace-tenacious', teamId: 634, vehicleLabel: 'Tenacious' },
+        { projectId: 'cmu-iris', teamId: 635, vehicleLabel: 'Iris' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+      forecastVoteId: ATLAS_FORECAST_VOTE_IDS['shared-first-tracks'],
+    },
     // Historical copy from the previous Arbitrum registry. Unlisted and unbound
     // so they cannot steal the live race tip. That registry is no longer read.
-    2: {
-      title: 'Touchdown',
-      tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
-      metaDescription:
-        'Earlier Arbitrum Touchdown on the previous registry. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
-      questionId: '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc',
-      unlisted: true,
-    },
     3: {
       title: 'Night Shift',
       tagline:
@@ -365,6 +386,11 @@ export function getDePrizeQuestionId(
 ): string | undefined {
   if (deprizeId === undefined || !Number.isFinite(deprizeId)) return undefined
   return DEPRIZE_COMPETITIONS[chainSlug]?.[deprizeId]?.questionId
+}
+
+/** Forecasts vote override for a prize, or undefined when it predicts under its id. */
+export function getDePrizeForecastVoteId(chainSlug: string, deprizeId: number): number | undefined {
+  return DEPRIZE_COMPETITIONS[chainSlug]?.[deprizeId]?.forecastVoteId
 }
 
 // Bindings are derived from a static registry, so cache them: callers memoize

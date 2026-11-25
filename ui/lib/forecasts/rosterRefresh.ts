@@ -1,3 +1,4 @@
+import { deprizeForecastVoteId } from '@/lib/deprize/forecastVote'
 import type { ForecastCaller } from '@/lib/forecasts/consensusTypes'
 
 /** Long enough that a reload inside the consensus CDN window still busts it. */
@@ -24,7 +25,7 @@ export type RosterStore = {
 }
 
 export function rosterFreshKey(chain: string, deprizeId: number): string {
-  return `deprize-roster-fresh:${chain}:${deprizeId}`
+  return `deprize-roster-fresh:${chain}:${deprizeForecastVoteId(deprizeId, chain)}`
 }
 
 /**

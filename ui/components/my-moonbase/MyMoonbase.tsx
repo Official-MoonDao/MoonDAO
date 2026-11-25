@@ -89,7 +89,7 @@ export default function MyMoonbase() {
     picks,
     betsPending,
     races: predictRaces,
-    market,
+    markets,
     address,
     identityReady,
     refresh,
@@ -157,8 +157,9 @@ export default function MyMoonbase() {
         const asset = projectId ? catalog.get(projectId) : undefined
         return asset ? [{ index, asset }] : []
       })
+      const market = markets.find((m) => m.goalId === race.goalId)
       const closedReason =
-        market?.goalId !== race.goalId
+        !market
           ? undefined
           : market.resolved
           ? 'This race has been decided, so predictions are closed.'
@@ -178,7 +179,7 @@ export default function MyMoonbase() {
       ]
     })
     return list.sort((a, b) => compareRacesBySchedule(a.goal, b.goal))
-  }, [dataset.sharedGoals, predictRaces, market, picks, catalog])
+  }, [dataset.sharedGoals, predictRaces, markets, picks, catalog])
 
   // The race whose predict window is mounted. It stays mounted after the
   // window closes, so a saved pick and its undo survive, as on the race panel.
@@ -187,6 +188,7 @@ export default function MyMoonbase() {
     null
   )
   const predictRace = predictRaces.find((race) => race.goalId === predictGoalId)
+  const predictMarket = markets.find((m) => m.goalId === predictGoalId)
   const openPredict = (goalId: string, index: number, name: string) => {
     setPredictGoalId(goalId)
     setPredictTarget({ index, name })
@@ -673,8 +675,8 @@ export default function MyMoonbase() {
           deprizeId={predictRace.voteId}
           numOutcomes={predictRace.outcomeIds.length}
           labels={predictRace.labels}
-          reported={market?.goalId === predictRace.goalId && market.resolved}
-          marketLoading={market?.goalId === predictRace.goalId && market.payoutPending}
+          reported={!!predictMarket?.resolved}
+          marketLoading={!!predictMarket?.payoutPending}
           outcomeIndex={predictTarget?.index ?? null}
           teamName={predictTarget?.name ?? ''}
           onClose={() => setPredictTarget(null)}

@@ -80,12 +80,12 @@ describe('capability ladder', () => {
     expect(CAPABILITY_LADDER[3].specHref).to.equal('')
   })
 
-  it('getLadderForCompetition("arbitrum", 1): public Touchdown is live and the other rungs stay planned', () => {
+  it('getLadderForCompetition("arbitrum", 1): Touchdown and First Tracks are live, the rest planned', () => {
     const viewed = getLadderForCompetition('arbitrum', 1)
     expect(viewed.currentKey).to.equal('touchdown')
     expect(viewed.rungs.map((r) => [r.key, r.status, r.deprizeId, r.current])).to.deep.equal([
       ['touchdown', 'live', 1, true],
-      ['first-tracks', 'planned', undefined, false],
+      ['first-tracks', 'live', 2, false],
       ['ice', 'planned', undefined, false],
       ['night-shift', 'planned', undefined, false],
     ])
@@ -132,13 +132,13 @@ describe('LADDER_GOAL_IDS — which races the Moonbase calls real', () => {
 
   // The Moonbase legend must not split its race list on "has a DePrize on
   // the connected chain". These ids are the races we run, on every chain.
-  // A market binding is per registry. Sepolia binds Touchdown and First
-  // Tracks. Arbitrum binds Touchdown.
+  // A market binding is per registry. Both chains bind Touchdown and First
+  // Tracks.
   it('lists the same races on Sepolia and on Arbitrum', () => {
     const bound = (chain: string) =>
       LADDER_GOAL_IDS.filter((id) => findDePrizeIdForGoal(chain, id) !== undefined)
     expect(bound('sepolia')).to.deep.equal(['shared-next-landing', 'shared-first-tracks'])
-    expect(bound('arbitrum')).to.deep.equal(['shared-next-landing'])
+    expect(bound('arbitrum')).to.deep.equal(['shared-next-landing', 'shared-first-tracks'])
     for (const id of LADDER_GOAL_IDS) {
       expect(isLadderGoal(id), id).to.equal(true)
     }

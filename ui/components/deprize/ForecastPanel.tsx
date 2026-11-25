@@ -378,7 +378,7 @@ export default function ForecastPanel(props: {
         account: from,
         forecastsTableName,
         chainId: chain.id,
-        voteId: deprizeForecastVoteId(deprizeId),
+        voteId: deprizeForecastVoteId(deprizeId, chainSlug),
         address: from.address,
         vote,
       })
@@ -435,7 +435,7 @@ export default function ForecastPanel(props: {
       await clearForecastVote({
         forecastsContract,
         account: writer,
-        voteId: deprizeForecastVoteId(deprizeId),
+        voteId: deprizeForecastVoteId(deprizeId, chainSlug),
       })
       if (forecastWriter.isGuest || !account) forgetGuestForecast(chainSlug, deprizeId)
       const clearedPick = savedPick != null ? labels[savedPick] : undefined

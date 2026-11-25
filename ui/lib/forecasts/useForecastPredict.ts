@@ -341,7 +341,7 @@ export function useForecastPredict(args: {
         account: writer,
         forecastsTableName,
         chainId: chain.id,
-        voteId: deprizeForecastVoteId(deprizeId),
+        voteId: deprizeForecastVoteId(deprizeId, chainSlug),
         address: writer.address,
         vote,
       })
@@ -400,7 +400,7 @@ export function useForecastPredict(args: {
       await clearForecastVote({
         forecastsContract,
         account: writer,
-        voteId: deprizeForecastVoteId(deprizeId),
+        voteId: deprizeForecastVoteId(deprizeId, chainSlug),
       })
       if (forecastWriter.isGuest || !activeAccount) forgetGuestForecast(chainSlug, deprizeId)
       const clearedPick = savedPick != null ? labels[savedPick] : undefined

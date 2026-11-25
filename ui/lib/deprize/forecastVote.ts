@@ -1,4 +1,5 @@
 /** On-chain payload contract for a DePrize prediction stored in Forecasts.sol. */
+import { getDePrizeForecastVoteId } from './competitions'
 
 export const FORECAST_VOTE_SCHEMA_VERSION = 1
 
@@ -14,9 +15,12 @@ export type ParsedForecastVote = {
   timestamp: number
 }
 
-/** Dedicated Forecasts table: voteId is the prize id. */
-export function deprizeForecastVoteId(deprizeId: number): number {
-  return deprizeId
+/**
+ * Dedicated Forecasts table: voteId is the prize id unless the registry entry
+ * overrides it. Atlas vote ids have no entry, so they pass through unchanged.
+ */
+export function deprizeForecastVoteId(deprizeId: number, chainSlug: string): number {
+  return getDePrizeForecastVoteId(chainSlug, deprizeId) ?? deprizeId
 }
 
 export function isValidAllocation(allocation: readonly number[]): boolean {

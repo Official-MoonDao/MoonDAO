@@ -5,6 +5,7 @@
  * each one again from the account's wallet. The copy stays until that
  * rewrite succeeds.
  */
+import { deprizeForecastVoteId } from '@/lib/deprize/forecastVote'
 
 export const GUEST_HANDOFF_STORAGE_KEY = 'deprize:guest-forecast-handoff'
 
@@ -18,6 +19,16 @@ export type PendingHandoff = {
 }
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+// Gateway rows carry the Forecasts vote id and local notes the page's prize
+// id. Compare on the vote id so both name the same prediction.
+function voteKey(chainSlug: string, deprizeId: number): string {
+  return `${chainSlug}:${deprizeForecastVoteId(deprizeId, chainSlug)}`
+}
+
+function isFor(row: PendingHandoff, chainSlug: string, deprizeId: number): boolean {
+  return voteKey(row.chainSlug, row.deprizeId) === voteKey(chainSlug, deprizeId)
+}
 
 function storage(): StorageLike | null {
   try {
@@ -72,7 +83,7 @@ export function mergePendingHandoffs(...groups: PendingHandoff[][]): PendingHand
   const byPrize = new Map<string, PendingHandoff>()
   for (const group of groups) {
     for (const row of group) {
-      byPrize.set(`${row.chainSlug}:${row.deprizeId}`, row)
+      byPrize.set(voteKey(row.chainSlug, row.deprizeId), row)
     }
   }
   return [...byPrize.values()]
@@ -111,9 +122,7 @@ export function forgetGuestForecast(
   store: StorageLike | null = storage()
 ): boolean {
   return writePendingHandoffs(
-    readPendingHandoffs(store).filter(
-      (row) => row.chainSlug !== chainSlug || row.deprizeId !== deprizeId
-    ),
+    readPendingHandoffs(store).filter((row) => !isFor(row, chainSlug, deprizeId)),
     store
   )
 }
@@ -125,9 +134,7 @@ export function peekPendingHandoff(
   store: StorageLike | null = storage()
 ): PendingHandoff | null {
   return (
-    readPendingHandoffs(store).find(
-      (row) => row.chainSlug === chainSlug && row.deprizeId === deprizeId
-    ) ?? null
+    readPendingHandoffs(store).find((row) => isFor(row, chainSlug, deprizeId)) ?? null
   )
 }
 
@@ -138,7 +145,7 @@ export function takePendingHandoff(
   store: StorageLike | null = storage()
 ): PendingHandoff | null {
   const rows = readPendingHandoffs(store)
-  const match = rows.find((row) => row.chainSlug === chainSlug && row.deprizeId === deprizeId)
+  const match = rows.find((row) => isFor(row, chainSlug, deprizeId))
   if (!match) return null
   writePendingHandoffs(
     rows.filter((row) => row !== match),
