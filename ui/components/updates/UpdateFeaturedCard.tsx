@@ -15,14 +15,14 @@ export default function UpdateFeaturedCard({ update }: { update: UpdateMeta }) {
           <img src={update.image} alt="" className="h-full w-full object-contain" />
         </div>
       )}
-      <div className="p-6 md:p-8">
+      <div className="p-5 md:p-8">
         <UpdateMetaLine
           category={update.category}
           date={update.date}
           readingMinutes={update.readingMinutes}
           featured
         />
-        <h2 className="mt-3 font-heading font-semibold text-2xl leading-snug text-white transition-colors group-hover:text-slate-200 md:text-3xl">
+        <h2 className="mt-3 font-heading font-semibold text-[22px] leading-snug text-white transition-colors group-hover:text-slate-200 md:text-3xl">
           {update.title}
         </h2>
         <p className="mt-3 max-w-3xl text-base leading-relaxed text-slate-300">
