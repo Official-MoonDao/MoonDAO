@@ -84,9 +84,14 @@ describe('my moonbase picks', () => {
     const touchdown = books.find((book) => book.goalId === 'shared-next-landing')
     expect(touchdown?.voteId).to.equal(1)
     expect(touchdown?.deprizeId).to.equal(1)
+    // Arbitrum First Tracks is a prize, but keeps the atlas id its free
+    // predictions were saved under.
     const rovers = books.find((book) => book.goalId === 'shared-first-tracks')
     expect(rovers?.voteId).to.equal(ATLAS_FORECAST_VOTE_IDS['shared-first-tracks'])
-    expect(rovers?.deprizeId).to.equal(undefined)
+    expect(rovers?.deprizeId).to.equal(2)
+    const ice = books.find((book) => book.goalId === 'shared-ice')
+    expect(ice?.voteId).to.equal(ATLAS_FORECAST_VOTE_IDS['shared-ice'])
+    expect(ice?.deprizeId).to.equal(undefined)
   })
 
   it('never shares a vote id between two races', () => {

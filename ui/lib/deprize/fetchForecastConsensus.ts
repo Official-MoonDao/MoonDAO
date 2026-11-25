@@ -38,7 +38,7 @@ export async function fetchForecastConsensus(args: {
   resolvedVector?: number[] | null
 }): Promise<ForecastConsensus> {
   const { chainSlug, deprizeId, outcomeCount, resolvedVector } = args
-  const voteId = deprizeForecastVoteId(deprizeId)
+  const voteId = deprizeForecastVoteId(deprizeId, chainSlug)
   if (!Number.isInteger(outcomeCount) || outcomeCount <= 0) {
     return emptyConsensus(deprizeId, voteId, 0)
   }

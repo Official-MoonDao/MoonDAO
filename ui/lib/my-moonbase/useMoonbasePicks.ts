@@ -3,6 +3,7 @@ import { FORECASTS_TABLE_NAMES } from 'const/config'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { deprizeForecastVoteId } from '@/lib/deprize/forecastVote'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
 import { readPendingHandoffs } from '@/lib/forecasts/guestHandoff'
 import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
@@ -139,7 +140,8 @@ export function useMoonbasePicks(
     () =>
       subscribeRoster((notice) => {
         if (notice.chain !== chainSlug) return
-        const race = races.find((r) => r.voteId === notice.deprizeId)
+        const voteId = deprizeForecastVoteId(notice.deprizeId, chainSlug)
+        const race = races.find((r) => r.voteId === voteId)
         if (!race) return
         const index = notice.removed
           ? null
@@ -194,7 +196,7 @@ export function useMoonbasePicks(
     // on this device until the prize page writes them again from the account.
     const handoffs: ForecastRow[] = readPendingHandoffs()
       .filter((row) => row.chainSlug === chainSlug)
-      .map((row) => ({ voteId: row.deprizeId, vote: row.vote }))
+      .map((row) => ({ voteId: deprizeForecastVoteId(row.deprizeId, chainSlug), vote: row.vote }))
     const mine = overlays.filter((o) => o.address === address)
     return mergePicks([
       ...picksFromForecastRows(overlayForecastRows([...(rows ?? []), ...handoffs], mine, books), books),

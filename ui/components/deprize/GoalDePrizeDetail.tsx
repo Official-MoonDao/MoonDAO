@@ -233,25 +233,6 @@ export default function GoalDePrizeDetail({
               </p>
             </div>
 
-            {goal.criteria && goal.criteria.length > 0 && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
-                <h3 className="text-white font-semibold text-sm mb-3">
-                  Capability criteria (draft)
-                </h3>
-                <ol className="flex flex-col gap-2.5">
-                  {goal.criteria.map((c, i) => (
-                    <li key={c.id} className="text-sm text-gray-300">
-                      <span className="text-gray-500 mr-2">{i + 1}</span>
-                      {c.statement}
-                      {c.threshold && (
-                        <p className="text-xs text-gray-500 mt-0.5 pl-5">{c.threshold}</p>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-
             {demoMarket && (
               <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
                 <p className="text-white font-semibold mb-3">Predictions</p>
@@ -297,12 +278,6 @@ export default function GoalDePrizeDetail({
                     Click a competitor to predict them as the winner.
                   </p>
                 )}
-              </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 -mt-1">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-3 w-1 rounded-full bg-zinc-400" />
-                  Unofficial — not confirmed
-                </span>
               </div>
               {outcomes.map((o) => {
                 const competitor = competitors[o.outcome.index]
@@ -367,6 +342,25 @@ export default function GoalDePrizeDetail({
                 )
               })}
             </div>
+
+            {goal.criteria && goal.criteria.length > 0 && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
+                <h3 className="text-white font-semibold text-sm mb-3">
+                  Capability criteria (draft)
+                </h3>
+                <ol className="flex flex-col gap-2.5">
+                  {goal.criteria.map((c, i) => (
+                    <li key={c.id} className="text-sm text-gray-300">
+                      <span className="text-gray-500 mr-2">{i + 1}</span>
+                      {c.statement}
+                      {c.threshold && (
+                        <p className="text-xs text-gray-500 mt-0.5 pl-5">{c.threshold}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
             {!userAddress && demoMarket && (
               <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3 flex-wrap">

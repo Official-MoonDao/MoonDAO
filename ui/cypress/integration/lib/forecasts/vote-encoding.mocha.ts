@@ -51,9 +51,17 @@ describe('deprize forecast vote encoding', () => {
 
   it('uses the prize id as voteId, since Forecasts is a dedicated table', () => {
     const { deprizeForecastVoteId } = mod
-    expect(deprizeForecastVoteId(22)).to.equal(22)
-    expect(deprizeForecastVoteId(0)).to.equal(0)
-    expect(deprizeForecastVoteId(9)).to.not.equal(deprizeForecastVoteId(10))
+    expect(deprizeForecastVoteId(22, 'sepolia')).to.equal(22)
+    expect(deprizeForecastVoteId(0, 'sepolia')).to.equal(0)
+    expect(deprizeForecastVoteId(1, 'arbitrum')).to.equal(1)
+    expect(deprizeForecastVoteId(9, 'sepolia')).to.not.equal(deprizeForecastVoteId(10, 'sepolia'))
+  })
+
+  it('keeps Arbitrum First Tracks on the atlas vote id its free predictions used', () => {
+    const { deprizeForecastVoteId } = mod
+    expect(deprizeForecastVoteId(2, 'arbitrum')).to.equal(1_000_002)
+    expect(deprizeForecastVoteId(1_000_002, 'arbitrum')).to.equal(1_000_002)
+    expect(deprizeForecastVoteId(2, 'sepolia')).to.equal(2)
   })
 
   it('round-trips an allocation and the stored vMOONEY', () => {

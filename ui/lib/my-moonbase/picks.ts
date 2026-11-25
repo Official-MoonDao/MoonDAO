@@ -58,7 +58,7 @@ export function raceBooks(chainSlug: string, goals: readonly SharedGoal[]): Race
       if (deprizeId === undefined || !binding) continue
       books.push({
         goalId: goal.id,
-        voteId: deprizeForecastVoteId(deprizeId),
+        voteId: deprizeForecastVoteId(deprizeId, chainSlug),
         outcomeIds: binding.outcomes.map((outcome) =>
           outcome.field ? undefined : outcome.projectId
         ),
