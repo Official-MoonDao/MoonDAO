@@ -40,7 +40,7 @@ This post is a field guide. It covers the rules, the rovers and the people who b
 - **The bar is low on purpose.** At CubeRover's standard speed of 4 cm/s, ten metres is about four minutes of driving. The hard parts come first: landing upright and getting off the lander.
 - **Two landers decide the early race.** Griffin-1 carries FLIP and CubeRover to the south pole, with a launch targeted for January 2027. IM-3 carries MAPP to Reiner Gamma, targeted for March or April 2027.
 - **A slot is an operator, not one rover.** Tenacious and Iris are gone, but ispace and Carnegie Mellon stay in the race with whatever they drive next. Open Field covers every commercial operator not on the list.
-- **You can predict now.** Free predictions are open. The ETH market on Arbitrum is prepared and opens once MoonDAO's executive multisig signs. The rules below are a draft until then.
+- **You can predict now.** First Tracks is open on Arbitrum as [prize 2](/deprize/arb/2), under rules version 1.0. Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
 
 </aside>
 
@@ -74,7 +74,7 @@ A drive qualifies only when it passes all five tests.
  "src": "/assets/updates/first-tracks/qualifying-drive.jpg",
  "narrow": "/assets/updates/first-tracks/qualifying-drive-narrow.jpg",
  "alt": "Diagram of a lander on the lunar surface with a ramp, a dotted wheel track running 10 metres to a small rover, and an orbiter looking down. Five numbered tests: after open, egress, drive, distance evidence and independent confirmation.",
- "source": "First Tracks rules, version 0.2-draft, 5 November 2026. Distances are to scale; the lander and rover are generic."
+ "source": "First Tracks rules, version 1.0, effective 25 November 2026. Distances are to scale; the lander and rover are generic."
 }
 ```
 
@@ -361,7 +361,7 @@ One in seven is the whole commercial record for landing upright, and that one la
   {"date": "Jan 2024", "title": "Iris launches on Peregrine", "body": "A propellant leak ends the mission in space. The lander never reaches the Moon."},
   {"date": "Mar 2025", "title": "The first MAPP reaches the surface on IM-2", "body": "The lander comes to rest on its side near Mons Mouton. The rover cannot get out."},
   {"date": "Jun 2025", "title": "Tenacious is lost with Hakuto-R Mission 2", "body": "The lander hits Mare Frigoris hard after a rangefinder problem."},
-  {"date": "Nov 2026", "title": "First Tracks is listed", "body": "Free predictions are open. The ETH market on Arbitrum follows.", "status": "now"},
+  {"date": "Nov 2026", "title": "First Tracks opens on Arbitrum", "body": "Prize 2 opens on 25 November. Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.", "status": "now"},
   {"date": "Jan 2027", "title": "Griffin-1 with FLIP and CubeRover", "body": "Target launch on a Falcon Heavy, bound for Mons Mouton.", "status": "next"},
   {"date": "Mar–Apr 2027", "title": "IM-3 with MAPP", "body": "Target launch on a Falcon 9, bound for Reiner Gamma.", "status": "next"},
   {"date": "2028", "title": "ispace Mission 3", "body": "A micro rover on the new ULTRA lander.", "status": "next"},
@@ -494,9 +494,9 @@ Two people who disagree about this race end up with different bases. One has a r
 ## Where things stand
 
 - **Free predictions are open.** You can predict the First Tracks winner today from [Moon Base Zero](/moonbase?race=shared-first-tracks) or the [prize page](/deprize/shared-first-tracks).
-- **The ETH market is prepared, not open.** The market contracts for First Tracks are deployed on Arbitrum. They open when MoonDAO's executive multisig signs the transaction that registers the prize. Until then the prize page reads "Market opens soon".
-- **The rules are a draft until the market opens.** Version 0.2 is dated 5 November 2026. The question, the definitions, the five tests and the tie-break freeze when the market opens. After that, only clarifications that cannot change an outcome are allowed.
-- **We will not open it mid-race.** The rules bar opening the market while a listed operator's rover is on the surface and able to drive, or within a week of a landing that carries one.
+- **The market is open.** MoonDAO's executive multisig registered and opened First Tracks on Arbitrum on 25 November 2026 as [prize 2](/deprize/arb/2). Predictions are open worldwide. Adding ETH to a prediction is unavailable in restricted jurisdictions.
+- **The rules are version 1.0 and frozen.** They took effect when the prize opened. The question, the definitions, the five tests and the tie-break are frozen. Only clarifications that cannot change an outcome are allowed.
+- **No mid-race opening.** The rules bar opening the market while a listed operator's rover is on the surface and able to drive, or within a week of a landing that carries one.
 
 ## Make your own call
 
@@ -576,6 +576,6 @@ The full text is [DEPRIZE_FIRST_TRACKS.md](https://github.com/Official-MoonDao/M
 
 Competitor listings are editorial and based solely on public sources. No listed organization has been contacted, has consented, or is affiliated with this prize.
 
-The rules described here are a draft until the Arbitrum market opens, and the appendix summary is not a substitute for the full text. Launch dates, landing sites and rover specifications come from public statements as of 25 November 2026 and will change. Where an operator has not published a figure, we have said so and have not guessed. Nothing here is advice.
+The rules described here are version 1.0, in force since the Arbitrum market opened on 25 November 2026, and the appendix summary is not a substitute for the full text. Launch dates, landing sites and rover specifications come from public statements as of 25 November 2026 and will change. Where an operator has not published a figure, we have said so and have not guessed. Nothing here is advice.
 
 You can watch the race in [Moon Base Zero](/moonbase?race=shared-first-tracks), read the criteria on the [prize page](/deprize/shared-first-tracks), and follow the first rung on the [Touchdown page](/deprize/arb/1). Free predictions and voting-power-weighted Citizen forecasts are open worldwide; adding ETH to your prediction is available in eligible jurisdictions.

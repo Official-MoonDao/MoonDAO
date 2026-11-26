@@ -12,7 +12,6 @@ const REQUIRED = [
   '## Roster',
   '## Oracle',
   '## Sunset',
-  'This prize is not registered on the public Arbitrum registry.',
   '0xAF26a002d716508b7e375f1f620338442F5470c0',
   '24 months',
   '### Definitions',
@@ -61,6 +60,11 @@ describe('rules of record', () => {
       for (const needle of REQUIRED) {
         expect(unwrapped, needle).to.include(needle)
       }
+      expect(unwrapped, 'status').to.include(
+        name === 'First Tracks'
+          ? 'This prize is registered and **OPEN** as prize id 2 on the public Arbitrum One registry (chain 42161).'
+          : 'This prize is not registered on the public Arbitrum registry.'
+      )
       for (const needle of FORBIDDEN) {
         expect(text, needle).to.not.include(needle)
       }
@@ -93,6 +97,17 @@ describe('rules of record', () => {
     }
     expect(waterIce).to.not.include('MDP-262')
     expect(waterIce).to.not.include('10 metres')
+  })
+
+  it('First Tracks is released as 1.0 and carries no draft language', () => {
+    expect(firstTracks).to.include('**Version** 1.0')
+    expect(firstTracks).to.not.match(/draft/i)
+    expect(firstTracks).to.include(
+      '0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4'
+    )
+    expect(firstTracks).to.include(
+      '0x380b57c4342eef02f49e3231460de2a70afec134f5a7aadd7ad7d8ac33595756'
+    )
   })
 
   it('First Tracks slots are rover operators and government rovers cannot win', () => {

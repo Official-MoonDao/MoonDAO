@@ -9,6 +9,9 @@
  * Refuses unless registry count() is still 1, so id 2 is the id register
  * will assign. Open is last.
  *
+ * Executed 2026-11-25 in tx 0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4.
+ * Registry count() is now 2, so this script refuses to run again.
+ *
  *   cd ui && yarn
  *   yarn tsx --tsconfig tsconfig.json scripts/propose-first-tracks-arbitrum-safe.ts
  *

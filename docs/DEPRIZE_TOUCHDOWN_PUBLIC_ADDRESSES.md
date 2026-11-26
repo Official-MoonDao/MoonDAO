@@ -2,7 +2,7 @@
 
 Broadcast from deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`.
 Do not invent addresses. The Arbitrum market was seeded on 30 Oct 2026.
-The executive Safe still has to register and open it.
+The executive Safe registered and opened it on the same registry (below).
 
 ## Sepolia (chain 11155111) — live
 
@@ -128,39 +128,37 @@ first bet. To `0x0454c7f7C7234661BB43be7Cb1665c3934c1c530`, data
 The deployer cannot send it. Registry and mint owners are still the deployer;
 the Safe remains `pendingOwner`.
 
-## First Tracks — Arbitrum market prepared (2026-11-24)
+## First Tracks — Arbitrum prize 2 open (2026-11-25)
 
-Broadcast from deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011` on the
-public Arbitrum registry above. Spec:
-`ui/scripts/races/first-tracks-public.json`. Do not run it again. The spec
-records the mission and market. A second market would take another 0.048 ETH.
+Broadcast 24 Nov 2026 from deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`
+on the public Arbitrum registry above, then registered and opened by the
+executive Safe on 25 Nov 2026. Spec: `ui/scripts/races/first-tracks-public.json`.
+Do not run it again. The spec records the mission and market. A second market
+would take another 0.048 ETH.
 
-Not registered. Registry `count()` is still 1. The app does not list this
-prize until the Safe batch below is executed.
+Registry `count()` is 2 and `state(2)` is OPEN. Read from Arbitrum One on
+26 Nov 2026. The app lists this prize at `/deprize/arb/2`.
 
 | Slot | Value | Notes |
 |---|---|---|
 | question | `deprize:arbitrum:first-tracks-public:v1` | |
 | questionId | `0xee977158d810dfa023735162257bcf562903dbb800447b7c20f1cd01d8c2d0de` | Not stored on-chain |
-| conditionId | `0x380b57c4342eef02f49e3231460de2a70afec134f5a7aadd7ad7d8ac33595756` | Oracle = treasury `0xAF26a002d716508b7e375f1f620338442F5470c0`, 6 slots. Tx `0xe040439c02fc2c7603b083ebac8989fd2b4f8ab76506d9bfcf546d4c32ea1b4a` |
-| market | `0xb71E299b98dC6e0DAa65750CB9aa942348120Bf6` | `createLMSRWithTWAP`, fee `2e16`, funding 0.048 ETH, stage running. Owner = executive Safe. Tx `0xbf7554dcdedd55edadfaab42ba99411a40521a7d62b63c61bbd00105cf2586dc`. Ownership `0xec49470ae7b6a3c58fac31c4288eee2d93a92f99e29b47b1f4a8e2d33a51651d` |
+| conditionId | `0x380b57c4342eef02f49e3231460de2a70afec134f5a7aadd7ad7d8ac33595756` | Oracle = treasury `0xAF26a002d716508b7e375f1f620338442F5470c0`, 6 slots. Stored in the registry by `setCondition(2)`. Tx `0xe040439c02fc2c7603b083ebac8989fd2b4f8ab76506d9bfcf546d4c32ea1b4a` |
+| market | `0xb71E299b98dC6e0DAa65750CB9aa942348120Bf6` | `createLMSRWithTWAP`, fee `2e16`, funding 0.048 ETH, stage running. Owner = executive Safe. `marketOf(2)` on DePrizeMint returns this address. Tx `0xbf7554dcdedd55edadfaab42ba99411a40521a7d62b63c61bbd00105cf2586dc`. Ownership `0xec49470ae7b6a3c58fac31c4288eee2d93a92f99e29b47b1f4a8e2d33a51651d` |
 | jbProjectId | `88` | missionId `1`. Tx `0x54901ff3077694a12ca885650dfafd3bf63b3e630e6eb71d33b35e5a346cd700` |
-| payHook | `0xe668A95289A8B736FC2e500A98Bae3417DBAf350` | Owner = executive Safe. `deprizeRegistry` is still unset |
-| roster | `[631, 632, 633, 634, 635, 24]` | Assigned as id 2 only if `count()` is still 1 when the batch executes |
+| payHook | `0xe668A95289A8B736FC2e500A98Bae3417DBAf350` | Owner = executive Safe. `deprizeRegistry` is latched to the public registry |
+| deprizeId | `2` | OPEN. Roster `[631, 632, 633, 634, 635, 24]` |
 | seed | 0.048 ETH | 0.008 ETH × 6 |
-| sunset | `1858641089` | |
-| compliance signer | deployer | Unchanged. Shared with Touchdown. This batch does not call `setComplianceSigner` |
+| sunset | `1858641089` | 24 Nov 2028, 01:11:29 UTC |
+| compliance signer | deployer | Unchanged. Shared with Touchdown. The batch did not call `setComplianceSigner` |
 
-The executive Safe batch is proposed and not executed. Nonce 60. It needs 3
-owner confirmations. `open` is last.
-
-https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xfbeeb2e5e4dc083ff3abfbb00b77bae58053af1afcbcb15d973b4d1c524e5459
+Register and open transaction
+[`0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4`](https://arbiscan.io/tx/0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4),
+Arbitrum block **527492845**, 25 Nov 2026, 17:39:21 UTC. It was executive Safe
+nonce 60, one MultiSend with five calls, and `open` was last:
 
 1. `0xe668A95289A8B736FC2e500A98Bae3417DBAf350` `setDePrizeRegistry`
 2. `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` `register(88, [631–635, 24], 1858641089)`
 3. `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` `setCondition(2, conditionId)`
 4. `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` `setMarket(2, market)`
 5. `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` `open(2)`
-
-Do not propose again while nonce 60 is pending. After it executes, bind
-`arbitrum` id 2 in `ui/lib/deprize/competitions.ts`.

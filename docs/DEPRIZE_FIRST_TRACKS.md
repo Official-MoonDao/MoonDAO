@@ -13,7 +13,7 @@
 
 **Owner:** MoonDAO
 
-**Version** 0.2-draft · **Date** 5 November 2026
+**Version** 1.0 · **Effective** 25 November 2026 (UTC, the day the prize opened)
 
 Competitor listings are editorial and based solely on public sources. No listed
 organization has been contacted, has consented, or is affiliated with this prize.
@@ -22,12 +22,26 @@ Predictions are open worldwide. Adding ETH to a prediction is unavailable in res
 
 ## Status
 
-This prize is not registered on the public Arbitrum registry. The market,
-condition, and Juicebox project are prepared. The executive Safe still has to
-execute the queued batch, which registers prize id 2 and opens it. These rules
-take effect when that batch is executed. Until then they are a draft and can
-change. A Sepolia rehearsal is open as public-registry id 2. That rehearsal does
-not freeze these rules.
+This prize is registered and **OPEN** as prize id 2 on the public Arbitrum One
+registry (chain 42161). These rules took effect when it opened and are frozen as
+set out in the table above.
+
+| | |
+|---|---|
+| Registry | `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` |
+| Prize id | 2 |
+| State | `OPEN` |
+| Opened | 25 November 2026, 17:39:21 UTC, Arbitrum block 527492845 |
+| Register and open transaction | [`0xc1a900fa…8e308a4`](https://arbiscan.io/tx/0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4) |
+| Condition id | `0x380b57c4342eef02f49e3231460de2a70afec134f5a7aadd7ad7d8ac33595756` |
+| Prize page | [moondao.com/deprize/arb/2](https://www.moondao.com/deprize/arb/2) |
+
+The executive Safe registered the prize, set its condition and market, and opened
+it in one transaction. Distance driven before that block does not count toward the
+10 metres (test 1).
+
+A Sepolia rehearsal ran earlier as public-registry id 2. It was a rehearsal only
+and does not bind these rules or any outcome here.
 
 ## Resolution criteria
 
@@ -168,14 +182,14 @@ through Open Field, under these rules.
 
 ## Oracle
 
-When this prize is registered, the oracle is
-`0xAF26a002d716508b7e375f1f620338442F5470c0`, the same oracle as Touchdown.
+The oracle is `0xAF26a002d716508b7e375f1f620338442F5470c0`, the same oracle as
+Touchdown.
 
 ## Sunset
 
-Not set. At registration the sunset is set 24 months out. It is extended with
-`setSunset` until the prize resolves. The market fee and seed liquidity are set at
-registration and published on the prize page before open.
+Set at registration to 24 November 2028, 01:11:29 UTC (24 months out). It is
+extended with `setSunset` until the prize resolves. The market fee is 2%, and the
+market was seeded with 0.048 ETH (0.008 ETH for each of the six outcomes).
 
 ## Field notes
 

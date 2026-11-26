@@ -4,6 +4,22 @@ The 2026-10-27 public Touchdown stack (new immutable registry, not yet the
 app pointer) is in
 [`DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md`](./DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md).
 
+## Public registry — First Tracks (prize id 2, OPEN)
+
+First Tracks is prize id 2 on the public Arbitrum registry
+`0x5620749d0579ff08D0DD2389CF9040523DD7B8ea`. This is not the id 4 below, which is
+an earlier-registry rehearsal. Full table in
+[`DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md`](./DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md).
+
+| Slot | Value |
+|---|---|
+| `deprizeId` | `2`, state OPEN |
+| Register and open tx | [`0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4`](https://arbiscan.io/tx/0xc1a900fa619d940fc2d254e393ad38b7cf9be7653a6c1c8610043b38a8e308a4), block 527492845, 25 Nov 2026 17:39:21 UTC |
+| `conditionId` | `0x380b57c4342eef02f49e3231460de2a70afec134f5a7aadd7ad7d8ac33595756` |
+| Market | `0xb71E299b98dC6e0DAa65750CB9aa942348120Bf6` |
+| JB project | `88` |
+| Roster | `[631, 632, 633, 634, 635, 24]` |
+
 Live values for Arbitrum One (chain id 42161). These are the source of truth for
 `ui/const/config.ts` and `fee-hook/script/base/Config.sol`. **Do not invent addresses.**
 Sepolia v2 (the dress rehearsal) is in [`DEPRIZE_SEPOLIA_ADDRESSES.md`](./DEPRIZE_SEPOLIA_ADDRESSES.md).
