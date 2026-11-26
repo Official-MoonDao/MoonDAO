@@ -35,6 +35,7 @@ import {
 import {
   mergePicks,
   overlayForecastRows,
+  picksFromBetReads,
   picksFromBets,
   picksFromForecastRows,
   raceBooks,
@@ -172,6 +173,29 @@ describe('my moonbase picks', () => {
       { goalId: 'shared-next-landing', projectId: 'spacex-starship-hls', source: 'bet' },
     ])
     expect(picksFromBets(undefined, [{ index: 0, balance: 1 }])).to.deep.equal([])
+  })
+
+  it('counts a bet on every live prize, and a missed read as incomplete', () => {
+    const books = raceBooks('arbitrum', goals)
+    const live = books.filter((book) => book.deprizeId !== undefined)
+    expect(live.map((book) => book.goalId)).to.deep.equal([
+      'shared-next-landing',
+      'shared-first-tracks',
+    ])
+    // Slot 6 of Touchdown is Starship HLS. Slot 2 of First Tracks is MAPP.
+    const both = picksFromBetReads(books, [
+      [{ index: 6, balance: 1 }],
+      [{ index: 2, balance: 1 }],
+    ])
+    expect(both.complete).to.equal(true)
+    expect(both.picks).to.deep.equal([
+      { goalId: 'shared-next-landing', projectId: 'spacex-starship-hls', source: 'bet' },
+      { goalId: 'shared-first-tracks', projectId: 'lunar-outpost-mapp', source: 'bet' },
+    ])
+    const missed = picksFromBetReads(books, [[{ index: 6, balance: 1 }], null])
+    expect(missed.complete).to.equal(false)
+    expect(missed.picks.map((pick) => pick.projectId)).to.deep.equal(['spacex-starship-hls'])
+    expect(picksFromBetReads(books, []).complete).to.equal(false)
   })
 
   it('merges one asset backed in two races, or two ways, into one entry', () => {
