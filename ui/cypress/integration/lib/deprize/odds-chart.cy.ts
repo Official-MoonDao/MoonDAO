@@ -1,9 +1,14 @@
 import {
+  ODDS_HOUR_MS,
   ODDS_MIN_SPAN_MS,
+  ODDS_RESAMPLE_POINTS,
+  availableOddsRanges,
   buildOddsTimeDomain,
   buildOddsValueDomain,
   formatOddsTick,
   padOddsSamples,
+  resampleOddsHistory,
+  sliceOddsTimeDomain,
   type OddsSample,
 } from '@/lib/deprize/odds-chart'
 
@@ -155,6 +160,70 @@ describe('deprize odds chart domain', () => {
       expect(padded[0].t).to.equal(1000)
       expect(padded[1].t).to.equal(2000)
       expect(padded[1].p).to.deep.equal([33, 33, 34])
+    })
+  })
+
+  describe('availableOddsRanges & sliceOddsTimeDomain', () => {
+    it('shows only timeframes meaningful for the market age', () => {
+      expect(availableOddsRanges(15 * 60 * 1000)).to.deep.equal(['ALL'])
+      expect(availableOddsRanges(21 * ODDS_HOUR_MS)).to.deep.equal(['1H', '6H', 'ALL'])
+      expect(availableOddsRanges(26 * DAY)).to.deep.equal(['1H', '6H', '1D', '1W', 'ALL'])
+      expect(availableOddsRanges(45 * DAY)).to.deep.equal(['1H', '6H', '1D', '1W', '1M', 'ALL'])
+    })
+
+    it('slices the time domain to the requested trailing window', () => {
+      const open = Date.UTC(2026, 10, 1, 0, 0)
+      const now = open + 10 * DAY
+      const domain = sliceOddsTimeDomain([{ t: open, p: [50, 50] }], '1D', open, now)
+      expect(domain.tMax).to.equal(now)
+      expect(domain.tMin).to.equal(now - DAY)
+      expect(domain.spanMs).to.equal(DAY)
+      expect(domain.ticks.length).to.be.at.least(2)
+      for (const t of domain.ticks) {
+        expect(t).to.be.at.least(domain.tMin)
+        expect(t).to.be.at.most(domain.tMax)
+      }
+    })
+  })
+
+  describe('resampleOddsHistory', () => {
+    it('collapses intra-bucket burst spikes and preserves the exact live endpoint', () => {
+      const open = Date.UTC(2026, 10, 1, 0, 0)
+      const now = open + 20 * DAY
+      const burst = open + 15 * DAY
+      const history: OddsSample[] = [
+        { t: open, p: [20, 80] },
+        { t: burst, p: [65, 35] },
+        { t: burst + 30_000, p: [25, 75] },
+        { t: burst + 60_000, p: [30, 70] },
+      ]
+      const domain = buildOddsTimeDomain(history, open, now)
+      const resampled = resampleOddsHistory(history, domain)
+
+      expect(resampled).to.have.length(ODDS_RESAMPLE_POINTS + 1)
+      expect(resampled[0]).to.deep.equal({ t: open, p: [20, 80] })
+      expect(resampled[resampled.length - 1]).to.deep.equal({ t: now, p: [30, 70] })
+      // The 30-second needle spike to 65% inside one 8-hour bucket should be gone.
+      for (const s of resampled) {
+        expect(s.p[0]).to.be.at.most(30)
+      }
+    })
+
+    it('carries forward prior odds when zoomed into a trailing slice with no new trades', () => {
+      const open = Date.UTC(2026, 10, 1, 0, 0)
+      const trade = open + 2 * DAY
+      const now = open + 10 * DAY
+      const history: OddsSample[] = [
+        { t: open, p: [50, 50] },
+        { t: trade, p: [72, 28] },
+      ]
+      const domain = sliceOddsTimeDomain(history, '1D', open, now)
+      const resampled = resampleOddsHistory(history, domain, 10)
+
+      expect(resampled).to.have.length(11)
+      for (const s of resampled) {
+        expect(s.p).to.deep.equal([72, 28])
+      }
     })
   })
 })

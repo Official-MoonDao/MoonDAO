@@ -7,6 +7,19 @@ export const ODDS_X_TICK_COUNT = 5
 /** Minimum window so a single (or tightly clustered) sample still gets a readable axis. */
 export const ODDS_MIN_SPAN_MS = 5 * 60 * 1000
 export const ODDS_DAY_MS = 24 * 60 * 60 * 1000
+export const ODDS_HOUR_MS = 60 * 60 * 1000
+export const ODDS_RESAMPLE_POINTS = 60
+
+export type OddsTimeRange = '1H' | '6H' | '1D' | '1W' | '1M' | 'ALL'
+
+export const ODDS_TIME_RANGES: { id: OddsTimeRange; label: string; ms: number | null }[] = [
+  { id: '1H', label: '1H', ms: ODDS_HOUR_MS },
+  { id: '6H', label: '6H', ms: 6 * ODDS_HOUR_MS },
+  { id: '1D', label: '1D', ms: ODDS_DAY_MS },
+  { id: '1W', label: '1W', ms: 7 * ODDS_DAY_MS },
+  { id: '1M', label: '1M', ms: 30 * ODDS_DAY_MS },
+  { id: 'ALL', label: 'ALL', ms: null },
+]
 
 export type OddsTimeDomain = {
   tMin: number
@@ -15,10 +28,53 @@ export type OddsTimeDomain = {
   spanMs: number
 }
 
+const SUB_DAY_STEPS_MS = [
+  60 * 1000, // 1m
+  2 * 60 * 1000, // 2m
+  5 * 60 * 1000, // 5m
+  10 * 60 * 1000, // 10m
+  15 * 60 * 1000, // 15m
+  30 * 60 * 1000, // 30m
+  ODDS_HOUR_MS, // 1h
+  2 * ODDS_HOUR_MS, // 2h
+  3 * ODDS_HOUR_MS, // 3h
+  4 * ODDS_HOUR_MS, // 4h
+  6 * ODDS_HOUR_MS, // 6h
+  8 * ODDS_HOUR_MS, // 8h
+  12 * ODDS_HOUR_MS, // 12h
+]
+
+function buildTicksForSpan(tMin: number, tMax: number): number[] {
+  const span = tMax - tMin
+  if (span >= ODDS_DAY_MS * 2) return calendarDayTicks(tMin, tMax)
+  return niceSubDayTicks(tMin, tMax)
+}
+
+/**
+ * Snap sub-2-day X ticks to clean local clock boundaries (e.g. 12 AM, 4 AM,
+ * 8 AM or :00/:15/:30/:45) instead of arbitrary off-the-minute timestamps.
+ */
+function niceSubDayTicks(tMin: number, tMax: number): number[] {
+  const span = tMax - tMin
+  const step =
+    SUB_DAY_STEPS_MS.find((s) => span / s <= 6) ?? SUB_DAY_STEPS_MS[SUB_DAY_STEPS_MS.length - 1]
+  const anchor = localDayStart(tMin)
+  const firstStep = Math.ceil((tMin - anchor) / step)
+  const ticks: number[] = []
+  for (let t = anchor + firstStep * step; t <= tMax; t += step) {
+    ticks.push(t)
+    if (ticks.length > 12) break
+  }
+  if (ticks.length >= 2) return ticks
+  return Array.from({ length: ODDS_X_TICK_COUNT }, (_, i) =>
+    Math.round(tMin + (span * i) / (ODDS_X_TICK_COUNT - 1)),
+  )
+}
+
 /**
  * Build an X-axis domain that spans the exact data range (market open → now)
- * with equal-interval ticks. No calendar snapping — that used to invent dead
- * space before the market opened.
+ * with clean clock-aligned ticks. No calendar snapping of the domain bounds —
+ * that used to invent dead space before the market opened.
  */
 export function buildOddsTimeDomain(
   history: OddsSample[],
@@ -30,7 +86,7 @@ export function buildOddsTimeDomain(
   }
 
   const times = history.map((s) => s.t)
-  let tMax = Math.max(...times, nowMs)
+  const tMax = Math.max(...times, nowMs)
   let tMin =
     domainStartMs !== undefined && Number.isFinite(domainStartMs)
       ? Math.min(domainStartMs, ...times)
@@ -40,13 +96,132 @@ export function buildOddsTimeDomain(
   }
 
   const span = tMax - tMin
-  const ticks =
-    span >= ODDS_DAY_MS * 2
-      ? calendarDayTicks(tMin, tMax)
-      : Array.from({ length: ODDS_X_TICK_COUNT }, (_, i) =>
-          Math.round(tMin + (span * i) / (ODDS_X_TICK_COUNT - 1)),
-        )
+  const ticks = buildTicksForSpan(tMin, tMax)
   return { tMin, tMax, ticks, spanMs: span }
+}
+
+/** Timeframes meaningful for a market's total span (always includes ALL). */
+export function availableOddsRanges(totalSpanMs: number): OddsTimeRange[] {
+  const ranges: OddsTimeRange[] = []
+  for (const r of ODDS_TIME_RANGES) {
+    if (r.ms === null || totalSpanMs > r.ms / 0.85) {
+      ranges.push(r.id)
+    }
+  }
+  return ranges
+}
+
+/** Build an X-axis domain zoomed to a selected timeframe ending at `tMax`. */
+export function sliceOddsTimeDomain(
+  history: OddsSample[],
+  range: OddsTimeRange,
+  domainStartMs?: number,
+  nowMs: number = Date.now(),
+): OddsTimeDomain {
+  const full = buildOddsTimeDomain(history, domainStartMs, nowMs)
+  if (!history.length || range === 'ALL') return full
+  const spec = ODDS_TIME_RANGES.find((r) => r.id === range)
+  if (!spec?.ms) return full
+  const tMax = full.tMax
+  const tMin = Math.max(full.tMin, tMax - spec.ms)
+  const spanMs = tMax - tMin
+  if (spanMs <= 0) return full
+  return {
+    tMin,
+    tMax,
+    ticks: buildTicksForSpan(tMin, tMax),
+    spanMs,
+  }
+}
+
+/**
+ * Exact time-weighted average of the piecewise-constant LMSR series over [a, b].
+ * Anti-aliases sub-bucket trade bursts regardless of where they fall relative
+ * to grid boundaries, preserves probability sums (= 100%), and never overshoots.
+ */
+function timeWeightedAverage(
+  sorted: OddsSample[],
+  startIdx: number,
+  a: number,
+  b: number,
+): number[] {
+  const n = sorted[startIdx].p.length
+  const acc = new Array<number>(n).fill(0)
+  const total = b - a
+  if (total <= 0) return sorted[startIdx].p
+
+  let idx = startIdx
+  let cursor = a
+  while (idx + 1 < sorted.length && sorted[idx + 1].t < b) {
+    const nextT = sorted[idx + 1].t
+    if (nextT > cursor) {
+      const w = nextT - cursor
+      const p = sorted[idx].p
+      for (let i = 0; i < n; i++) acc[i] += p[i] * w
+      cursor = nextT
+    }
+    idx++
+  }
+  const rem = b - cursor
+  if (rem > 0) {
+    const p = sorted[idx].p
+    for (let i = 0; i < n; i++) acc[i] += p[i] * rem
+  }
+  for (let i = 0; i < n; i++) acc[i] /= total
+  return acc
+}
+
+/**
+ * Resample the piecewise-constant LMSR odds series onto an evenly spaced time
+ * grid across `domain` using centered time-weighted bucket averages (with exact
+ * opening and live endpoint values).
+ *
+ * 1. Brief burst spikes within a bucket are anti-aliased cleanly instead of
+ *    rendering as single-pixel vertical needles.
+ * 2. Even grid spacing keeps smooth monotone curves faithful (flat intervals
+ *    stay flat; sustained shifts ease smoothly right around the trade time) and
+ *    makes hover scrubbing continuous across the entire chart.
+ */
+export function resampleOddsHistory(
+  history: OddsSample[],
+  domain: OddsTimeDomain,
+  points: number = ODDS_RESAMPLE_POINTS,
+): OddsSample[] {
+  if (!history.length) return []
+  const sorted = [...history].sort((a, b) => a.t - b.t)
+  if (domain.spanMs <= 0 || points < 2) return padOddsSamples(sorted, domain)
+
+  const out: OddsSample[] = []
+  const dt = domain.spanMs / points
+  const halfDt = dt / 2
+
+  let startIdx = 0
+  while (startIdx + 1 < sorted.length && sorted[startIdx + 1].t <= domain.tMin) {
+    startIdx++
+  }
+  let endIdx = startIdx
+  while (endIdx + 1 < sorted.length && sorted[endIdx + 1].t <= domain.tMax) {
+    endIdx++
+  }
+
+  // Exact opening value at domain.tMin
+  out.push({ t: domain.tMin, p: sorted[startIdx].p })
+
+  // Interior grid points: centered time-weighted average over [t - dt/2, t + dt/2]
+  let winIdx = startIdx
+  for (let k = 1; k < points; k++) {
+    const t = Math.round(domain.tMin + dt * k)
+    const a = Math.max(domain.tMin, t - halfDt)
+    const b = Math.min(domain.tMax, t + halfDt)
+    while (winIdx + 1 < sorted.length && sorted[winIdx + 1].t <= a) {
+      winIdx++
+    }
+    out.push({ t, p: timeWeightedAverage(sorted, winIdx, a, b) })
+  }
+
+  // Exact live endpoint at domain.tMax
+  out.push({ t: domain.tMax, p: sorted[endIdx].p })
+  return out
 }
 
 export type OddsValueDomain = { min: number; max: number; ticks: number[] }
@@ -161,15 +336,24 @@ export function formatOddsTick(t: number, spanMs: number): string {
   if (spanMs >= ODDS_DAY_MS) {
     return d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric' })
   }
+  if (spanMs >= 3 * ODDS_HOUR_MS && d.getMinutes() === 0) {
+    return d.toLocaleTimeString([], { hour: 'numeric' })
+  }
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
 export function formatOddsTooltip(t: number, spanMs: number): string {
   const d = new Date(t)
-  if (spanMs >= ODDS_DAY_MS) {
+  if (spanMs >= ODDS_HOUR_MS) {
     return d.toLocaleString([], {
       month: 'short',
       day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
+  if (spanMs >= 15 * 60 * 1000) {
+    return d.toLocaleTimeString([], {
       hour: 'numeric',
       minute: '2-digit',
     })
