@@ -4,7 +4,7 @@
  * A visitor's browser is never given the owner's wallet, so it cannot read
  * their predictions itself. This reads them here, the same two ways the
  * builder does: free predictions from the Forecasts table, and any outcome
- * the wallet holds a position on in the live DePrize market.
+ * the wallet holds a position on in a live DePrize market.
  *
  * Server only.
  */
@@ -25,7 +25,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { picksCacheKey } from './baseStore'
 import {
   mergePicks,
-  picksFromBets,
+  picksFromBetReads,
   picksFromForecastRows,
   raceBooks,
   type ForecastRow,
@@ -203,30 +203,34 @@ export async function readVisitorPicks(
   const table = FORECASTS_TABLE_NAMES[chainSlug] as string | undefined
   if (!table) return null
   const books = raceBooks(chainSlug, SEED_ATLAS.sharedGoals)
-  const betBook = books.find((book) => book.deprizeId !== undefined)
+  const betBooks = books.filter((book) => book.deprizeId !== undefined)
 
-  const [rows, bets] = await Promise.all([
+  const [rows, betReads] = await Promise.all([
     fetchForecastRows(chain.id, table, wallet).catch((err) => {
       console.warn('[my-moonbase] could not read a base owner’s predictions', err)
       return null
     }),
-    betBook
-      ? withTimeout(readBetBalances(chainSlug, chain.id, betBook, wallet), 'position read').catch(
+    Promise.all(
+      betBooks.map((book) =>
+        withTimeout(readBetBalances(chainSlug, chain.id, book, wallet), 'position read').catch(
           (err) => {
             console.warn('[my-moonbase] could not read a base owner’s positions', err)
             return null
           }
         )
-      : Promise.resolve([]),
+      )
+    ),
   ])
   if (!rows) return null
 
+  // One failed market must not look like a finished read. The share page
+  // empties a lot only when `complete` is true.
+  const bets = picksFromBetReads(books, betReads)
   const result: VisitorPicks = {
-    picks: mergePicks([
-      ...picksFromForecastRows(rows, books),
-      ...picksFromBets(betBook, bets ?? []),
-    ]).map(({ projectId, goalIds }) => ({ projectId, goalIds })),
-    complete: bets !== null,
+    picks: mergePicks([...picksFromForecastRows(rows, books), ...bets.picks]).map(
+      ({ projectId, goalIds }) => ({ projectId, goalIds })
+    ),
+    complete: bets.complete,
   }
   // A partial read is not kept: the next visitor should get another try at it.
   if (redis && result.complete) {

@@ -141,6 +141,24 @@ export function picksFromBets(
   return picks
 }
 
+/**
+ * Bets on every live prize. `reads` lines up with the market-bound books, in
+ * the same order. A null entry means that prize's positions were not read, so
+ * the result is incomplete: a share page must not treat missing hardware as
+ * given up.
+ */
+export function picksFromBetReads(
+  books: readonly RaceBook[],
+  reads: readonly (readonly { index: number; balance: number }[] | null)[]
+): { picks: RacePick[]; complete: boolean } {
+  const betBooks = books.filter((book) => book.deprizeId !== undefined)
+  if (reads.length !== betBooks.length) return { picks: [], complete: false }
+  return {
+    complete: reads.every((read) => read !== null),
+    picks: betBooks.flatMap((book, index) => picksFromBets(book, reads[index] ?? [])),
+  }
+}
+
 /** One entry per asset, however many races or ways it was backed. */
 export function mergePicks(picks: readonly RacePick[]): MoonbasePick[] {
   const byProject = new Map<string, MoonbasePick>()
