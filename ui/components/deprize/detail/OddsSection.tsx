@@ -33,7 +33,7 @@ export default function OddsSection(props: {
         {caption}
       </p>
       <OddsHistoryChart
-        variant="hero"
+        variant="detail"
         height={CHART_HEIGHT}
         history={props.history}
         labels={props.labels}
