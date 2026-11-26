@@ -280,7 +280,10 @@ export default function OddsHistoryChart({
     (state: any) => {
       if (!detail) return
       const row = state?.activePayload?.[0]?.payload as ChartRow | undefined
-      if (!row || typeof row.t !== 'number') return
+      if (!state?.isTooltipActive || !row || typeof row.t !== 'number') {
+        setScrubPoint(null)
+        return
+      }
       setScrubPoint((prev) => {
         if (prev && prev.t === row.t) return prev
         const values = Array.from({ length: outcomeCount }, (_, i) => row[`v${i}`])
