@@ -9,17 +9,18 @@
 # DePrize capability ladder
 
 **Owner:** *unassigned — product*  
-**Last updated:** 2026-11-05
+**Last updated:** 2026-11-26
 
 Touchdown is registered on the public registries (Arbitrum #1, Sepolia #1). First Tracks
-is registered on the public Sepolia registry as #2. Water Ice and Night Shift ran as dress
+is registered and open on the public Arbitrum registry as #2 and on the public Sepolia
+registry as #2. Water Ice and Night Shift ran as dress
 rehearsals on earlier Sepolia and Arbitrum registries, and the site no longer lists those
 markets. Nothing on this page is an offer to award a prize.
 
 | Rung | Name | Bar | Status |
 |---|---|---|---|
 | 0 | Touchdown | next upright working landing | LIVE · Arbitrum #1 · Sepolia #1 |
-| 1 | First Tracks | commercial rover egress + drive | LIVE · Sepolia #2 · Rehearsal: LIVE (Sepolia #5) · Arbitrum #4, earlier registries |
+| 1 | First Tracks | commercial rover egress + drive | LIVE · Arbitrum #2 · Sepolia #2 · Rehearsal: LIVE (Sepolia #5) · Arbitrum #4, earlier registries |
 | 2 | Water Ice | 2027 in-situ surface water ice | Rehearsal: LIVE (Sepolia #6) · Arbitrum #5, earlier registries |
 | 3 | Night Shift | chamber proxy now · surface 2028+ | Rehearsal: LIVE (Sepolia #3) · Arbitrum #3, earlier registries |
 
